@@ -37,7 +37,7 @@ class SegmentUtteranceFactory(object):
 				yield utt
 
 	def __create(self, segment: Element) -> "Utterance":
-		token_elems = segment.iterfind(".//hat:t", ANNOTATION_NAMESPACES)
+		token_elems = segment.iterfind(".//hat:t", annotations.ANNOTATION_NAMESPACES)
 		token_text = (elem.text for elem in token_elems)
 		content = self.token_seq_factory(token_text)
 		if content:
