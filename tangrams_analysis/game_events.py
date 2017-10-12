@@ -1,6 +1,5 @@
 import csv
 import decimal
-import json
 import sys
 from collections import defaultdict
 from enum import Enum, unique
@@ -253,7 +252,8 @@ def read_events(session: session_data.SessionData) -> EventData:
 	participant_metadata = session.read_participant_metadata()
 	participant_source_ids = participant_metadata[session_data.ParticipantMetadataRow.SOURCE_ID.value]
 	interned_source_participant_ids = dict(
-		(sys.intern(source_id), sys.intern(participant_id)) for (participant_id, source_id) in participant_source_ids.items())
+		(sys.intern(source_id), sys.intern(participant_id)) for (participant_id, source_id) in
+		participant_source_ids.items())
 	initial_instructor_id = sys.intern(events_metadata[session_data.EventMetadataRow.INITIAL_INSTRUCTOR_ID.value])
 	return EventData(events, interned_source_participant_ids, initial_instructor_id)
 

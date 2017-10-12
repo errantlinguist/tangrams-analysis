@@ -1,11 +1,9 @@
-import itertools
 import sys
 from collections import defaultdict
 from typing import Any, Callable, DefaultDict, Iterable, Iterator, List, Sequence, Tuple, Union
 from xml.etree.ElementTree import Element, parse as parse_etree
 
-from annotations import ANNOTATION_NAMESPACES
-from sorted_lists import SortedList
+import annotations
 
 """
 NOTE: See "../src/main/resources/se/kth/speech/nlp/fillers.txt"
@@ -86,68 +84,6 @@ class Utterance(object):
 		return self.segment_id, self.speaker_id, self.start_time, self.end_time, self.content
 
 
-class UtteranceTimes(object):
-	def __init__(self, utts: Iterable[Utterance]):
-		self.utts_by_start_time = defaultdict(SortedList)
-		for utt in utts:
-			self.utts_by_start_time[utt.start_time].append(utt)
-		for utt_list in self.utts_by_start_time.values():
-			utt_list.sort(key=lambda u: u.end_time)
-
-		self.__ascending_start_times = SortedList(self.utts_by_start_time.keys())
-		self.__ascending_start_times.sort()
-
-	@property
-	def __key(self):
-		return self.utts_by_start_time
-
-	def __eq__(self, other):
-		return (self is other or (isinstance(other, type(self))
-								  and self.__key == other.__key))
-
-	def __ne__(self, other):
-		return not (self == other)
-
-	def __repr__(self):
-		return self.__class__.__name__ + str(self.__dict__)
-
-	def __getitem__(self, item) -> Union[Utterance, Iterator[Utterance]]:
-		if isinstance(item, slice):
-			start = item.start
-			stop = item.stop
-			if stop is None:
-				result = self.__after(start)
-			else:
-				result = self.__between(start, stop)
-		else:
-			result = self.__next_after(item)
-		return result
-
-	def get(self, start: float, stop: float = None, d=iter(())) -> Iterator[Utterance]:
-		try:
-			if stop is None:
-				result = self.__after(start)
-			else:
-				result = self.__between(start, stop)
-		except ValueError:
-			result = d
-		return result
-
-	def __after(self, start_time: float) -> Iterator[Utterance]:
-		utt_start_times = self.__ascending_start_times.slice_ge(start_time)
-		return itertools.chain.from_iterable(
-			self.utts_by_start_time[start_time] for start_time in utt_start_times)
-
-	def __between(self, start_time: float, end_time: float) -> Iterator[Utterance]:
-		utt_start_times = self.__ascending_start_times.iter_between(start_time, end_time)
-		return itertools.chain.from_iterable(
-			self.utts_by_start_time[start_time] for start_time in utt_start_times)
-
-	def __next_after(self, start_time: float) -> Utterance:
-		next_start_time = self.__ascending_start_times.find_ge(start_time)
-		return self.utts_by_start_time[next_start_time]
-
-
 def is_semantically_relevant_token(token: str) -> bool:
 	return token not in METALANGUAGE_TOKENS and token not in FILLER_TOKENS and not is_disfluency(token)
 
@@ -223,7 +159,7 @@ def join_utt_sentence_reprs(utts: Iterable[Utterance]) -> str:
 def read_segments(infile_path: str) -> Iterator[Element]:
 	print("Reading XML file \"{}\".".format(infile_path), file=sys.stderr)
 	doc_tree = parse_etree(infile_path)
-	return doc_tree.iterfind(".//hat:segment", ANNOTATION_NAMESPACES)
+	return doc_tree.iterfind(".//hat:segment", annotations.ANNOTATION_NAMESPACES)
 
 
 def token_seq_repr(tokens: Iterable[str]) -> str:
