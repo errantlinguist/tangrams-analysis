@@ -1,4 +1,5 @@
 import sys
+from numbers import Number
 from typing import Callable, Iterable, Iterator, Mapping, Sequence, \
 	Tuple
 
@@ -72,10 +73,11 @@ class SessionGameRoundUtteranceFactory(object):
 		round_first_reference_events["UTTERANCES"] = valid_round_utts
 
 
-def zip_game_round_utterances(round_timespans, utt_iter: Iterator[utterances.Utterance]):
+def zip_game_round_utterances(round_timespan_iter: Iterator[Tuple[Number, Number]],
+							  utt_iter: Iterator[utterances.Utterance]):
 	current_round_timespan = None
 	current_round_utts = []
-	next_round_timespan = next(round_timespans)
+	next_round_timespan = next(round_timespan_iter)
 	next_round_start_time = next_round_timespan[0]
 
 	try:
@@ -92,11 +94,11 @@ def zip_game_round_utterances(round_timespans, utt_iter: Iterator[utterances.Utt
 
 				current_round_timespan = next_round_timespan
 				current_round_utts = [utt]
-				next_round_timespan = next(round_timespans)
+				next_round_timespan = next(round_timespan_iter)
 				next_round_start_time = next_round_timespan[0]
 
 		# Return the rest of the rounds with empty utterance lists
-		for remaining_round_timespan in round_timespans:
+		for remaining_round_timespan in round_timespan_iter:
 			yield remaining_round_timespan, []
 
 	except StopIteration:
