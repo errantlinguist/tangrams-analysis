@@ -1,6 +1,9 @@
 import sys
-from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Optional, Sequence, \
+from typing import Callable, Iterable, Iterator, Mapping, Sequence, \
 	Tuple
+
+import numpy as np
+import pandas as pd
 
 import game_events
 import session_data as sd
@@ -21,74 +24,83 @@ class GameRoundUtterances(object):
 		return self.__class__.__name__ + str(self.__dict__)
 
 
+# def referring_language(event_start_time : Number, utt_times : utterances.UtteranceTimes):
+#	utt_times.
+
+
+def add_round_start_time(group_df: pd.DataFrame) -> pd.DataFrame:
+	round_start_time = group_df["TIME"].transform('min')
+	group_df["ROUND_START_TIME"] = round_start_time
+	return group_df
+
+
 class SessionGameRoundUtteranceFactory(object):
 	ROUND_ID_OFFSET = 1
 
 	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
 		self.token_seq_factory = token_seq_factory
 
-	def __call__(self, named_sessions: Iterable[Tuple[str, sd.SessionData]]) -> Dict[
-		str, GameRoundUtterances]:
-		result = {}
-		for dyad_id, session in named_sessions:
-			print("Processing session \"{}\".".format(dyad_id), file=sys.stderr)
-			entity_coreference_chains = self.__create_game_round_utterances(session)
-			result[dyad_id] = entity_coreference_chains
-
-		return result
-
-	def __create_game_round_utterances(self, session: sd.SessionData) -> GameRoundUtterances:
+	def __call__(self, session: sd.SessionData) -> GameRoundUtterances:
 		event_data = game_events.read_events(session)
 		source_participant_ids = event_data.source_participant_ids
 		seg_utt_factory = utterances.SegmentUtteranceFactory(self.token_seq_factory,
 															 lambda source_id: source_participant_ids[source_id])
-		game_rounds = game_events.create_game_rounds(event_data.events)
+		event_df = event_data.events
+		event_df.sort_values("TIME", inplace=True)
+
+		# Get the events which describe the referent entity at the time a new turn is submitted
+		entity_reference_events = event_df[(event_df["REFERENT"] == True) & (event_df["NAME"] == "nextturn.request")]
+		# Ensure the chronologically-first event is chosen (should be unimportant because there should be only one turn submission event per round)
+		round_first_reference_events = entity_reference_events.groupby("ROUND").first()
+		round_first_reference_event_times = round_first_reference_events["TIME"]
+		next_round_first_reference_event_times = round_first_reference_event_times.shift(-1).fillna(np.inf)
+		round_timespans = zip(round_first_reference_event_times, next_round_first_reference_event_times)
+
 		segments = utterances.read_segments(session.utts)
 		utts = seg_utt_factory(segments)
+		round_utts = tuple(zip_game_round_utterances(round_timespans, iter(utts)))
+		# Trim the first set of utterances if it represents language before the game started
+		if round_utts[0][0] is None:
+			valid_round_utts = round_utts[1:]
+		else:
+			valid_round_utts = round_utts
 
-		game_round_utts = tuple(zip_game_round_utterances(game_rounds, iter(utts)))
-		event_participant_id_factory = game_events.EventParticipantIdFactory(event_data.initial_instructor_id)
-
-		round_instructor_ids = {}
-		enumerated_game_round_utts = enumerate(game_round_utts, start=self.ROUND_ID_OFFSET)
-		for round_id, round_utts in enumerated_game_round_utts:
-			game_round, round_utts = round_utts
-			initial_event = game_round.initial_event
-			round_instructor_id = event_participant_id_factory(initial_event)
-			existing_instructor_id = round_instructor_ids.get(round_id, None)
-			if existing_instructor_id and existing_instructor_id != round_instructor_id:
-				raise ValueError("Differing instructor ID for round {}.".format(round_id))
-			else:
-				round_instructor_ids[round_id] = round_instructor_id
-		return GameRoundUtterances(game_round_utts, round_instructor_ids)
+		print("Round count : {}".format(round_first_reference_events.shape[0]), file=sys.stderr)
+		print("Utterance set count : {}".format(len(valid_round_utts)), file=sys.stderr)
+		for utts in valid_round_utts:
+			print(utts)
+		round_first_reference_events["UTTERANCES"] = valid_round_utts
 
 
-def zip_game_round_utterances(game_rounds: Iterator[game_events.GameRound], utt_iter: Iterator[utterances.Utterance]) -> \
-		Iterator[Tuple[Optional[game_events.GameRound], List[utterances.Utterance]]]:
-	current_round = None
+def zip_game_round_utterances(round_timespans, utt_iter: Iterator[utterances.Utterance]):
+	current_round_timespan = None
 	current_round_utts = []
-	next_round = next(game_rounds)
-	next_round_start_time = next_round.start_time
+	next_round_timespan = next(round_timespans)
+	next_round_start_time = next_round_timespan[0]
 
 	try:
 		for utt in utt_iter:
 			if utt.start_time < next_round_start_time:
 				current_round_utts.append(utt)
 			else:
-				result = current_round, current_round_utts
-				if current_round is None:
+				result = current_round_timespan, current_round_utts
+				if current_round_timespan is None:
 					if current_round_utts:
 						yield result
 				else:
 					yield result
 
-				current_round = next_round
+				current_round_timespan = next_round_timespan
 				current_round_utts = [utt]
-				next_round = next(game_rounds)
-				next_round_start_time = next_round.start_time
+				next_round_timespan = next(round_timespans)
+				next_round_start_time = next_round_timespan[0]
+
+		# Return the rest of the rounds with empty utterance lists
+		for remaining_round_timespan in round_timespans:
+			yield remaining_round_timespan, []
 
 	except StopIteration:
 		# There are no more following events; The rest of the utterances must belong to the event directly following this one
 		current_round_utts.extend(utt_iter)
 
-	yield current_round, current_round_utts
+	yield current_round_timespan, current_round_utts

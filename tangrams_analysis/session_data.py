@@ -2,10 +2,13 @@ import csv
 import os
 from decimal import Decimal
 from enum import Enum, unique
-from typing import Any, Callable, Dict, Iterator, List, Iterable, Tuple
+from typing import Any, Callable, Dict, Iterator, Iterable, Tuple
+
+import pandas as pd
 
 DECIMAL_VALUE_TYPE = Decimal
 ENCODING = 'utf-8'
+NULL_VALUE_REPR = '?'
 
 _DECIMAL_INFINITY = DECIMAL_VALUE_TYPE('Infinity')
 _PARTICIPANT_METADATA_HEADER_ROW_NAME = "PARTICIPANT_ID"
@@ -106,23 +109,14 @@ class SessionData(object):
 	def __repr__(self):
 		return self.__class__.__name__ + str(self.__dict__)
 
+	def read_events(self) -> pd.DataFrame:
+		return pd.read_csv(self.events, sep='\t', dialect=csv.excel_tab, float_precision="high",
+						   encoding=ENCODING, memory_map=True)
+
 	def read_events_metadata(self) -> Dict[str, str]:
 		with open(self.events_metadata, 'r', encoding=ENCODING) as infile:
 			rows = csv.reader(infile, dialect="excel-tab")
 			return dict(rows)
-
-	def read_metadata_entity_count(self) -> int:
-		return int(self.read_metadatum_value(EventMetadataRow.ENTITY_COUNT))
-
-	def read_metadata_event_count(self) -> int:
-		return int(self.read_metadatum_value(EventMetadataRow.EVENT_COUNT))
-
-	def read_metadata_round_count(self) -> int:
-		return int(self.read_metadatum_value(EventMetadataRow.ROUND_COUNT))
-
-	def read_metadatum_value(self, metadatum: EventMetadataRow):
-		events_metadata = self.read_events_metadata()
-		return events_metadata[metadatum.value]
 
 	def read_participant_metadata(self) -> Dict[str, Dict[str, str]]:
 		result = {}
@@ -137,25 +131,6 @@ class SessionData(object):
 			participant_value_dict = dict(
 				(participant_id, participant_values[idx]) for (participant_id, idx) in participant_id_idxs)
 			result[metadatum_name] = participant_value_dict
-
-		return result
-
-	def read_round_start_end_times(self) -> Iterator[Tuple[DECIMAL_VALUE_TYPE, DECIMAL_VALUE_TYPE]]:
-		return session_round_start_end_times(iter(self.read_round_start_times()))
-
-	def read_round_start_times(self) -> List[DECIMAL_VALUE_TYPE]:
-		round_count = self.read_metadata_round_count()
-
-		result = [_DECIMAL_INFINITY] * round_count
-		with open(self.events, 'r', encoding=ENCODING) as infile:
-			rows = csv.reader(infile, dialect="excel-tab")
-			col_idxs = dict((col_name, idx) for (idx, col_name) in enumerate(next(rows)))
-			for row in rows:
-				event_time_col_idx = col_idxs[DataColumn.EVENT_TIME.value]
-				event_time = fetch_decimal_value(row[event_time_col_idx])
-				round_id_col_idx = col_idxs[DataColumn.ROUND_ID.value]
-				round_idx = int(row[round_id_col_idx]) - 1
-				result[round_idx] = min(result[round_idx], event_time)
 
 		return result
 
@@ -175,25 +150,6 @@ def is_session_dir(filenames: Iterable[str]) -> bool:
 			break
 
 	return result
-
-
-def session_round_start_end_times(round_start_times: Iterator[DECIMAL_VALUE_TYPE]) -> Iterator[
-	Tuple[DECIMAL_VALUE_TYPE, DECIMAL_VALUE_TYPE]]:
-	current_start_time = next(round_start_times)
-	for next_start_time in round_start_times:
-		yield current_start_time, next_start_time
-		current_start_time = next_start_time
-
-	end_reached = False
-	while not end_reached:
-		try:
-			next_start_time = next(round_start_times)
-		except StopIteration:
-			next_start_time = _DECIMAL_INFINITY
-			end_reached = True
-
-		yield current_start_time, next_start_time
-		current_start_time = next_start_time
 
 
 def walk_session_data(inpaths: Iterable[str]) -> Iterator[Tuple[str, SessionData]]:
