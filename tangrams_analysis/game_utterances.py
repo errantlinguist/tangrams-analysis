@@ -27,17 +27,27 @@ class GameRoundUtterances(object):
 		return self.__class__.__name__ + str(self.__dict__)
 
 
-def add_round_start_time(group_df: pd.DataFrame) -> pd.DataFrame:
-	round_start_time = group_df["TIME"].transform('min')
-	group_df["ROUND_START_TIME"] = round_start_time
-	return group_df
-
-
 class SessionGameRoundUtteranceFactory(object):
 	ROUND_ID_OFFSET = 1
 
 	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
 		self.token_seq_factory = token_seq_factory
+
+	@staticmethod
+	def create_token_rows(row) -> Iterator[pd.Series]:
+		utts = row.UTTERANCES
+		for utt in utts:
+			speaker_id = utt.speaker_id
+			tokens = utt.content
+			for token in tokens:
+				#token_row = row.copy(deep=False)
+				token_row = pd.Series(row, row._fields)
+				#print(token_row)
+				token_row.drop("UTTERANCES", inplace=True)
+
+				token_row["SPEAKER"] = speaker_id
+				token_row["TOKEN"] = token
+				yield token_row
 
 	def __call__(self, session: sd.SessionData) -> pd.DataFrame:
 		event_data = game_events.read_events(session)
@@ -58,9 +68,37 @@ class SessionGameRoundUtteranceFactory(object):
 		segments = utterances.read_segments(session.utts)
 		utts = tuple(seg_utt_factory(segments))
 		round_utts = tuple(game_round_utterances(round_first_reference_event_end_times, utts)[1])
-		round_first_reference_events["UTTERANCES"] = round_utts
+		# round_first_reference_event_utts = tuple(zip(round_first_reference_events, round_utts))
+		# for elem in round_first_reference_event_utts:
+		#	print(elem)
 
-		return round_first_reference_events
+		# round_first_reference_events.apply(lambda df : self.create_bag_of_words_df(df, round_utts))
+
+		# round_first_reference_events.apply(lambda row )
+
+		round_first_reference_events["UTTERANCES"] = round_utts
+		# event_token_df = round_first_reference_events.transform(self.create_token_rows, axis=1)
+		# print(event_token_df)
+		# print(type(round_first_reference_events))
+		# token_rows
+		#blah = round_first_reference_events.apply(self.create_token_row_tuple, axis=1)
+		#print(blah)
+		#token_rows = itertools.chain.from_iterable(self.create_token_rows(row) for row in round_first_reference_events.itertuples())
+		#for token_row in token_rows:
+		#	print(token_row)
+
+		token_rows = []
+		for row in round_first_reference_events.itertuples():
+			#print(help(pd.core.frame.Pandas))
+			#print(type(row))
+			round_token_rows = self.create_token_rows(row)
+			token_rows.extend(round_token_rows)
+
+		#print("Token training instances: {}".format(len(token_rows)))
+		round_token_df = pd.DataFrame(token_rows)
+		#print(round_token_df)
+
+		return round_token_df
 
 
 def game_round_utterances(round_start_time_iter: Iterator[N],

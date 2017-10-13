@@ -40,8 +40,8 @@ class CrossValidator(object):
 
 	def create_training_data(self, sessions: Iterable[SessionData]):
 		for session in sessions:
-			game_round_utt_df = self.session_game_round_utt_factory(session)
-			print(game_round_utt_df)
+			game_round_token_df = self.session_game_round_utt_factory(session)
+			print(game_round_token_df)
 			#for round_id, (game_round, round_utts) in enumerate(session_round_utts.game_round_utts,
 			#													start=game_utterances.SessionGameRoundUtteranceFactory.ROUND_ID_OFFSET):
 			#	round_instructor_id = session_round_utts.round_instructor_ids[round_id]
