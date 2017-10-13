@@ -1,7 +1,7 @@
 import sys
 from numbers import Number
 from typing import Callable, Iterable, Iterator, List, Mapping, Optional, Sequence, \
-	Tuple
+	Tuple, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -9,6 +9,8 @@ import pandas as pd
 import game_events
 import session_data as sd
 import utterances
+
+N = TypeVar('N', bound=Number)
 
 
 class GameRoundUtterances(object):
@@ -38,9 +40,12 @@ def add_round_start_time(group_df: pd.DataFrame) -> pd.DataFrame:
 class SessionGameRoundUtteranceFactory(object):
 	ROUND_ID_OFFSET = 1
 
+	__GameRoundUtteranceSequence = TypeVar("__GameRoundUtteranceSequence",
+										   bound=Sequence[Tuple[Optional[Tuple[N, N]], Sequence[utterances.Utterance]]])
+
 	@staticmethod
 	def __trim_game_round_utterances(
-			game_round_utts: Sequence[Tuple[Optional[Tuple[Number, Number]], Sequence[utterances.Utterance]]]):
+			game_round_utts: __GameRoundUtteranceSequence) -> __GameRoundUtteranceSequence:
 		"""
 		Trims the first set of utterances if it represents language before the game started.
 		:param game_round_utts: The game round utterances to trim.
@@ -82,9 +87,9 @@ class SessionGameRoundUtteranceFactory(object):
 		round_first_reference_events["UTTERANCES"] = round_utts
 
 
-def zip_game_round_utterances(round_timespan_iter: Iterator[Tuple[Number, Number]],
+def zip_game_round_utterances(round_timespan_iter: Iterator[Tuple[N, N]],
 							  utt_iter: Iterator[utterances.Utterance]) -> Iterator[
-	Tuple[Optional[Tuple[Number, Number]], List[utterances.Utterance]]]:
+	Tuple[Optional[Tuple[N, N]], List[utterances.Utterance]]]:
 	current_round_timespan = None
 	current_round_utts = []
 	next_round_timespan = next(round_timespan_iter)
