@@ -40,7 +40,7 @@ class SessionGameRoundUtteranceFactory(object):
 	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
 		self.token_seq_factory = token_seq_factory
 
-	def __call__(self, session: sd.SessionData) -> GameRoundUtterances:
+	def __call__(self, session: sd.SessionData) -> pd.DataFrame:
 		event_data = game_events.read_events(session)
 		source_participant_ids = event_data.source_participant_ids
 		seg_utt_factory = utterances.SegmentUtteranceFactory(self.token_seq_factory,
@@ -63,6 +63,8 @@ class SessionGameRoundUtteranceFactory(object):
 		print("Round count : {}".format(round_first_reference_events.shape[0]), file=sys.stderr)
 		print("Utterance set count : {}".format(len(round_utts)), file=sys.stderr)
 		round_first_reference_events["UTTERANCES"] = round_utts
+
+		return round_first_reference_events
 
 
 def game_round_utterances(round_start_time_iter: Iterator[N],
