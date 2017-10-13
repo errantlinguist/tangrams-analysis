@@ -2,8 +2,9 @@
 
 import argparse
 import sys
-from typing import ItemsView, Mapping, Tuple
+from typing import ItemsView, Iterator, Mapping, Tuple
 
+import pandas as pd
 from sklearn.linear_model import LogisticRegression
 
 import game_utterances
@@ -39,21 +40,24 @@ class CrossValidator(object):
 		self.session_game_round_utt_factory = session_game_round_utt_factory
 		self.session_training_data = {}
 
-	def create_training_data(self, sessions: ItemsView[str, SessionData]):
+	def __call__(self, cross_validation_data: CrossValidationData):
+		traning_feature_df = pd.concat(self.__session_feature_dfs(cross_validation_data.training_data.items()))
+		print(traning_feature_df)
+		logistic = LogisticRegression()
+		# TODO: Finish
+
+	# logistic.fit(X,y)
+	# logistic.predict(iris.data[-1,:]),iris.target[-1])
+
+	def __session_feature_dfs(self, sessions: ItemsView[str, SessionData]) -> Iterator[pd.DataFrame]:
 		for infile, session in sessions:
 			try:
-				game_round_token_df = self.session_training_data[infile]
+				session_feature_df = self.session_training_data[infile]
 			except KeyError:
-				game_round_token_df = self.session_game_round_utt_factory(session)
-				self.session_training_data[infile] = game_round_token_df
-			print(game_round_token_df)
-
-	def __call__(self, cross_validation_data: CrossValidationData):
-		self.create_training_data(cross_validation_data.training_data.items())
-		logistic = LogisticRegression()
-		# logistic.fit(X,y)
-		# logistic.predict(iris.data[-1,:]),iris.target[-1])
-		pass
+				session_feature_df = self.session_game_round_utt_factory(session)
+				session_feature_df["DYAD"] = infile
+				self.session_training_data[infile] = session_feature_df
+			yield session_feature_df
 
 
 def __create_argparser() -> argparse.ArgumentParser:
