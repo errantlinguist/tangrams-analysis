@@ -1,6 +1,6 @@
 import itertools
 from numbers import Number
-from typing import Any, Callable, Iterable, Iterator, Mapping, NamedTuple, Sequence, \
+from typing import Any, Callable, Iterable, Iterator, NamedTuple, Sequence, \
 	Tuple, TypeVar
 
 import numpy as np
@@ -11,20 +11,6 @@ import session_data as sd
 import utterances
 
 N = TypeVar('N', bound=Number)
-
-
-class GameRoundUtterances(object):
-	"""
-	A class associating game rounds with the dialogues for each.
-	"""
-
-	def __init__(self, game_round_utts: Sequence[Tuple[game_events.GameRound, Sequence[utterances.Utterance]]],
-				 round_instructor_ids: Mapping[int, str]):
-		self.game_round_utts = game_round_utts
-		self.round_instructor_ids = round_instructor_ids
-
-	def __repr__(self):
-		return self.__class__.__name__ + str(self.__dict__)
 
 
 class SessionGameRoundUtteranceFactory(object):
