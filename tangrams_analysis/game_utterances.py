@@ -32,17 +32,6 @@ class SessionGameRoundUtteranceFactory(object):
 
 	__UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
 
-	@classmethod
-	def create_token_rows(cls, row, event_features: Sequence[str]) -> Iterator[Iterator[Any]]:
-		row_dict = row._asdict()
-		event_feature_vals = tuple(row_dict[event_feature] for event_feature in event_features)
-		for utt in row_dict[cls.__UTTERANCE_SEQUENCE_COL_NAME]:
-			speaker_id = utt.speaker_id
-			tokens = utt.content
-			for token in tokens:
-				linguistic_features = (speaker_id, token)
-				yield itertools.chain(event_feature_vals, linguistic_features)
-
 	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
 		self.token_seq_factory = token_seq_factory
 
@@ -72,12 +61,23 @@ class SessionGameRoundUtteranceFactory(object):
 		round_first_reference_events[self.__UTTERANCE_SEQUENCE_COL_NAME] = round_utts
 
 		token_row_cols = tuple(itertools.chain(event_colums, ("SPEAKER", "TOKEN")))
-		round_token_row_iters = (self.create_token_rows(row, event_colums) for row in
+		round_token_row_iters = (self.__create_token_rows(row, event_colums) for row in
 								 round_first_reference_events.itertuples())
 		token_row_value_iters = itertools.chain.from_iterable(round_token_row_iters)
 		token_rows = (tuple(token_row_value_iter) for token_row_value_iter in token_row_value_iters)
 		round_token_df = pd.DataFrame(token_rows, columns=token_row_cols)
 		return round_token_df
+
+	@classmethod
+	def __create_token_rows(cls, row, event_features: Sequence[str]) -> Iterator[Iterator[Any]]:
+		row_dict = row._asdict()
+		event_feature_vals = tuple(row_dict[event_feature] for event_feature in event_features)
+		for utt in row_dict[cls.__UTTERANCE_SEQUENCE_COL_NAME]:
+			speaker_id = utt.speaker_id
+			tokens = utt.content
+			for token in tokens:
+				linguistic_features = (speaker_id, token)
+				yield itertools.chain(event_feature_vals, linguistic_features)
 
 
 def game_round_utterances(round_start_time_iter: Iterator[N],
