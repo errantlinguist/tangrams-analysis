@@ -1,6 +1,6 @@
 import itertools
 from numbers import Number
-from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence, \
+from typing import Any, Callable, Iterable, Iterator, Mapping, NamedTuple, Sequence, \
 	Tuple, TypeVar
 
 import numpy as np
@@ -69,7 +69,7 @@ class SessionGameRoundUtteranceFactory(object):
 		return round_token_df
 
 	@classmethod
-	def __create_token_rows(cls, row, event_features: Sequence[str]) -> Iterator[Iterator[Any]]:
+	def __create_token_rows(cls, row: NamedTuple, event_features: Sequence[str]) -> Iterator[Iterator[Any]]:
 		row_dict = row._asdict()
 		event_feature_vals = tuple(row_dict[event_feature] for event_feature in event_features)
 		for utt in row_dict[cls.__UTTERANCE_SEQUENCE_COL_NAME]:
