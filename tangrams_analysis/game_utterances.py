@@ -66,15 +66,6 @@ class SessionGameRoundUtteranceFactory(object):
 		utts = tuple(seg_utt_factory(segments))
 		round_utts = tuple(game_round_utterances(round_first_reference_event_end_times, utts)[1])
 		round_first_reference_events["UTTERANCES"] = round_utts
-		# event_token_df = round_first_reference_events.transform(self.create_token_rows, axis=1)
-		# print(event_token_df)
-		# print(type(round_first_reference_events))
-		# token_rows
-		# blah = round_first_reference_events.apply(self.create_token_row_tuple, axis=1)
-		# print(blah)
-		# token_rows = itertools.chain.from_iterable(self.create_token_rows(row) for row in round_first_reference_events.itertuples())
-		# for token_row in token_rows:
-		#	print(token_row)
 
 		token_row_cols = tuple(itertools.chain(event_colums, ("SPEAKER", "TOKEN")))
 		round_token_row_iters = (self.create_token_rows(row, event_colums) for row in
