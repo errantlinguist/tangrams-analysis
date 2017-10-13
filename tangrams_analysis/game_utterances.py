@@ -50,7 +50,9 @@ class SessionGameRoundUtteranceFactory(object):
 		seg_utt_factory = utterances.SegmentUtteranceFactory(self.token_seq_factory,
 															 lambda source_id: source_participant_ids[source_id])
 		event_df = event_data.events
-		event_df.sort_values("TIME", inplace=True)
+
+		time_col_name = "TIME"
+		event_df.sort_values(time_col_name, inplace=True)
 
 		# Get the events which describe the referent entity at the time a new turn is submitted
 		entity_reference_events = event_df[(event_df["REFERENT"] == True) & (event_df["NAME"] == "nextturn.request")]
@@ -58,7 +60,7 @@ class SessionGameRoundUtteranceFactory(object):
 		round_first_reference_events = entity_reference_events.groupby("ROUND").first()
 
 		event_colums = tuple(round_first_reference_events.columns.values)
-		round_first_reference_event_times = round_first_reference_events["TIME"]
+		round_first_reference_event_times = round_first_reference_events[time_col_name]
 		round_first_reference_event_end_times = itertools.chain(
 			(value for idx, value in round_first_reference_event_times.iteritems()), (np.inf,))
 
