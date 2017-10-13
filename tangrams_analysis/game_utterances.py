@@ -66,7 +66,7 @@ class SessionGameRoundUtteranceFactory(object):
 
 
 def zip_game_round_utterances(round_start_time_iter: Iterator[N],
-							  utts: Sequence[utterances.Utterance]) -> Tuple[Tuple[utterances.Utterance, ...], Iterator[
+							  utts: Iterable[utterances.Utterance]) -> Tuple[Tuple[utterances.Utterance, ...], Iterator[
 	Tuple[utterances.Utterance, ...]]]:
 	first_round_start_time = next(round_start_time_iter)
 	# Get utterances preceding the first round
