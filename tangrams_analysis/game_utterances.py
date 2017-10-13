@@ -1,6 +1,6 @@
 import itertools
 from numbers import Number
-from typing import Callable, Iterable, Iterator, Mapping, Sequence, \
+from typing import Any, Callable, Iterable, Iterator, Mapping, Sequence, \
 	Tuple, TypeVar
 
 import numpy as np
@@ -30,24 +30,19 @@ class GameRoundUtterances(object):
 class SessionGameRoundUtteranceFactory(object):
 	ROUND_ID_OFFSET = 1
 
-	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
-		self.token_seq_factory = token_seq_factory
-
 	@staticmethod
-	def create_token_rows(row, event_features: Sequence[str]) -> Iterator[pd.Series]:
+	def create_token_rows(row, event_features: Sequence[str]) -> Iterator[Iterator[Any]]:
 		row_dict = row._asdict()
 		event_feature_vals = tuple(row_dict[event_feature] for event_feature in event_features)
 		for utt in row.UTTERANCES:
 			speaker_id = utt.speaker_id
 			tokens = utt.content
 			for token in tokens:
-				# token_row = row.copy(deep=False)
-				token_row = pd.Series(event_feature_vals, event_features)
-				# print(token_row)
+				linguistic_features = (speaker_id, token)
+				yield itertools.chain(event_feature_vals, linguistic_features)
 
-				token_row["SPEAKER"] = speaker_id
-				token_row["TOKEN"] = token
-				yield token_row
+	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
+		self.token_seq_factory = token_seq_factory
 
 	def __call__(self, session: sd.SessionData) -> pd.DataFrame:
 		event_data = game_events.read_events(session)
@@ -81,6 +76,7 @@ class SessionGameRoundUtteranceFactory(object):
 		# for token_row in token_rows:
 		#	print(token_row)
 
+		token_row_cols = tuple(itertools.chain(event_colums, ("SPEAKER", "TOKEN")))
 		token_rows = []
 		for row in round_first_reference_events.itertuples():
 			# print(help(pd.core.frame.Pandas))
@@ -89,7 +85,7 @@ class SessionGameRoundUtteranceFactory(object):
 			token_rows.extend(round_token_rows)
 
 		# print("Token training instances: {}".format(len(token_rows)))
-		round_token_df = pd.DataFrame(token_rows)
+		round_token_df = pd.DataFrame(token_rows, columns=token_row_cols)
 		# print(round_token_df)
 
 		return round_token_df
