@@ -41,7 +41,6 @@ class SessionGameRoundUtteranceFactory(object):
 		seg_utt_factory = utterances.SegmentUtteranceFactory(self.token_seq_factory,
 															 lambda source_id: source_participant_ids[source_id])
 		event_df = event_data.events
-
 		time_col_name = "TIME"
 		event_df.sort_values(time_col_name, inplace=True)
 
