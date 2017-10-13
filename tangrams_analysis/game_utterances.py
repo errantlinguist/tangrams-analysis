@@ -58,7 +58,7 @@ class SessionGameRoundUtteranceFactory(object):
 
 		segments = utterances.read_segments(session.utts)
 		utts = seg_utt_factory(segments)
-		round_utts = tuple(zip_game_round_utterances(round_first_reference_event_end_times, iter(utts))[1])
+		round_utts = tuple(zip_game_round_utterances(round_first_reference_event_end_times, tuple(utts))[1])
 
 		print("Round count : {}".format(round_first_reference_events.shape[0]), file=sys.stderr)
 		print("Utterance set count : {}".format(len(round_utts)), file=sys.stderr)
@@ -66,8 +66,8 @@ class SessionGameRoundUtteranceFactory(object):
 
 
 def zip_game_round_utterances(round_start_time_iter: Iterator[N],
-							  utts: Sequence[utterances.Utterance]) -> Tuple[Tuple[utterances.Utterance], Iterator[
-	Tuple[utterances.Utterance]]]:
+							  utts: Sequence[utterances.Utterance]) -> Tuple[Tuple[utterances.Utterance, ...], Iterator[
+	Tuple[utterances.Utterance, ...]]]:
 	first_round_start_time = next(round_start_time_iter)
 	# Get utterances preceding the first round
 	pre_game_utts = tuple(utt for utt in utts if utt.start_time < first_round_start_time)
