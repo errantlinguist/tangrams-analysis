@@ -57,8 +57,8 @@ class SessionGameRoundUtteranceFactory(object):
 			(value for idx, value in round_first_reference_event_times.iteritems()), (np.inf,))
 
 		segments = utterances.read_segments(session.utts)
-		utts = seg_utt_factory(segments)
-		round_utts = tuple(game_round_utterances(round_first_reference_event_end_times, tuple(utts))[1])
+		utts = tuple(seg_utt_factory(segments))
+		round_utts = tuple(game_round_utterances(round_first_reference_event_end_times, utts)[1])
 
 		print("Round count : {}".format(round_first_reference_events.shape[0]), file=sys.stderr)
 		print("Utterance set count : {}".format(len(round_utts)), file=sys.stderr)
