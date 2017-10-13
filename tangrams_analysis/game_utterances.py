@@ -30,11 +30,13 @@ class GameRoundUtterances(object):
 class SessionGameRoundUtteranceFactory(object):
 	ROUND_ID_OFFSET = 1
 
-	@staticmethod
-	def create_token_rows(row, event_features: Sequence[str]) -> Iterator[Iterator[Any]]:
+	__UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
+
+	@classmethod
+	def create_token_rows(cls, row, event_features: Sequence[str]) -> Iterator[Iterator[Any]]:
 		row_dict = row._asdict()
 		event_feature_vals = tuple(row_dict[event_feature] for event_feature in event_features)
-		for utt in row.UTTERANCES:
+		for utt in row_dict[cls.__UTTERANCE_SEQUENCE_COL_NAME]:
 			speaker_id = utt.speaker_id
 			tokens = utt.content
 			for token in tokens:
@@ -67,7 +69,7 @@ class SessionGameRoundUtteranceFactory(object):
 		segments = utterances.read_segments(session.utts)
 		utts = tuple(seg_utt_factory(segments))
 		round_utts = tuple(game_round_utterances(round_first_reference_event_end_times, utts)[1])
-		round_first_reference_events["UTTERANCES"] = round_utts
+		round_first_reference_events[self.__UTTERANCE_SEQUENCE_COL_NAME] = round_utts
 
 		token_row_cols = tuple(itertools.chain(event_colums, ("SPEAKER", "TOKEN")))
 		round_token_row_iters = (self.create_token_rows(row, event_colums) for row in
