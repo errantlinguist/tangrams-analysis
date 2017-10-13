@@ -77,17 +77,11 @@ class SessionGameRoundUtteranceFactory(object):
 		#	print(token_row)
 
 		token_row_cols = tuple(itertools.chain(event_colums, ("SPEAKER", "TOKEN")))
-		token_rows = []
-		for row in round_first_reference_events.itertuples():
-			# print(help(pd.core.frame.Pandas))
-			# print(type(row))
-			round_token_rows = self.create_token_rows(row, event_colums)
-			token_rows.extend(round_token_rows)
-
-		# print("Token training instances: {}".format(len(token_rows)))
+		round_token_row_iters = (self.create_token_rows(row, event_colums) for row in
+								 round_first_reference_events.itertuples())
+		token_row_value_iters = itertools.chain.from_iterable(round_token_row_iters)
+		token_rows = (tuple(token_row_value_iter) for token_row_value_iter in token_row_value_iters)
 		round_token_df = pd.DataFrame(token_rows, columns=token_row_cols)
-		# print(round_token_df)
-
 		return round_token_df
 
 
