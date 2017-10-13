@@ -64,7 +64,7 @@ def __create_argparser() -> argparse.ArgumentParser:
 def __main(args):
 	inpaths = args.inpaths
 	print("Looking for session data underneath {}.".format(inpaths), file=sys.stderr)
-	session_data = frozenset(data for (inpath, data) in walk_session_data(inpaths))
+	session_data = tuple(data for (inpath, data) in sorted(walk_session_data(inpaths), key=lambda item: item[0]))
 	cross_validation_testing_training_data = tuple((CrossValidationData(testing_data, frozenset(
 		training_data for training_data in session_data if training_data != testing_data)) for testing_data in
 													session_data))
