@@ -34,16 +34,16 @@ class SessionGameRoundUtteranceFactory(object):
 		self.token_seq_factory = token_seq_factory
 
 	@staticmethod
-	def create_token_rows(row) -> Iterator[pd.Series]:
-		utts = row.UTTERANCES
-		for utt in utts:
+	def create_token_rows(row, event_features: Sequence[str]) -> Iterator[pd.Series]:
+		row_dict = row._asdict()
+		event_feature_vals = tuple(row_dict[event_feature] for event_feature in event_features)
+		for utt in row.UTTERANCES:
 			speaker_id = utt.speaker_id
 			tokens = utt.content
 			for token in tokens:
-				#token_row = row.copy(deep=False)
-				token_row = pd.Series(row, row._fields)
-				#print(token_row)
-				token_row.drop("UTTERANCES", inplace=True)
+				# token_row = row.copy(deep=False)
+				token_row = pd.Series(event_feature_vals, event_features)
+				# print(token_row)
 
 				token_row["SPEAKER"] = speaker_id
 				token_row["TOKEN"] = token
@@ -61,6 +61,8 @@ class SessionGameRoundUtteranceFactory(object):
 		entity_reference_events = event_df[(event_df["REFERENT"] == True) & (event_df["NAME"] == "nextturn.request")]
 		# Ensure the chronologically-first event is chosen (should be unimportant because there should be only one turn submission event per round)
 		round_first_reference_events = entity_reference_events.groupby("ROUND").first()
+
+		event_colums = tuple(round_first_reference_events.columns.values)
 		round_first_reference_event_times = round_first_reference_events["TIME"]
 		round_first_reference_event_end_times = itertools.chain(
 			(value for idx, value in round_first_reference_event_times.iteritems()), (np.inf,))
@@ -73,22 +75,22 @@ class SessionGameRoundUtteranceFactory(object):
 		# print(event_token_df)
 		# print(type(round_first_reference_events))
 		# token_rows
-		#blah = round_first_reference_events.apply(self.create_token_row_tuple, axis=1)
-		#print(blah)
-		#token_rows = itertools.chain.from_iterable(self.create_token_rows(row) for row in round_first_reference_events.itertuples())
-		#for token_row in token_rows:
+		# blah = round_first_reference_events.apply(self.create_token_row_tuple, axis=1)
+		# print(blah)
+		# token_rows = itertools.chain.from_iterable(self.create_token_rows(row) for row in round_first_reference_events.itertuples())
+		# for token_row in token_rows:
 		#	print(token_row)
 
 		token_rows = []
 		for row in round_first_reference_events.itertuples():
-			#print(help(pd.core.frame.Pandas))
-			#print(type(row))
-			round_token_rows = self.create_token_rows(row)
+			# print(help(pd.core.frame.Pandas))
+			# print(type(row))
+			round_token_rows = self.create_token_rows(row, event_colums)
 			token_rows.extend(round_token_rows)
 
-		#print("Token training instances: {}".format(len(token_rows)))
+		# print("Token training instances: {}".format(len(token_rows)))
 		round_token_df = pd.DataFrame(token_rows)
-		#print(round_token_df)
+		# print(round_token_df)
 
 		return round_token_df
 
