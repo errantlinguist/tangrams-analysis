@@ -27,10 +27,6 @@ class GameRoundUtterances(object):
 		return self.__class__.__name__ + str(self.__dict__)
 
 
-# def referring_language(event_start_time : Number, utt_times : utterances.UtteranceTimes):
-#	utt_times.
-
-
 def add_round_start_time(group_df: pd.DataFrame) -> pd.DataFrame:
 	round_start_time = group_df["TIME"].transform('min')
 	group_df["ROUND_START_TIME"] = round_start_time
