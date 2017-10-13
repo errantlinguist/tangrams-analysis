@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from typing import FrozenSet, Iterable
+from typing import ItemsView, Mapping, Tuple
 
 from sklearn.linear_model import LogisticRegression
 
@@ -12,7 +12,7 @@ from session_data import SessionData, walk_session_data
 
 
 class CrossValidationData(object):
-	def __init__(self, testing_data: SessionData, training_data: FrozenSet[SessionData]):
+	def __init__(self, testing_data: Tuple[str, SessionData], training_data: Mapping[str, SessionData]):
 		self.testing_data = testing_data
 		self.training_data = training_data
 
@@ -37,17 +37,18 @@ class CrossValidationData(object):
 class CrossValidator(object):
 	def __init__(self, session_game_round_utt_factory: game_utterances.SessionGameRoundUtteranceFactory):
 		self.session_game_round_utt_factory = session_game_round_utt_factory
+		self.session_training_data = {}
 
-	def create_training_data(self, sessions: Iterable[SessionData]):
-		for session in sessions:
+	def create_training_data(self, sessions: ItemsView[str, SessionData]):
+		for infile, session in sessions:
 			game_round_token_df = self.session_game_round_utt_factory(session)
 			print(game_round_token_df)
-			#for round_id, (game_round, round_utts) in enumerate(session_round_utts.game_round_utts,
-			#													start=game_utterances.SessionGameRoundUtteranceFactory.ROUND_ID_OFFSET):
-			#	round_instructor_id = session_round_utts.round_instructor_ids[round_id]
+		# for round_id, (game_round, round_utts) in enumerate(session_round_utts.game_round_utts,
+		#													start=game_utterances.SessionGameRoundUtteranceFactory.ROUND_ID_OFFSET):
+		#	round_instructor_id = session_round_utts.round_instructor_ids[round_id]
 
 	def __call__(self, cross_validation_data: CrossValidationData):
-		self.create_training_data(cross_validation_data.training_data)
+		self.create_training_data(cross_validation_data.training_data.items())
 		logistic = LogisticRegression()
 		# logistic.fit(X,y)
 		# logistic.predict(iris.data[-1,:]),iris.target[-1])
@@ -65,18 +66,16 @@ def __create_argparser() -> argparse.ArgumentParser:
 def __main(args):
 	inpaths = args.inpaths
 	print("Looking for session data underneath {}.".format(inpaths), file=sys.stderr)
-	session_data = tuple(data for (inpath, data) in sorted(walk_session_data(inpaths), key=lambda item: item[0]))
-	cross_validation_testing_training_data = tuple((CrossValidationData(testing_data, frozenset(
-		training_data for training_data in session_data if training_data != testing_data)) for testing_data in
-													session_data))
-	print("Using {} sessions in total for {}-fold cross-validation.".format(len(session_data), len(
-		cross_validation_testing_training_data)), file=sys.stderr)
+	infile_session_data = tuple(sorted(walk_session_data(inpaths), key=lambda item: item[0]))
 
 	cross_validator = CrossValidator(game_utterances.SessionGameRoundUtteranceFactory(
 		utterances.TokenSequenceFactory()))
-
-	for testing_training_data in cross_validation_testing_training_data:
-		cross_validator(testing_training_data)
+	for testing_infile_path, testing_session_data in infile_session_data:
+		training_sessions = dict(
+			(infile, training_session_data) for (infile, training_session_data) in infile_session_data if
+			testing_session_data != training_session_data)
+		cross_validation_set = CrossValidationData((testing_infile_path, testing_session_data), training_sessions)
+		cross_validator(cross_validation_set)
 
 
 if __name__ == "__main__":
