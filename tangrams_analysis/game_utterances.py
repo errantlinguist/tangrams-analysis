@@ -1,6 +1,6 @@
 import sys
 from numbers import Number
-from typing import Callable, Iterable, Iterator, Mapping, Sequence, \
+from typing import Callable, Iterable, Iterator, List, Mapping, Optional, Sequence, \
 	Tuple
 
 import numpy as np
@@ -38,6 +38,20 @@ def add_round_start_time(group_df: pd.DataFrame) -> pd.DataFrame:
 class SessionGameRoundUtteranceFactory(object):
 	ROUND_ID_OFFSET = 1
 
+	@staticmethod
+	def __trim_game_round_utterances(
+			game_round_utts: Sequence[Tuple[Optional[Tuple[Number, Number]], Sequence[utterances.Utterance]]]):
+		"""
+		Trims the first set of utterances if it represents language before the game started.
+		:param game_round_utts: The game round utterances to trim.
+		:return: The utterance sequence minus the first entry if it represents language before the first game round.
+		"""
+		if game_round_utts[0][0] is None:
+			result = game_round_utts[1:]
+		else:
+			result = game_round_utts
+		return result
+
 	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
 		self.token_seq_factory = token_seq_factory
 
@@ -59,22 +73,18 @@ class SessionGameRoundUtteranceFactory(object):
 
 		segments = utterances.read_segments(session.utts)
 		utts = seg_utt_factory(segments)
-		round_utts = tuple(zip_game_round_utterances(round_timespans, iter(utts)))
-		# Trim the first set of utterances if it represents language before the game started
-		if round_utts[0][0] is None:
-			valid_round_utts = round_utts[1:]
-		else:
-			valid_round_utts = round_utts
+		round_utts = self.__trim_game_round_utterances(tuple(zip_game_round_utterances(round_timespans, iter(utts))))
 
 		print("Round count : {}".format(round_first_reference_events.shape[0]), file=sys.stderr)
-		print("Utterance set count : {}".format(len(valid_round_utts)), file=sys.stderr)
-		for utts in valid_round_utts:
+		print("Utterance set count : {}".format(len(round_utts)), file=sys.stderr)
+		for utts in round_utts:
 			print(utts)
-		round_first_reference_events["UTTERANCES"] = valid_round_utts
+		round_first_reference_events["UTTERANCES"] = round_utts
 
 
 def zip_game_round_utterances(round_timespan_iter: Iterator[Tuple[Number, Number]],
-							  utt_iter: Iterator[utterances.Utterance]):
+							  utt_iter: Iterator[utterances.Utterance]) -> Iterator[
+	Tuple[Optional[Tuple[Number, Number]], List[utterances.Utterance]]]:
 	current_round_timespan = None
 	current_round_utts = []
 	next_round_timespan = next(round_timespan_iter)
