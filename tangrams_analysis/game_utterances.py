@@ -1,5 +1,6 @@
 import itertools
 from numbers import Number
+from string import ascii_uppercase
 from typing import Any, Callable, Iterable, Iterator, NamedTuple, Sequence, \
 	Tuple, TypeVar
 
@@ -17,6 +18,25 @@ class SessionGameRoundUtteranceFactory(object):
 	ROUND_ID_OFFSET = 1
 
 	__UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
+	__EVENT_SUBMITTER_COL_NAME = "SUBMITTER"
+
+	@staticmethod
+	def __username_participant_ids(usernames: np.ndarray, initial_participant_username: str) -> Iterator[
+		Tuple[str, str]]:
+		assert initial_participant_username in usernames
+		alphabetically_ordered_usernames = sorted(usernames)
+		role_ordered_usernames = sorted(alphabetically_ordered_usernames,
+										key=lambda username: -1 if username == initial_participant_username else 0)
+		return zip(role_ordered_usernames, ascii_uppercase)
+
+	@classmethod
+	def __anonymize_event_submitter_ids(cls, event_df: pd.DataFrame, initial_participant_username: str):
+		event_submitter_ids = event_df[cls.__EVENT_SUBMITTER_COL_NAME]
+		username_participant_ids = dict(
+			cls.__username_participant_ids(event_submitter_ids.unique(), initial_participant_username))
+		anonymized_event_submitter_ids = event_submitter_ids.transform(
+			lambda submitter_id: username_participant_ids[submitter_id])
+		event_df[cls.__EVENT_SUBMITTER_COL_NAME] = anonymized_event_submitter_ids
 
 	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
 		self.token_seq_factory = token_seq_factory
@@ -27,6 +47,8 @@ class SessionGameRoundUtteranceFactory(object):
 		seg_utt_factory = utterances.SegmentUtteranceFactory(self.token_seq_factory,
 															 lambda source_id: source_participant_ids[source_id])
 		event_df = event_data.events
+		self.__anonymize_event_submitter_ids(event_df, event_data.initial_instructor_id)
+
 		time_col_name = "TIME"
 		event_df.sort_values(time_col_name, inplace=True)
 
