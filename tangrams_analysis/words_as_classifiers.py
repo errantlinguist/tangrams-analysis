@@ -120,14 +120,6 @@ class CrossValidationDataFrameFactory(object):
 		return CrossValidationDataFrames(dummified_training_feature_df, dummified_testing_feature_df)
 
 
-def __create_argparser() -> argparse.ArgumentParser:
-	result = argparse.ArgumentParser(
-		description="Cross-validation of reference resolution for tangram sessions.")
-	result.add_argument("inpaths", metavar="INPATH", nargs='+',
-						help="The directories to process.")
-	return result
-
-
 def create_token_type_row_idx_dict(df: pd.DataFrame) -> Dict[str, List[Integral]]:
 	result = defaultdict(list)
 	for row in df.itertuples():
@@ -140,6 +132,22 @@ def create_token_type_row_idx_dict(df: pd.DataFrame) -> Dict[str, List[Integral]
 			for token in tokens:
 				result[token].append(idx)
 	return result
+
+
+def cross_validate(cross_validation_df: CrossValidationDataFrames):
+	training_df = cross_validation_df.training
+	dependent_var_cols = tuple(
+		col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
+	token_type_row_idxs = smooth(training_df)
+	for token_class, training_inst_idxs in token_type_row_idxs:
+		training_insts = training_df.loc[training_inst_idxs]
+		training_x = training_insts.loc[:, dependent_var_cols]
+		training_y = training_insts.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
+		model = LogisticRegression()
+		model.fit(training_x, training_y)
+
+	testing_df = cross_validation_df.testing
+	testing_y = training_df[INDEPENDENT_VARIABLE_COL_NAME]
 
 
 def smooth(df: pd.DataFrame) -> Iterator[Tuple[str, List[Integral]]]:
@@ -162,20 +170,12 @@ def smooth(df: pd.DataFrame) -> Iterator[Tuple[str, List[Integral]]]:
 	return result
 
 
-def __cross_validate(cross_validation_df: CrossValidationDataFrames):
-	training_df = cross_validation_df.training
-	dependent_var_cols = tuple(
-		col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
-	token_type_row_idxs = smooth(training_df)
-	for token_class, training_inst_idxs in token_type_row_idxs:
-		training_insts = training_df.loc[training_inst_idxs]
-		training_x = training_insts.loc[:, dependent_var_cols]
-		training_y = training_insts.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
-		model = LogisticRegression()
-		model.fit(training_x, training_y)
-
-	testing_df = cross_validation_df.testing
-	testing_y = training_df[INDEPENDENT_VARIABLE_COL_NAME]
+def __create_argparser() -> argparse.ArgumentParser:
+	result = argparse.ArgumentParser(
+		description="Cross-validation of reference resolution for tangram sessions.")
+	result.add_argument("inpaths", metavar="INPATH", nargs='+',
+						help="The directories to process.")
+	return result
 
 
 def __main(args):
@@ -189,7 +189,7 @@ def __main(args):
 	print("Creating cross-validation datasets from {} session(s).".format(len(infile_session_data)), file=sys.stderr)
 	# NOTE: This must be lazily-generated lest a dataframe be created in-memory for each cross-validation fold
 	for cross_validation_df in cross_validation_data_frame_factory(infile_session_data):
-		__cross_validate(cross_validation_df)
+		cross_validate(cross_validation_df)
 
 
 if __name__ == "__main__":
