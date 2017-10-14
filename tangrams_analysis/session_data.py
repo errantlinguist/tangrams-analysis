@@ -9,7 +9,7 @@ import pandas as pd
 DECIMAL_VALUE_TYPE = Decimal
 ENCODING = 'utf-8'
 
-_EVENT_FILE_DTYPES = {"SHAPE": "category"}
+_EVENT_FILE_DTYPES = {"SHAPE": "category", "SPEAKER" : "category", "SUBMITTER": "category", "TOKEN" : "category"}
 
 
 @unique
