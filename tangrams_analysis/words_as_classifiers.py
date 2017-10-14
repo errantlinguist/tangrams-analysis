@@ -79,6 +79,16 @@ class CrossValidationData(object):
 
 
 class CrossValidationDataFrameFactory(object):
+	@staticmethod
+	def __categoricize_data(training_feature_df: pd.DataFrame, testing_feature_df: pd.DataFrame):
+		for col_name in CATEGORICAL_VAR_COL_NAMES:
+			unique_vals = tuple(sorted(frozenset(
+				itertools.chain(training_feature_df[col_name].unique(), testing_feature_df[col_name].unique()))))
+			training_feature_df[col_name] = pd.Categorical(training_feature_df[col_name], categories=unique_vals,
+														   ordered=False)
+			testing_feature_df[col_name] = pd.Categorical(testing_feature_df[col_name], categories=unique_vals,
+														  ordered=False)
+
 	def __init__(self, session_data_frame_factory: Callable[[str, sd.SessionData], pd.DataFrame]):
 		self.session_data_frame_factory = session_data_frame_factory
 
@@ -96,20 +106,14 @@ class CrossValidationDataFrameFactory(object):
 		training_feature_df = pd.concat(self.session_data_frame_factory(infile, session) for (infile, session) in
 										cross_validation_data.training_data.items())
 		# noinspection PyUnresolvedReferences
-		print("Training data shape: {}".format(training_feature_df.shape), file=sys.stderr)
+		# print("Training data shape: {}".format(training_feature_df.shape), file=sys.stderr)
 		# print(training_feature_df)
 		testing_feature_df = self.session_data_frame_factory(*cross_validation_data.testing_data)
-		print("Testing data shape: {}".format(testing_feature_df.shape), file=sys.stderr)
+		# print("Testing data shape: {}".format(testing_feature_df.shape), file=sys.stderr)
 		# print(testing_feature_df)
 
-		for col_name in CATEGORICAL_VAR_COL_NAMES:
-			unique_vals = tuple(sorted(frozenset(
-				itertools.chain(training_feature_df[col_name].unique(), testing_feature_df[col_name].unique()))))
-			training_feature_df[col_name] = pd.Categorical(training_feature_df[col_name], categories=unique_vals,
-														   ordered=False)
-			testing_feature_df[col_name] = pd.Categorical(testing_feature_df[col_name], categories=unique_vals,
-														  ordered=False)
-
+		# noinspection PyTypeChecker
+		self.__categoricize_data(training_feature_df, testing_feature_df)
 		dummified_training_feature_df = pd.get_dummies(training_feature_df, columns=CATEGORICAL_DEPENDENT_VAR_COL_NAMES)
 		dummified_testing_feature_df = pd.get_dummies(testing_feature_df, columns=CATEGORICAL_DEPENDENT_VAR_COL_NAMES)
 
@@ -140,12 +144,12 @@ def __cross_validate(cross_validation_df: CrossValidationDataFrames):
 
 	token_class_training_insts = training_df.groupby(TOKEN_CLASS_COL_NAME, as_index=False)
 	for token_class, training_insts in token_class_training_insts:
-		print("Using {} training instance(s) for class \"{}\".".format(len(training_insts), token_class), file=sys.stderr)
+		# print("Using {} training instance(s) for class \"{}\".".format(len(training_insts), token_class), file=sys.stderr)
 		dependent_var_cols = tuple(
 			col for col in training_insts.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
 		training_x = training_insts.loc[:, dependent_var_cols]
 		training_y = training_insts.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
-		print(training_y.unique())
+		# print(training_y.unique())
 		model = LogisticRegression()
 		model.fit(training_x, training_y)
 
@@ -162,9 +166,8 @@ def __main(args):
 		CachingSessionDataFrameFactory(game_utterances.SessionGameRoundUtteranceFactory(
 			utterances.TokenSequenceFactory())))
 	print("Creating cross-validation datasets from {} session(s).".format(len(infile_session_data)), file=sys.stderr)
-	cross_validation_dfs = tuple(cross_validation_data_frame_factory(infile_session_data))
-	print("Created {} cross-validation dataset(s).".format(len(cross_validation_dfs)), file=sys.stderr)
-	for cross_validation_df in cross_validation_dfs:
+	# NOTE: This must be lazily-generated lest a dataframe be created in-memory for each cross-validation fold
+	for cross_validation_df in cross_validation_data_frame_factory(infile_session_data):
 		__cross_validate(cross_validation_df)
 
 
