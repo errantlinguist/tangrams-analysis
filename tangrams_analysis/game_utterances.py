@@ -39,12 +39,12 @@ class SessionGameRoundUtteranceFactory(object):
 		event_df[cls.__EVENT_SUBMITTER_COL_NAME] = anonymized_event_submitter_ids
 
 	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
-		self.token_seq_factory = token_seq_factory
+		self.__token_seq_factory = token_seq_factory
 
 	def __call__(self, session: sd.SessionData) -> pd.DataFrame:
 		event_data = game_events.read_events(session)
 		source_participant_ids = event_data.source_participant_ids
-		seg_utt_factory = utterances.SegmentUtteranceFactory(self.token_seq_factory,
+		seg_utt_factory = utterances.SegmentUtteranceFactory(self.__token_seq_factory,
 															 lambda source_id: source_participant_ids[source_id])
 		event_df = event_data.events
 		self.__anonymize_event_submitter_ids(event_df, event_data.initial_instructor_id)
@@ -53,7 +53,7 @@ class SessionGameRoundUtteranceFactory(object):
 		event_df.sort_values(time_col_name, inplace=True)
 
 		# Get the events which describe the referent entity at the time a new turn is submitted
-		entity_reference_events = event_df[(event_df["REFERENT"] == True) & (event_df["NAME"] == "nextturn.request")]
+		entity_reference_events = event_df[(event_df["NAME"] == "nextturn.request")]
 		# Ensure the chronologically-first event is chosen (should be unimportant because there should be only one turn submission event per round)
 		round_first_reference_events = entity_reference_events.groupby("ROUND").first()
 
