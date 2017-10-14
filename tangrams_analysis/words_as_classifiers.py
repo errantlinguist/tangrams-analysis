@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from typing import AbstractSet, Iterator, Mapping, Tuple
+from typing import Iterator, Mapping, Tuple
 
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -41,23 +41,27 @@ class CrossValidator(object):
 		self.session_training_data = {}
 
 	def __call__(self, cross_validation_data: CrossValidationData):
-		traning_feature_df = pd.concat(self.__session_feature_dfs(cross_validation_data.training_data.items()))
-		print(traning_feature_df)
+		training_feature_df = pd.concat(self.__fetch_session_feature_df(infile, session) for (infile, session) in
+										cross_validation_data.training_data.items())
+		print("Training data shape: {}".format(training_feature_df.shape), file=sys.stderr)
+		testing_feature_df = self.__fetch_session_feature_df(*cross_validation_data.testing_data)
+		print("Testing data shape: {}".format(testing_feature_df.shape), file=sys.stderr)
+
 		logistic = LogisticRegression()
-		# TODO: Finish
+
+	# TODO: Finish
 
 	# logistic.fit(X,y)
 	# logistic.predict(iris.data[-1,:]),iris.target[-1])
 
-	def __session_feature_dfs(self, sessions: AbstractSet[Tuple[str, SessionData]]) -> Iterator[pd.DataFrame]:
-		for infile, session in sessions:
-			try:
-				session_feature_df = self.session_training_data[infile]
-			except KeyError:
-				session_feature_df = self.session_game_round_utt_factory(session)
-				session_feature_df["DYAD"] = infile
-				self.session_training_data[infile] = session_feature_df
-			yield session_feature_df
+	def __fetch_session_feature_df(self, infile: str, session: SessionData) -> Iterator[pd.DataFrame]:
+		try:
+			session_feature_df = self.session_training_data[infile]
+		except KeyError:
+			session_feature_df = self.session_game_round_utt_factory(session)
+			session_feature_df["DYAD"] = infile
+			self.session_training_data[infile] = session_feature_df
+		return session_feature_df
 
 
 def __create_argparser() -> argparse.ArgumentParser:
