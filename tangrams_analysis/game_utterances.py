@@ -15,7 +15,6 @@ N = TypeVar('N', bound=Number)
 
 
 class SessionGameRoundUtteranceFactory(object):
-	ROUND_ID_OFFSET = 1
 
 	__EVENT_NAME_COL_NAME = "NAME"
 	__EVENT_SUBMITTER_COL_NAME = "SUBMITTER"
