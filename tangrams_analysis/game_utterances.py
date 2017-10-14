@@ -4,6 +4,7 @@ from numbers import Number
 from string import ascii_uppercase
 from typing import Any, Callable, Iterable, Iterator, NamedTuple, Sequence, \
 	Tuple, TypeVar
+from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -16,15 +17,13 @@ N = TypeVar('N', bound=Number)
 
 
 class SessionGameRoundUtteranceFactory(object):
-	class LinguisticDataColumn(Enum):
-		TOKEN = "TOKEN"
-		SPEAKER = "SPEAKER"
+	UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
 
 	__EVENT_ID_COL_NAME = "EVENT"
 	__EVENT_NAME_COL_NAME = "NAME"
 	__EVENT_SUBMITTER_COL_NAME = "SUBMITTER"
 	__EVENT_TIME_COL_NAME = "TIME"
-	__UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
+
 
 	@staticmethod
 	def __username_participant_ids(usernames: np.ndarray, initial_participant_username: str) -> Iterator[
@@ -68,30 +67,9 @@ class SessionGameRoundUtteranceFactory(object):
 		segments = utterances.read_segments(session.utts)
 		utts = tuple(seg_utt_factory(segments))
 		round_utts = tuple(game_round_utterances(round_first_reference_event_end_times, utts)[1])
-		round_first_reference_events.loc[:, self.__UTTERANCE_SEQUENCE_COL_NAME] = round_utts
-
-		event_columns = tuple(event_df.columns.values)
-		token_row_cols = tuple(itertools.chain(event_columns, (
-			self.LinguisticDataColumn.SPEAKER.value, self.LinguisticDataColumn.TOKEN.value)))
-		round_token_row_iters = (self.__create_token_rows(row, event_columns) for row in
-								 round_first_reference_events.itertuples())
-		token_row_value_iters = itertools.chain.from_iterable(round_token_row_iters)
-		token_rows = (tuple(token_row_value_iter) for token_row_value_iter in token_row_value_iters)
-		result = pd.DataFrame(token_rows, columns=token_row_cols)
-		result.drop([self.__EVENT_ID_COL_NAME, self.__EVENT_NAME_COL_NAME], 1, inplace=True)
-		return result
-
-	@classmethod
-	def __create_token_rows(cls, row: NamedTuple, event_features: Sequence[str]) -> Iterator[Iterator[Any]]:
-		# noinspection PyProtectedMember
-		row_dict = row._asdict()
-		event_feature_vals = tuple(row_dict[event_feature] for event_feature in event_features)
-		for utt in row_dict[cls.__UTTERANCE_SEQUENCE_COL_NAME]:
-			speaker_id = utt.speaker_id
-			tokens = utt.content
-			for token in tokens:
-				linguistic_features = (speaker_id, token)
-				yield itertools.chain(event_feature_vals, linguistic_features)
+		round_first_reference_events.loc[:, self.UTTERANCE_SEQUENCE_COL_NAME] = round_utts
+		round_first_reference_events.drop([self.__EVENT_ID_COL_NAME, self.__EVENT_NAME_COL_NAME], 1, inplace=True)
+		return round_first_reference_events
 
 
 def game_round_utterances(round_start_time_iter: Iterator[N],

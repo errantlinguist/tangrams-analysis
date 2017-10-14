@@ -4,8 +4,10 @@ import argparse
 import itertools
 import re
 import sys
+from collections import defaultdict
 from collections import namedtuple
-from typing import Callable, Iterable, Iterator, Mapping, Tuple
+from numbers import Integral
+from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Sequence, Tuple
 
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -27,14 +29,12 @@ INDEPENDENT_VARIABLE_COL_NAME = "REFERENT"
 
 DYAD_ID_COL_NAME = "DYAD"
 OUT_OF_VOCABULARY_TOKEN_LABEL = "__OUT_OF_VOCABULARY__"
-TOKEN_CLASS_COL_NAME = game_utterances.SessionGameRoundUtteranceFactory.LinguisticDataColumn.TOKEN.value
 '''
 See T. Shore and G. Skantze. 2017. "Enhancing reference resolution in dialogue using participant feedback." Grounding Language Understanding 2017
 '''
 TOKEN_CLASS_SMOOTHING_FREQ_CUTOFF = 4
 
-CATEGORICAL_VAR_COL_NAMES = ("SHAPE", "SUBMITTER",
-							 game_utterances.SessionGameRoundUtteranceFactory.LinguisticDataColumn.SPEAKER.value)
+CATEGORICAL_VAR_COL_NAMES = ("SHAPE", "SUBMITTER")
 # NOTE: For some reason, "pandas.get_dummies(..., columns=[col_name_1,...])" works with list objects but not with tuples
 CATEGORICAL_DEPENDENT_VAR_COL_NAMES = ["SHAPE"]
 assert all(x in CATEGORICAL_VAR_COL_NAMES for x in CATEGORICAL_DEPENDENT_VAR_COL_NAMES)
@@ -128,28 +128,46 @@ def __create_argparser() -> argparse.ArgumentParser:
 	return result
 
 
-def smooth(df: pd.DataFrame):
-	token_classes = df.groupby(TOKEN_CLASS_COL_NAME, as_index=False)
-	smoothed_token_classes = frozenset(token_classes.filter(lambda group_df: len(group_df) < TOKEN_CLASS_SMOOTHING_FREQ_CUTOFF)[
-		TOKEN_CLASS_COL_NAME].unique())
-	print("Token class(es) used for smoothing: {}".format(smoothed_token_classes), file=sys.stderr)
-	df.loc[df[TOKEN_CLASS_COL_NAME].isin(smoothed_token_classes), TOKEN_CLASS_COL_NAME] = OUT_OF_VOCABULARY_TOKEN_LABEL
-	print("{} data point(s) used as out-of-vocabulary instance(s).".format(
-		len(df[df[TOKEN_CLASS_COL_NAME] == OUT_OF_VOCABULARY_TOKEN_LABEL])), file=sys.stderr)
+def create_token_type_row_idx_dict(df: pd.DataFrame) -> Dict[str, List[Integral]]:
+	result = defaultdict(list)
+	for row in df.itertuples():
+		# noinspection PyProtectedMember
+		row_dict = row._asdict()
+		utts = row_dict[game_utterances.SessionGameRoundUtteranceFactory.UTTERANCE_SEQUENCE_COL_NAME]
+		for utt in utts:
+			tokens = utt.content
+			for token in tokens:
+				result[token].append(row.Index)
+	return result
+
+
+def smooth(df: pd.DataFrame) -> Iterator[Tuple[str, Sequence[Integral]]]:
+	token_type_row_idxs = create_token_type_row_idx_dict(df)
+
+	# smoothed_token_classes = set()
+	unsmoothed_token_type_row_idxs = token_type_row_idxs.items()
+	for token_type, row_idxs in unsmoothed_token_type_row_idxs:
+		smoothed_token_type = OUT_OF_VOCABULARY_TOKEN_LABEL if len(
+			token_type_row_idxs) < TOKEN_CLASS_SMOOTHING_FREQ_CUTOFF else token_type
+		yield smoothed_token_type, row_idxs
+	# smoothed_token_classes.add(token_type)
+	# del token_type_row_idxs[token_type]
+	# token_type_row_idxs[OUT_OF_VOCABULARY_TOKEN_LABEL].extend(row_idxs)
+
+	# print("Token class(es) used for smoothing: {}; {} data point(s) used as out-of-vocabulary instance(s).".format(
+	#	smoothed_token_classes, len(token_type_row_idxs[OUT_OF_VOCABULARY_TOKEN_LABEL])), file=sys.stderr)
+	# return token_type_row_idxs
 
 
 def __cross_validate(cross_validation_df: CrossValidationDataFrames):
 	training_df = cross_validation_df.training
-	smooth(training_df)
-
-	token_class_training_insts = training_df.groupby(TOKEN_CLASS_COL_NAME, as_index=False)
-	for token_class, training_insts in token_class_training_insts:
-		# print("Using {} training instance(s) for class \"{}\".".format(len(training_insts), token_class), file=sys.stderr)
-		dependent_var_cols = tuple(
-			col for col in training_insts.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
+	dependent_var_cols = tuple(
+		col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
+	token_type_row_idxs = smooth(training_df)
+	for token_class, training_inst_idxs in token_type_row_idxs:
+		training_insts = training_df.loc[training_inst_idxs]
 		training_x = training_insts.loc[:, dependent_var_cols]
 		training_y = training_insts.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
-		# print(training_y.unique())
 		model = LogisticRegression()
 		model.fit(training_x, training_y)
 
