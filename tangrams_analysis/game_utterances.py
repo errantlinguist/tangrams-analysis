@@ -57,19 +57,19 @@ class SessionGameRoundUtteranceFactory(object):
 		event_df.sort_values(self.__EVENT_TIME_COL_NAME, inplace=True)
 
 		# Get the events which describe the referent entity at the time a new turn is submitted
-		entity_reference_events = event_df[(event_df[self.__EVENT_NAME_COL_NAME] == "nextturn.request")]
+		entity_reference_events = event_df.loc[event_df[self.__EVENT_NAME_COL_NAME] == "nextturn.request"]
 		# Ensure the chronologically-first event is chosen (should be unimportant because there should be only one turn submission event per round)
 		round_first_reference_events = entity_reference_events.groupby("ROUND").first()
 
 		event_colums = tuple(round_first_reference_events.columns.values)
-		round_first_reference_event_times = round_first_reference_events[self.__EVENT_TIME_COL_NAME]
+		round_first_reference_event_times = round_first_reference_events.loc[:, self.__EVENT_TIME_COL_NAME]
 		round_first_reference_event_end_times = itertools.chain(
 			(value for idx, value in round_first_reference_event_times.iteritems()), (np.inf,))
 
 		segments = utterances.read_segments(session.utts)
 		utts = tuple(seg_utt_factory(segments))
 		round_utts = tuple(game_round_utterances(round_first_reference_event_end_times, utts)[1])
-		round_first_reference_events[self.__UTTERANCE_SEQUENCE_COL_NAME] = round_utts
+		round_first_reference_events.loc[:, self.__UTTERANCE_SEQUENCE_COL_NAME] = round_utts
 
 		token_row_cols = tuple(itertools.chain(event_colums, (
 			self.LinguisticDataColumn.SPEAKER.value, self.LinguisticDataColumn.TOKEN.value)))
