@@ -20,6 +20,7 @@ class SessionGameRoundUtteranceFactory(object):
 		TOKEN = "TOKEN"
 		SPEAKER = "SPEAKER"
 
+	__EVENT_ID_COL_NAME = "EVENT"
 	__EVENT_NAME_COL_NAME = "NAME"
 	__EVENT_SUBMITTER_COL_NAME = "SUBMITTER"
 	__EVENT_TIME_COL_NAME = "TIME"
@@ -78,7 +79,7 @@ class SessionGameRoundUtteranceFactory(object):
 		token_row_value_iters = itertools.chain.from_iterable(round_token_row_iters)
 		token_rows = (tuple(token_row_value_iter) for token_row_value_iter in token_row_value_iters)
 		result = pd.DataFrame(token_rows, columns=token_row_cols)
-		result.drop(self.__EVENT_NAME_COL_NAME, 1, inplace=True)
+		result.drop([self.__EVENT_ID_COL_NAME, self.__EVENT_NAME_COL_NAME], 1, inplace=True)
 		return result
 
 	@classmethod
