@@ -2,7 +2,7 @@
 
 import argparse
 import sys
-from typing import ItemsView, Iterator, Mapping, Tuple
+from typing import AbstractSet, Iterator, Mapping, Tuple
 
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -49,7 +49,7 @@ class CrossValidator(object):
 	# logistic.fit(X,y)
 	# logistic.predict(iris.data[-1,:]),iris.target[-1])
 
-	def __session_feature_dfs(self, sessions: ItemsView[str, SessionData]) -> Iterator[pd.DataFrame]:
+	def __session_feature_dfs(self, sessions: AbstractSet[Tuple[str, SessionData]]) -> Iterator[pd.DataFrame]:
 		for infile, session in sessions:
 			try:
 				session_feature_df = self.session_training_data[infile]
