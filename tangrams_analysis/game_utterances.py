@@ -17,8 +17,9 @@ N = TypeVar('N', bound=Number)
 class SessionGameRoundUtteranceFactory(object):
 	ROUND_ID_OFFSET = 1
 
-	__UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
 	__EVENT_SUBMITTER_COL_NAME = "SUBMITTER"
+	__EVENT_TIME_COL_NAME = "TIME"
+	__UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
 
 	@staticmethod
 	def __username_participant_ids(usernames: np.ndarray, initial_participant_username: str) -> Iterator[
@@ -49,8 +50,7 @@ class SessionGameRoundUtteranceFactory(object):
 		event_df = event_data.events
 		self.__anonymize_event_submitter_ids(event_df, event_data.initial_instructor_id)
 
-		time_col_name = "TIME"
-		event_df.sort_values(time_col_name, inplace=True)
+		event_df.sort_values(self.__EVENT_TIME_COL_NAME, inplace=True)
 
 		# Get the events which describe the referent entity at the time a new turn is submitted
 		entity_reference_events = event_df[(event_df["NAME"] == "nextturn.request")]
@@ -58,7 +58,7 @@ class SessionGameRoundUtteranceFactory(object):
 		round_first_reference_events = entity_reference_events.groupby("ROUND").first()
 
 		event_colums = tuple(round_first_reference_events.columns.values)
-		round_first_reference_event_times = round_first_reference_events[time_col_name]
+		round_first_reference_event_times = round_first_reference_events[self.__EVENT_TIME_COL_NAME]
 		round_first_reference_event_end_times = itertools.chain(
 			(value for idx, value in round_first_reference_event_times.iteritems()), (np.inf,))
 
