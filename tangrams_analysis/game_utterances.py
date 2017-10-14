@@ -77,6 +77,7 @@ class SessionGameRoundUtteranceFactory(object):
 
 	@classmethod
 	def __create_token_rows(cls, row: NamedTuple, event_features: Sequence[str]) -> Iterator[Iterator[Any]]:
+		# noinspection PyProtectedMember
 		row_dict = row._asdict()
 		event_feature_vals = tuple(row_dict[event_feature] for event_feature in event_features)
 		for utt in row_dict[cls.__UTTERANCE_SEQUENCE_COL_NAME]:
