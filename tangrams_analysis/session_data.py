@@ -9,6 +9,8 @@ import pandas as pd
 DECIMAL_VALUE_TYPE = Decimal
 ENCODING = 'utf-8'
 
+_EVENT_FILE_DTYPES = {"SHAPE": "category"}
+
 
 @unique
 class EventMetadataRow(Enum):
@@ -62,7 +64,7 @@ class SessionData(object):
 
 	def read_events(self) -> pd.DataFrame:
 		return pd.read_csv(self.events, sep='\t', dialect=csv.excel_tab, float_precision="high",
-						   encoding=ENCODING, memory_map=True)
+						   encoding=ENCODING, memory_map=True, dtype=_EVENT_FILE_DTYPES)
 
 	def read_events_metadata(self) -> Dict[str, str]:
 		with open(self.events_metadata, 'r', encoding=ENCODING) as infile:
