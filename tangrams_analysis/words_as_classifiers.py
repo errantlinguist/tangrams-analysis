@@ -133,11 +133,12 @@ def create_token_type_row_idx_dict(df: pd.DataFrame) -> Dict[str, List[Integral]
 	for row in df.itertuples():
 		# noinspection PyProtectedMember
 		row_dict = row._asdict()
+		idx = row.Index
 		utts = row_dict[game_utterances.SessionGameRoundUtteranceFactory.UTTERANCE_SEQUENCE_COL_NAME]
 		for utt in utts:
 			tokens = utt.content
 			for token in tokens:
-				result[token].append(row.Index)
+				result[token].append(idx)
 	return result
 
 
