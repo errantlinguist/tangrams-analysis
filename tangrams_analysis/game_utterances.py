@@ -1,4 +1,5 @@
 import itertools
+from enum import Enum
 from numbers import Number
 from string import ascii_uppercase
 from typing import Any, Callable, Iterable, Iterator, NamedTuple, Sequence, \
@@ -15,6 +16,9 @@ N = TypeVar('N', bound=Number)
 
 
 class SessionGameRoundUtteranceFactory(object):
+	class LinguisticDataColumn(Enum):
+		TOKEN = "TOKEN"
+		SPEAKER = "SPEAKER"
 
 	__EVENT_NAME_COL_NAME = "NAME"
 	__EVENT_SUBMITTER_COL_NAME = "SUBMITTER"
@@ -67,7 +71,8 @@ class SessionGameRoundUtteranceFactory(object):
 		round_utts = tuple(game_round_utterances(round_first_reference_event_end_times, utts)[1])
 		round_first_reference_events[self.__UTTERANCE_SEQUENCE_COL_NAME] = round_utts
 
-		token_row_cols = tuple(itertools.chain(event_colums, ("SPEAKER", "TOKEN")))
+		token_row_cols = tuple(itertools.chain(event_colums, (
+			self.LinguisticDataColumn.SPEAKER.value, self.LinguisticDataColumn.TOKEN.value)))
 		round_token_row_iters = (self.__create_token_rows(row, event_colums) for row in
 								 round_first_reference_events.itertuples())
 		token_row_value_iters = itertools.chain.from_iterable(round_token_row_iters)
