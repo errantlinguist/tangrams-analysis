@@ -145,7 +145,6 @@ def create_token_type_row_idx_dict(df: pd.DataFrame) -> Dict[str, List[Integral]
 def smooth(df: pd.DataFrame) -> Iterator[Tuple[str, List[Integral]]]:
 	token_type_row_idxs = create_token_type_row_idx_dict(df)
 
-	# smoothed_token_classes = set()
 	unsmoothed_token_type_row_idxs = token_type_row_idxs.items()
 	smoothed_token_types = set()
 	smoothed_row_idxs = []
