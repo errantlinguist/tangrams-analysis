@@ -17,6 +17,7 @@ N = TypeVar('N', bound=Number)
 class SessionGameRoundUtteranceFactory(object):
 	ROUND_ID_OFFSET = 1
 
+	__EVENT_NAME_COL_NAME = "NAME"
 	__EVENT_SUBMITTER_COL_NAME = "SUBMITTER"
 	__EVENT_TIME_COL_NAME = "TIME"
 	__UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
@@ -53,7 +54,7 @@ class SessionGameRoundUtteranceFactory(object):
 		event_df.sort_values(self.__EVENT_TIME_COL_NAME, inplace=True)
 
 		# Get the events which describe the referent entity at the time a new turn is submitted
-		entity_reference_events = event_df[(event_df["NAME"] == "nextturn.request")]
+		entity_reference_events = event_df[(event_df[self.__EVENT_NAME_COL_NAME] == "nextturn.request")]
 		# Ensure the chronologically-first event is chosen (should be unimportant because there should be only one turn submission event per round)
 		round_first_reference_events = entity_reference_events.groupby("ROUND").first()
 
@@ -72,8 +73,9 @@ class SessionGameRoundUtteranceFactory(object):
 								 round_first_reference_events.itertuples())
 		token_row_value_iters = itertools.chain.from_iterable(round_token_row_iters)
 		token_rows = (tuple(token_row_value_iter) for token_row_value_iter in token_row_value_iters)
-		round_token_df = pd.DataFrame(token_rows, columns=token_row_cols)
-		return round_token_df
+		result = pd.DataFrame(token_rows, columns=token_row_cols)
+		result.drop(self.__EVENT_NAME_COL_NAME, 1, inplace=True)
+		return result
 
 	@classmethod
 	def __create_token_rows(cls, row: NamedTuple, event_features: Sequence[str]) -> Iterator[Iterator[Any]]:
