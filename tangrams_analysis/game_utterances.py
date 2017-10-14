@@ -1,10 +1,8 @@
 import itertools
-from enum import Enum
 from numbers import Number
 from string import ascii_uppercase
-from typing import Any, Callable, Iterable, Iterator, NamedTuple, Sequence, \
+from typing import Callable, Iterable, Iterator, Sequence, \
 	Tuple, TypeVar
-from collections import defaultdict
 
 import numpy as np
 import pandas as pd
@@ -23,7 +21,6 @@ class SessionGameRoundUtteranceFactory(object):
 	__EVENT_NAME_COL_NAME = "NAME"
 	__EVENT_SUBMITTER_COL_NAME = "SUBMITTER"
 	__EVENT_TIME_COL_NAME = "TIME"
-
 
 	@staticmethod
 	def __username_participant_ids(usernames: np.ndarray, initial_participant_username: str) -> Iterator[
