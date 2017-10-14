@@ -150,7 +150,7 @@ def cross_validate(cross_validation_df: CrossValidationDataFrames):
 	testing_y = training_df[INDEPENDENT_VARIABLE_COL_NAME]
 
 
-def smooth(df: pd.DataFrame) -> Iterator[Tuple[str, List[Integral]]]:
+def smooth(df: pd.DataFrame) -> List[Tuple[str, List[Integral]]]:
 	token_type_row_idxs = create_token_type_row_idx_dict(df)
 
 	unsmoothed_token_type_row_idxs = token_type_row_idxs.items()
