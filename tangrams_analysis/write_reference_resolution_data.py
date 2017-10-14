@@ -2,6 +2,7 @@
 
 import argparse
 import sys
+from typing import Callable
 
 import pandas as pd
 
@@ -18,6 +19,13 @@ def __create_argparser() -> argparse.ArgumentParser:
 	return result
 
 
+def __create_session_df(name: str, session: sd.SessionData,
+						session_data_frame_factory: Callable[[sd.SessionData], pd.DataFrame]):
+	result = session_data_frame_factory(session)
+	result["DYAD"] = name
+	return result
+
+
 def __main(args):
 	inpaths = args.inpaths
 	print("Looking for session data underneath {}.".format(inpaths), file=sys.stderr)
@@ -26,8 +34,10 @@ def __main(args):
 	session_data_frame_factory = game_utterances.SessionGameRoundUtteranceFactory(
 		utterances.TokenSequenceFactory())
 	session_df = pd.concat(
-		session_data_frame_factory(session_inpath, session_data) for (session_inpath, session_data) in
+		__create_session_df(session_inpath, session_data, session_data_frame_factory) for (session_inpath, session_data)
+		in
 		infile_session_data)
+	print(session_df["REFERENT"].unique())
 	session_df.to_csv(sys.stdout, sep='\t', encoding="utf-8")
 
 
