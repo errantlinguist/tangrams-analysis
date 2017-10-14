@@ -147,17 +147,20 @@ def smooth(df: pd.DataFrame) -> Iterator[Tuple[str, List[Integral]]]:
 
 	# smoothed_token_classes = set()
 	unsmoothed_token_type_row_idxs = token_type_row_idxs.items()
+	smoothed_token_types = set()
+	smoothed_row_idxs = []
+	result = []
 	for token_type, row_idxs in unsmoothed_token_type_row_idxs:
-		smoothed_token_type = OUT_OF_VOCABULARY_TOKEN_LABEL if len(
-			token_type_row_idxs) < TOKEN_CLASS_SMOOTHING_FREQ_CUTOFF else token_type
-		yield smoothed_token_type, row_idxs
-	# smoothed_token_classes.add(token_type)
-	# del token_type_row_idxs[token_type]
-	# token_type_row_idxs[OUT_OF_VOCABULARY_TOKEN_LABEL].extend(row_idxs)
+		if len(row_idxs) < TOKEN_CLASS_SMOOTHING_FREQ_CUTOFF:
+			smoothed_token_types.add(token_type)
+			smoothed_row_idxs.extend(row_idxs)
+		else:
+			result.append((token_type, row_idxs))
 
-	# print("Token class(es) used for smoothing: {}; {} data point(s) used as out-of-vocabulary instance(s).".format(
-	#	smoothed_token_classes, len(token_type_row_idxs[OUT_OF_VOCABULARY_TOKEN_LABEL])), file=sys.stderr)
-	# return token_type_row_idxs
+	result.append((OUT_OF_VOCABULARY_TOKEN_LABEL, smoothed_row_idxs))
+	print("Token class(es) used for smoothing: {}; {} data point(s) used as out-of-vocabulary instance(s).".format(
+		smoothed_token_types, len(smoothed_row_idxs), file=sys.stderr))
+	return result
 
 
 def __cross_validate(cross_validation_df: CrossValidationDataFrames):
