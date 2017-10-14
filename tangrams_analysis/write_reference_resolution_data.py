@@ -37,6 +37,7 @@ def __main(args):
 		__create_session_df(session_inpath, session_data, session_data_frame_factory) for (session_inpath, session_data)
 		in
 		infile_session_data)
+	# noinspection PyUnresolvedReferences
 	session_df.to_csv(sys.stdout, sep='\t', encoding="utf-8", index_label="Index")
 
 
