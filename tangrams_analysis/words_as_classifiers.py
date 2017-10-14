@@ -7,7 +7,7 @@ import sys
 from collections import defaultdict
 from collections import namedtuple
 from numbers import Integral
-from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Sequence, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Tuple
 
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -142,7 +142,7 @@ def create_token_type_row_idx_dict(df: pd.DataFrame) -> Dict[str, List[Integral]
 	return result
 
 
-def smooth(df: pd.DataFrame) -> Iterator[Tuple[str, Sequence[Integral]]]:
+def smooth(df: pd.DataFrame) -> Iterator[Tuple[str, List[Integral]]]:
 	token_type_row_idxs = create_token_type_row_idx_dict(df)
 
 	# smoothed_token_classes = set()
