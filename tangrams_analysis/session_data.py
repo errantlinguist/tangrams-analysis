@@ -29,7 +29,7 @@ class SessionDatum(Enum):
 	EVENTS = "events.tsv"
 	EVENTS_METADATA = "events-metadata.tsv"
 	PARTICIPANT_METADATA = "participant-metadata.tsv"
-	UTTS = "utts.xml"
+	UTTERANCES = "utts.xml"
 
 	@property
 	def canonical_filename(self):
@@ -45,7 +45,7 @@ class SessionData(object):
 		self.events_metadata = os.path.join(session_file_prefix, SessionDatum.EVENTS_METADATA.canonical_filename)
 		self.participant_metadata = os.path.join(session_file_prefix,
 												 SessionDatum.PARTICIPANT_METADATA.canonical_filename)
-		self.utts = os.path.join(session_file_prefix, SessionDatum.UTTS.canonical_filename)
+		self.utts = os.path.join(session_file_prefix, SessionDatum.UTTERANCES.canonical_filename)
 
 	def __eq__(self, other):
 		return (self is other or (isinstance(other, type(self))
