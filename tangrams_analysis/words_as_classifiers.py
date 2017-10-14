@@ -130,8 +130,8 @@ def __create_argparser() -> argparse.ArgumentParser:
 
 def smooth(df: pd.DataFrame):
 	token_classes = df.groupby(TOKEN_CLASS_COL_NAME, as_index=False)
-	smoothed_token_classes = token_classes.filter(lambda group_df: len(group_df) < TOKEN_CLASS_SMOOTHING_FREQ_CUTOFF)[
-		TOKEN_CLASS_COL_NAME].unique()
+	smoothed_token_classes = frozenset(token_classes.filter(lambda group_df: len(group_df) < TOKEN_CLASS_SMOOTHING_FREQ_CUTOFF)[
+		TOKEN_CLASS_COL_NAME].unique())
 	print("Token class(es) used for smoothing: {}".format(smoothed_token_classes), file=sys.stderr)
 	df.loc[df[TOKEN_CLASS_COL_NAME].isin(smoothed_token_classes), TOKEN_CLASS_COL_NAME] = OUT_OF_VOCABULARY_TOKEN_LABEL
 	print("{} data point(s) used as out-of-vocabulary instance(s).".format(
