@@ -18,6 +18,7 @@ N = TypeVar('N', bound=Number)
 class SessionGameRoundUtteranceFactory(object):
 	@unique
 	class EventColumn(Enum):
+		ENTITY_ID = "ENTITY"
 		EVENT_ID = "EVENT"
 		EVENT_NAME = "NAME"
 		EVENT_SUBMITTER = "SUBMITTER"
@@ -44,6 +45,11 @@ class SessionGameRoundUtteranceFactory(object):
 			lambda submitter_id: username_participant_ids[submitter_id])
 		event_df[cls.EventColumn.EVENT_SUBMITTER.value] = anonymized_event_submitter_ids
 
+	@classmethod
+	def __first_events(cls, df: pd.DataFrame) -> pd.DataFrame:
+		min_event_time = df[cls.EventColumn.EVENT_TIME.value].min()
+		return df.loc[df[cls.EventColumn.EVENT_TIME.value] == min_event_time]
+
 	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
 		self.__token_seq_factory = token_seq_factory
 
@@ -55,13 +61,17 @@ class SessionGameRoundUtteranceFactory(object):
 		event_df = event_data.events
 		self.__anonymize_event_submitter_ids(event_df, event_data.initial_instructor_id)
 
-		event_df.sort_values([self.EventColumn.ROUND_ID.value, self.EventColumn.EVENT_ID.value, self.EventColumn.EVENT_TIME.value, "ENTITY"],
-							 inplace=True)
+		event_df.sort_values(
+			[self.EventColumn.ROUND_ID.value, self.EventColumn.EVENT_ID.value, self.EventColumn.EVENT_TIME.value,
+			 self.EventColumn.ENTITY_ID.value],
+			inplace=True)
 
 		# Get the events which describe the referent entity at the time a new turn is submitted
 		turn_submission_events = event_df.loc[event_df[self.EventColumn.EVENT_NAME.value] == "nextturn.request"]
-		# Ensure the chronologically-first event is chosen (should be unimportant because there should be only one turn submission event per round)
-		round_first_turn_submission_events = turn_submission_events.groupby(self.EventColumn.ROUND_ID.value, as_index=False).first()
+		round_time_turn_submission_events = turn_submission_events.groupby(self.EventColumn.ROUND_ID.value,
+																		   as_index=False)
+		# Ensure the chronologically-first events are chosen (should be unimportant because there should be only one turn submission event per round)
+		round_first_turn_submission_events = round_time_turn_submission_events.apply(self.__first_events)
 		round_first_turn_submission_event_times = round_first_turn_submission_events.loc[:,
 												  self.EventColumn.EVENT_TIME.value]
 		round_first_turn_submission_event_end_times = itertools.chain(
@@ -73,6 +83,9 @@ class SessionGameRoundUtteranceFactory(object):
 		round_first_turn_submission_events.loc[:, self.UTTERANCE_SEQUENCE_COL_NAME] = round_utts
 		round_first_turn_submission_events.drop([self.EventColumn.EVENT_ID.value, self.EventColumn.EVENT_NAME.value], 1,
 												inplace=True)
+
+		# Assert that all entities are represented in each round's set of events
+		assert len(round_first_turn_submission_events) % len(round_first_turn_submission_events[self.EventColumn.ENTITY_ID.value].unique()) == 0
 		return round_first_turn_submission_events
 
 
