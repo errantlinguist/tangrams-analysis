@@ -138,7 +138,6 @@ def create_token_type_row_idx_mapping(df: pd.DataFrame) -> TokenTypeRowIndexMapp
 			(token_type, int((Decimal(count) / Decimal(observation_event_count)).to_integral_exact())) for
 			token_type, count in
 			type_event_counts.items())
-	# assert not any(count.Inexact for token_type, count in type_counts)
 	return TokenTypeRowIndexMapping(token_type_row_idxs, dict(type_counts))
 
 
