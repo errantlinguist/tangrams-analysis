@@ -7,7 +7,7 @@ import sys
 from collections import defaultdict
 from collections import namedtuple
 from numbers import Integral
-from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Tuple
+from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Sequence, Tuple
 
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -105,12 +105,7 @@ class CrossValidationDataFrameFactory(object):
 											  cross_validation_data: CrossValidationData) -> CrossValidationDataFrames:
 		training_feature_df = pd.concat(self.session_data_frame_factory(infile, session) for (infile, session) in
 										cross_validation_data.training_data.items())
-		# noinspection PyUnresolvedReferences
-		# print("Training data shape: {}".format(training_feature_df.shape), file=sys.stderr)
-		# print(training_feature_df)
 		testing_feature_df = self.session_data_frame_factory(*cross_validation_data.testing_data)
-		# print("Testing data shape: {}".format(testing_feature_df.shape), file=sys.stderr)
-		# print(testing_feature_df)
 
 		# noinspection PyTypeChecker
 		self.__categoricize_data(training_feature_df, testing_feature_df)
@@ -126,11 +121,14 @@ def create_token_type_row_idx_dict(df: pd.DataFrame) -> Dict[str, List[Integral]
 		# noinspection PyProtectedMember
 		row_dict = row._asdict()
 		idx = row.Index
-		utts = row_dict[game_utterances.SessionGameRoundUtteranceFactory.UTTERANCE_SEQUENCE_COL_NAME]
+		utts = row_dict[game_utterances.SessionGameRoundUtteranceSequenceFactory.UTTERANCE_SEQUENCE_COL_NAME]
 		for utt in utts:
 			tokens = utt.content
 			for token in tokens:
 				result[token].append(idx)
+
+	assert len(frozenset(idx for idx_set in result.values() for idx in idx_set)) == len(df)
+
 	return result
 
 
@@ -138,7 +136,9 @@ def cross_validate(cross_validation_df: CrossValidationDataFrames):
 	training_df = cross_validation_df.training
 	dependent_var_cols = tuple(
 		col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
-	token_type_row_idxs = smooth(training_df)
+
+	token_type_row_idxs = create_token_type_row_idx_dict(training_df)
+	token_type_row_idxs = smooth(token_type_row_idxs)
 	for token_class, training_inst_idxs in token_type_row_idxs:
 		training_insts = training_df.loc[training_inst_idxs]
 		training_x = training_insts.loc[:, dependent_var_cols]
@@ -150,9 +150,7 @@ def cross_validate(cross_validation_df: CrossValidationDataFrames):
 	testing_y = training_df[INDEPENDENT_VARIABLE_COL_NAME]
 
 
-def smooth(df: pd.DataFrame) -> List[Tuple[str, List[Integral]]]:
-	token_type_row_idxs = create_token_type_row_idx_dict(df)
-
+def smooth(token_type_row_idxs: Mapping[str, Sequence[Integral]]) -> List[Tuple[str, List[Integral]]]:
 	unsmoothed_token_type_row_idxs = token_type_row_idxs.items()
 	smoothed_token_types = set()
 	smoothed_row_idxs = []
@@ -184,7 +182,7 @@ def __main(args):
 	infile_session_data = tuple(sorted(sd.walk_session_data(inpaths), key=lambda item: item[0]))
 
 	cross_validation_data_frame_factory = CrossValidationDataFrameFactory(
-		CachingSessionDataFrameFactory(game_utterances.SessionGameRoundUtteranceFactory(
+		CachingSessionDataFrameFactory(game_utterances.SessionGameRoundUtteranceSequenceFactory(
 			utterances.TokenSequenceFactory())))
 	print("Creating cross-validation datasets from {} session(s).".format(len(infile_session_data)), file=sys.stderr)
 	# NOTE: This must be lazily-generated lest a dataframe be created in-memory for each cross-validation fold

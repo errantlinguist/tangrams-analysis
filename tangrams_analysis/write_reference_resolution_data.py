@@ -31,7 +31,7 @@ def __main(args):
 	print("Looking for session data underneath {}.".format(inpaths), file=sys.stderr)
 	infile_session_data = tuple(sorted(sd.walk_session_data(inpaths), key=lambda item: item[0]))
 
-	session_data_frame_factory = game_utterances.SessionGameRoundUtteranceFactory(
+	session_data_frame_factory = game_utterances.SessionGameRoundUtteranceSequenceFactory(
 		utterances.TokenSequenceFactory())
 	session_df = pd.concat(
 		__create_session_df(session_inpath, session_data, session_data_frame_factory) for (session_inpath, session_data)

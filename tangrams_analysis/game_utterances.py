@@ -25,7 +25,7 @@ class EventColumn(Enum):
 	ROUND_ID = "ROUND"
 
 
-class RoundUtteranceSequenceFactory(object):
+class GameRoundUtteranceSequenceFactory(object):
 	def __init__(self, df: pd.DataFrame, utts: Iterable[utterances.Utterance]):
 		self.df = df
 		self.utts = utts
@@ -48,7 +48,7 @@ class RoundUtteranceSequenceFactory(object):
 		return (utt for utt in self.utts if start_time <= utt.start_time < end_time)
 
 
-class SessionGameRoundUtteranceFactory(object):
+class SessionGameRoundUtteranceSequenceFactory(object):
 	UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
 
 	@staticmethod
@@ -103,7 +103,7 @@ class SessionGameRoundUtteranceFactory(object):
 			(value for idx, value in round_first_turn_submission_event_times.iteritems()), (np.inf,))
 		segments = utterances.read_segments(session.utts)
 		utts = tuple(seg_utt_factory(segments))
-		round_utt_seq_factory = RoundUtteranceSequenceFactory(round_first_turn_submission_events, utts)
+		round_utt_seq_factory = GameRoundUtteranceSequenceFactory(round_first_turn_submission_events, utts)
 		round_first_turn_submission_events.loc[:,
 		self.UTTERANCE_SEQUENCE_COL_NAME] = round_first_turn_submission_events.apply(round_utt_seq_factory, axis=1)
 
