@@ -7,7 +7,7 @@ import sys
 from collections import Counter, defaultdict, namedtuple
 from decimal import Decimal, Inexact, localcontext
 from numbers import Integral
-from typing import Callable, Iterable, Iterator, List, Mapping, Tuple
+from typing import Callable, Iterable, Iterator, Mapping, Sequence, Tuple
 
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -117,34 +117,61 @@ class CrossValidationDataFrameFactory(object):
 
 
 class CrossValidator(object):
+	@staticmethod
+	def __split_dependent_independent_vars(df: pd.DataFrame, dependent_var_cols: Sequence[str]) -> Tuple[
+		pd.DataFrame, pd.DataFrame]:
+		x = df.loc[:, dependent_var_cols]
+		y = df.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
+		assert (len(x) == len(y))
+		return x, y
+
 	def __init__(self, smoothing_freq_cutoff: Integral):
 		# self.parallelizer = parallelizer
 		self.smoothing_freq_cutoff = smoothing_freq_cutoff
 
 	def __call__(self, cross_validation_df: CrossValidationDataFrames):
 		training_df = cross_validation_df.training
-		training_token_type_row_idxs = smooth(create_token_type_row_idx_mapping(training_df), self.smoothing_freq_cutoff)
-		word_models = self.__train_models(training_token_type_row_idxs, training_df)
+		print("Training using a total of {} dataframe row(s).".format(len(training_df)), file=sys.stderr)
+		training_token_type_row_idxs = create_token_type_row_idx_mapping(training_df)
+		smooth(training_token_type_row_idxs, self.smoothing_freq_cutoff)
+		word_models, dependent_var_cols = self.__train_models(training_token_type_row_idxs.row_idxs, training_df)
 
 		testing_df = cross_validation_df.testing
-		testing_y = training_df[INDEPENDENT_VARIABLE_COL_NAME]
+		print("Testing using a total of {} dataframe row(s).".format(len(testing_df)), file=sys.stderr)
+		# testing_df.to_csv("/home/tshore/Downloads/testingoutput.tsv", sep='\t', encoding="utf-8", index_label="Index")
+		testing_token_type_row_idxs = create_token_type_row_idx_mapping(testing_df)
+		oov_model = word_models[OUT_OF_VOCABULARY_TOKEN_LABEL]
+		for token_class, testing_inst_idxs in testing_token_type_row_idxs.row_idxs.items():
+			print("Testing classifier for \"{}\".".format(token_class), file=sys.stderr)
+			classifier = word_models.get(token_class, oov_model)
+			testing_insts = tuple(training_df.loc[training_inst_idx] for training_inst_idx in testing_inst_idxs)
+			assert (len(testing_insts) == len(testing_inst_idxs))
+			testing_x, testing_y = self.__split_dependent_independent_vars(pd.DataFrame(testing_insts), dependent_var_cols)
+			# testing_x.to_csv("/home/tshore/Downloads/testingoutput_{}.tsv".format(token_class), sep='\t',
+			#				 encoding="utf-8", index_label="Index")
+			# print(len(testing_x))
+			# print(testing_x)
+			decision_probs = classifier.predict_proba(testing_x)
+			# decision_probs = classifier.predict_log_proba(testing_x)
+			print(decision_probs)
 
 	def __train_models(self, token_type_row_idxs: Iterable[
-		Tuple[str, List[Integral]]], training_df: pd.DataFrame):
+		Tuple[str, Sequence[Integral]]], training_df: pd.DataFrame):
 		dependent_var_cols = tuple(
 			col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
-		result = {}
-		for token_class, training_inst_idxs in token_type_row_idxs:
-			training_insts = training_df.loc[training_inst_idxs]
-			training_x = training_insts.loc[:, dependent_var_cols]
-			training_y = training_insts.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
+		word_models = {}
+		for (token_class, training_inst_idxs) in token_type_row_idxs.items():
+			training_insts = (training_df.loc[training_inst_idx] for training_inst_idx in training_inst_idxs)
+			#print(training_insts)
+			training_x, training_y = self.__split_dependent_independent_vars(pd.DataFrame(training_insts), dependent_var_cols)
 			model = LogisticRegression()
 			model.fit(training_x, training_y)
-			result[token_class] = model
-		return result
+			word_models[token_class] = model
+		return word_models, dependent_var_cols
 
 
 def create_token_type_row_idx_mapping(df: pd.DataFrame) -> TokenTypeRowIndexMapping:
+	# df.to_csv("/home/tshore/Downloads/tokenrowidx.tsv", sep='\t', encoding="utf-8", index_label="Index")
 	# There should be an equivalent event for each unique entity in the game
 	observation_event_count = len(df["ENTITY"].unique())
 	token_type_row_idxs = defaultdict(list)
@@ -166,27 +193,22 @@ def create_token_type_row_idx_mapping(df: pd.DataFrame) -> TokenTypeRowIndexMapp
 			(token_type, int((Decimal(count) / Decimal(observation_event_count)).to_integral_exact())) for
 			token_type, count in
 			type_event_counts.items())
+
 	return TokenTypeRowIndexMapping(token_type_row_idxs, dict(type_counts))
 
 
-def smooth(token_type_row_idxs: TokenTypeRowIndexMapping, smoothing_freq_cutoff: Integral) -> List[
-	Tuple[str, List[Integral]]]:
-	unsmoothed_token_type_row_idxs = token_type_row_idxs.row_idxs
-	smoothed_token_types = set()
-	smoothed_row_idxs = []
-	result = []
-	for token_type, count in token_type_row_idxs.type_counts.items():
-		row_idxs = unsmoothed_token_type_row_idxs[token_type]
-		if count < smoothing_freq_cutoff:
-			smoothed_token_types.add(token_type)
-			smoothed_row_idxs.extend(row_idxs)
-		else:
-			result.append((token_type, row_idxs))
+def smooth(token_type_row_idxs: TokenTypeRowIndexMapping, smoothing_freq_cutoff: Integral):
+	smoothed_token_types = frozenset(
+		token_type for token_type, count in token_type_row_idxs.type_counts.items() if count < smoothing_freq_cutoff)
+	row_idxs = token_type_row_idxs.row_idxs
+	for token_type in smoothed_token_types:
+		inst_idxs = row_idxs[token_type]
+		del row_idxs[token_type]
+		row_idxs[OUT_OF_VOCABULARY_TOKEN_LABEL].extend(inst_idxs)
 
-	result.append((OUT_OF_VOCABULARY_TOKEN_LABEL, smoothed_row_idxs))
+	smoothed_row_idxs = row_idxs[OUT_OF_VOCABULARY_TOKEN_LABEL]
 	print("Token class(es) used for smoothing: {}; {} data point(s) used as out-of-vocabulary instance(s).".format(
 		smoothed_token_types, len(smoothed_row_idxs)), file=sys.stderr)
-	return result
 
 
 def __create_argparser() -> argparse.ArgumentParser:
