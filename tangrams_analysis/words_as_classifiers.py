@@ -19,7 +19,7 @@ import utterances
 CrossValidationDataFrames = namedtuple("CrossValidationDataFrames", ("training", "testing"))
 
 
-def __create_regex_disjunction(regexes: Iterable[str]):
+def __create_regex_disjunction(regexes: Iterable[str]) -> str:
 	return "(?:" + ")|(?:".join(regexes) + ")"
 
 
