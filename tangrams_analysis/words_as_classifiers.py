@@ -32,7 +32,7 @@ OUT_OF_VOCABULARY_TOKEN_LABEL = "__OUT_OF_VOCABULARY__"
 '''
 See T. Shore and G. Skantze. 2017. "Enhancing reference resolution in dialogue using participant feedback." Grounding Language Understanding 2017
 '''
-TOKEN_CLASS_SMOOTHING_FREQ_CUTOFF = 4
+DEFAULT_TOKEN_CLASS_SMOOTHING_FREQ_CUTOFF = 4
 
 CATEGORICAL_VAR_COL_NAMES = ("SHAPE", "SUBMITTER")
 # NOTE: For some reason, "pandas.get_dummies(..., columns=[col_name_1,...])" works with list objects but not with tuples
@@ -132,13 +132,13 @@ def create_token_type_row_idx_dict(df: pd.DataFrame) -> Dict[str, List[Integral]
 	return result
 
 
-def cross_validate(cross_validation_df: CrossValidationDataFrames):
+def cross_validate(cross_validation_df: CrossValidationDataFrames, smoothing_freq_cutoff: Integral):
 	training_df = cross_validation_df.training
 	dependent_var_cols = tuple(
 		col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
 
 	token_type_row_idxs = create_token_type_row_idx_dict(training_df)
-	token_type_row_idxs = smooth(token_type_row_idxs)
+	token_type_row_idxs = smooth(token_type_row_idxs, smoothing_freq_cutoff)
 	for token_class, training_inst_idxs in token_type_row_idxs:
 		training_insts = training_df.loc[training_inst_idxs]
 		training_x = training_insts.loc[:, dependent_var_cols]
@@ -150,13 +150,14 @@ def cross_validate(cross_validation_df: CrossValidationDataFrames):
 	testing_y = training_df[INDEPENDENT_VARIABLE_COL_NAME]
 
 
-def smooth(token_type_row_idxs: Mapping[str, Sequence[Integral]]) -> List[Tuple[str, List[Integral]]]:
+def smooth(token_type_row_idxs: Mapping[str, Sequence[Integral]], smoothing_freq_cutoff: Integral) -> List[
+	Tuple[str, List[Integral]]]:
 	unsmoothed_token_type_row_idxs = token_type_row_idxs.items()
 	smoothed_token_types = set()
 	smoothed_row_idxs = []
 	result = []
 	for token_type, row_idxs in unsmoothed_token_type_row_idxs:
-		if len(row_idxs) < TOKEN_CLASS_SMOOTHING_FREQ_CUTOFF:
+		if len(row_idxs) < smoothing_freq_cutoff:
 			smoothed_token_types.add(token_type)
 			smoothed_row_idxs.extend(row_idxs)
 		else:
@@ -173,6 +174,9 @@ def __create_argparser() -> argparse.ArgumentParser:
 		description="Cross-validation of reference resolution for tangram sessions.")
 	result.add_argument("inpaths", metavar="INPATH", nargs='+',
 						help="The directories to process.")
+	result.add_argument("-s", "--smoothing", metavar="COUNT", type=int,
+						default=DEFAULT_TOKEN_CLASS_SMOOTHING_FREQ_CUTOFF,
+						help="The minimum number of times a word class can be observed without being smoothed.")
 	return result
 
 
@@ -180,6 +184,9 @@ def __main(args):
 	inpaths = args.inpaths
 	print("Looking for session data underneath {}.".format(inpaths), file=sys.stderr)
 	infile_session_data = tuple(sorted(sd.walk_session_data(inpaths), key=lambda item: item[0]))
+	smoothing_freq_cutoff = args.smoothing
+	print("Using token types with a frequency less than {} for smoothing.".format(smoothing_freq_cutoff),
+		  file=sys.stderr)
 
 	cross_validation_data_frame_factory = CrossValidationDataFrameFactory(
 		CachingSessionDataFrameFactory(game_utterances.SessionGameRoundUtteranceSequenceFactory(
@@ -187,7 +194,7 @@ def __main(args):
 	print("Creating cross-validation datasets from {} session(s).".format(len(infile_session_data)), file=sys.stderr)
 	# NOTE: This must be lazily-generated lest a dataframe be created in-memory for each cross-validation fold
 	for cross_validation_df in cross_validation_data_frame_factory(infile_session_data):
-		cross_validate(cross_validation_df)
+		cross_validate(cross_validation_df, smoothing_freq_cutoff)
 
 
 if __name__ == "__main__":
