@@ -57,15 +57,6 @@ class SessionGameRoundUtteranceFactory(object):
 		return df.loc[df[EventColumn.EVENT_TIME.value] == min_event_time]
 
 	@staticmethod
-	def __round_utterances(cls, row: pd.Series, df: pd.DataFrame, utts: Iterable[utterances.Utterance]) -> Iterator[
-		utterances.Utterance]:
-		round_id = row[EventColumn.ROUND_ID.value]
-		start_time = row[EventColumn.EVENT_TIME.value]
-		following_round_events = df.loc[(df[EventColumn.ROUND_ID.value] > round_id)]
-		end_time = following_round_events[EventColumn.EVENT_TIME.value].min()
-		return (utt for utt in utts if start_time <= utt.start_time < end_time)
-
-	@staticmethod
 	def __username_participant_ids(usernames: np.ndarray, initial_participant_username: str) -> Iterator[
 		Tuple[str, str]]:
 		assert initial_participant_username in usernames
