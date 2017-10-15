@@ -144,7 +144,7 @@ class CrossValidator(object):
 		for token_class, testing_inst_idxs in testing_token_type_row_idxs.row_idxs.items():
 			print("Testing classifier for \"{}\".".format(token_class), file=sys.stderr)
 			classifier = word_models.get(token_class, oov_model)
-			testing_insts = (training_df.loc[inst_idx] for inst_idx in testing_inst_idxs)
+			testing_insts = (testing_df.loc[inst_idx] for inst_idx in testing_inst_idxs)
 			#assert (len(testing_insts) == len(testing_inst_idxs))
 			testing_x, testing_y = self.__split_dependent_independent_vars(pd.DataFrame(testing_insts), dependent_var_cols)
 			# testing_x.to_csv("/home/tshore/Downloads/testingoutput_{}.tsv".format(token_class), sep='\t',
