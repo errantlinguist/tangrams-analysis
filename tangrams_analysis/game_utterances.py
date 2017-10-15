@@ -51,7 +51,7 @@ class SessionGameRoundUtteranceFactory(object):
 		event_df = event_data.events
 		self.__anonymize_event_submitter_ids(event_df, event_data.initial_instructor_id)
 
-		event_df.sort_values(self.__EVENT_TIME_COL_NAME, inplace=True)
+		event_df.sort_values("ROUND", self.__EVENT_ID_COL_NAME, self.__EVENT_TIME_COL_NAME, "ENTITY", inplace=True)
 
 		# Get the events which describe the referent entity at the time a new turn is submitted
 		entity_reference_events = event_df.loc[event_df[self.__EVENT_NAME_COL_NAME] == "nextturn.request"]
