@@ -71,18 +71,19 @@ class SessionGameRoundUtteranceFactory(object):
 																		   as_index=False)
 		# Ensure the chronologically-first events are chosen (should be unimportant because there should be only one turn submission event per round)
 		round_first_turn_submission_events = round_time_turn_submission_events.apply(self.__first_events)
+
+		# Find the utterances made for each event
 		round_first_turn_submission_event_times = round_first_turn_submission_events.loc[:,
 												  self.EventColumn.EVENT_TIME.value]
 		round_first_turn_submission_event_end_times = itertools.chain(
 			(value for idx, value in round_first_turn_submission_event_times.iteritems()), (np.inf,))
-
 		segments = utterances.read_segments(session.utts)
 		utts = tuple(seg_utt_factory(segments))
 		round_utts = game_round_utterances(round_first_turn_submission_event_end_times, utts)[1]
 		round_first_turn_submission_events.loc[:, self.UTTERANCE_SEQUENCE_COL_NAME] = round_utts
+
 		round_first_turn_submission_events.drop([self.EventColumn.EVENT_ID.value, self.EventColumn.EVENT_NAME.value], 1,
 												inplace=True)
-
 		# Assert that all entities are represented in each round's set of events
 		assert len(round_first_turn_submission_events) % len(
 			round_first_turn_submission_events[self.EventColumn.ENTITY_ID.value].unique()) == 0
