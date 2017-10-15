@@ -4,10 +4,10 @@ import argparse
 import itertools
 import re
 import sys
-from collections import defaultdict
-from collections import namedtuple
+from collections import Counter, defaultdict, namedtuple
+from decimal import Decimal, Inexact, localcontext
 from numbers import Integral
-from typing import Callable, Dict, Iterable, Iterator, List, Mapping, Sequence, Tuple
+from typing import Callable, Iterable, Iterator, List, Mapping, Tuple
 
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
@@ -17,6 +17,7 @@ import session_data as sd
 import utterances
 
 CrossValidationDataFrames = namedtuple("CrossValidationDataFrames", ("training", "testing"))
+TokenTypeRowIndexMapping = namedtuple("TokenTypeRowIndexMapping", ("row_idxs", "type_counts"))
 
 
 def __create_regex_disjunction(regexes: Iterable[str]) -> str:
@@ -115,8 +116,11 @@ class CrossValidationDataFrameFactory(object):
 		return CrossValidationDataFrames(dummified_training_feature_df, dummified_testing_feature_df)
 
 
-def create_token_type_row_idx_dict(df: pd.DataFrame) -> Dict[str, List[Integral]]:
-	result = defaultdict(list)
+def create_token_type_row_idx_mapping(df: pd.DataFrame) -> TokenTypeRowIndexMapping:
+	# There should be an equivalent event for each unique entity in the game
+	observation_event_count = len(df["ENTITY"].unique())
+	token_type_row_idxs = defaultdict(list)
+	type_event_counts = Counter()
 	for row in df.itertuples():
 		# noinspection PyProtectedMember
 		row_dict = row._asdict()
@@ -125,11 +129,17 @@ def create_token_type_row_idx_dict(df: pd.DataFrame) -> Dict[str, List[Integral]
 		for utt in utts:
 			tokens = utt.content
 			for token in tokens:
-				result[token].append(idx)
+				token_type_row_idxs[token].append(idx)
+				type_event_counts[token] += 1
 
-	assert len(frozenset(idx for idx_set in result.values() for idx in idx_set)) == len(df)
-
-	return result
+	with localcontext() as ctx:
+		ctx.traps[Inexact] = True
+		type_counts = tuple(
+			(token_type, int((Decimal(count) / Decimal(observation_event_count)).to_integral_exact())) for
+			token_type, count in
+			type_event_counts.items())
+	# assert not any(count.Inexact for token_type, count in type_counts)
+	return TokenTypeRowIndexMapping(token_type_row_idxs, dict(type_counts))
 
 
 def cross_validate(cross_validation_df: CrossValidationDataFrames, smoothing_freq_cutoff: Integral):
@@ -137,7 +147,7 @@ def cross_validate(cross_validation_df: CrossValidationDataFrames, smoothing_fre
 	dependent_var_cols = tuple(
 		col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
 
-	token_type_row_idxs = create_token_type_row_idx_dict(training_df)
+	token_type_row_idxs = create_token_type_row_idx_mapping(training_df)
 	token_type_row_idxs = smooth(token_type_row_idxs, smoothing_freq_cutoff)
 	for token_class, training_inst_idxs in token_type_row_idxs:
 		training_insts = training_df.loc[training_inst_idxs]
@@ -150,14 +160,15 @@ def cross_validate(cross_validation_df: CrossValidationDataFrames, smoothing_fre
 	testing_y = training_df[INDEPENDENT_VARIABLE_COL_NAME]
 
 
-def smooth(token_type_row_idxs: Mapping[str, Sequence[Integral]], smoothing_freq_cutoff: Integral) -> List[
+def smooth(token_type_row_idxs: TokenTypeRowIndexMapping, smoothing_freq_cutoff: Integral) -> List[
 	Tuple[str, List[Integral]]]:
-	unsmoothed_token_type_row_idxs = token_type_row_idxs.items()
+	unsmoothed_token_type_row_idxs = token_type_row_idxs.row_idxs
 	smoothed_token_types = set()
 	smoothed_row_idxs = []
 	result = []
-	for token_type, row_idxs in unsmoothed_token_type_row_idxs:
-		if len(row_idxs) < smoothing_freq_cutoff:
+	for token_type, count in token_type_row_idxs.type_counts.items():
+		row_idxs = unsmoothed_token_type_row_idxs[token_type]
+		if count < smoothing_freq_cutoff:
 			smoothed_token_types.add(token_type)
 			smoothed_row_idxs.extend(row_idxs)
 		else:
@@ -165,7 +176,7 @@ def smooth(token_type_row_idxs: Mapping[str, Sequence[Integral]], smoothing_freq
 
 	result.append((OUT_OF_VOCABULARY_TOKEN_LABEL, smoothed_row_idxs))
 	print("Token class(es) used for smoothing: {}; {} data point(s) used as out-of-vocabulary instance(s).".format(
-		smoothed_token_types, len(smoothed_row_idxs), file=sys.stderr))
+		smoothed_token_types, len(smoothed_row_idxs)), file=sys.stderr)
 	return result
 
 
