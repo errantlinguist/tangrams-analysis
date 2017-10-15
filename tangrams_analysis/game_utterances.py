@@ -1,4 +1,5 @@
 import itertools
+from enum import Enum, unique
 from numbers import Number
 from string import ascii_uppercase
 from typing import Callable, Iterable, Iterator, Sequence, \
@@ -15,12 +16,14 @@ N = TypeVar('N', bound=Number)
 
 
 class SessionGameRoundUtteranceFactory(object):
-	UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
+	@unique
+	class EventColumn(Enum):
+		EVENT_ID = "EVENT"
+		EVENT_NAME = "NAME"
+		EVENT_SUBMITTER = "SUBMITTER"
+		EVENT_TIME = "TIME"
 
-	__EVENT_ID_COL_NAME = "EVENT"
-	__EVENT_NAME_COL_NAME = "NAME"
-	__EVENT_SUBMITTER_COL_NAME = "SUBMITTER"
-	__EVENT_TIME_COL_NAME = "TIME"
+	UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
 
 	@staticmethod
 	def __username_participant_ids(usernames: np.ndarray, initial_participant_username: str) -> Iterator[
@@ -33,12 +36,12 @@ class SessionGameRoundUtteranceFactory(object):
 
 	@classmethod
 	def __anonymize_event_submitter_ids(cls, event_df: pd.DataFrame, initial_participant_username: str):
-		event_submitter_ids = event_df[cls.__EVENT_SUBMITTER_COL_NAME]
+		event_submitter_ids = event_df[cls.EventColumn.EVENT_SUBMITTER.value]
 		username_participant_ids = dict(
 			cls.__username_participant_ids(event_submitter_ids.unique(), initial_participant_username))
 		anonymized_event_submitter_ids = event_submitter_ids.transform(
 			lambda submitter_id: username_participant_ids[submitter_id])
-		event_df[cls.__EVENT_SUBMITTER_COL_NAME] = anonymized_event_submitter_ids
+		event_df[cls.EventColumn.EVENT_SUBMITTER.value] = anonymized_event_submitter_ids
 
 	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
 		self.__token_seq_factory = token_seq_factory
@@ -51,13 +54,15 @@ class SessionGameRoundUtteranceFactory(object):
 		event_df = event_data.events
 		self.__anonymize_event_submitter_ids(event_df, event_data.initial_instructor_id)
 
-		event_df.sort_values("ROUND", self.__EVENT_ID_COL_NAME, self.__EVENT_TIME_COL_NAME, "ENTITY", inplace=True)
+		event_df.sort_values(["ROUND", self.EventColumn.EVENT_ID.value, self.EventColumn.EVENT_TIME.value, "ENTITY"],
+							 inplace=True)
 
 		# Get the events which describe the referent entity at the time a new turn is submitted
-		turn_submission_events = event_df.loc[event_df[self.__EVENT_NAME_COL_NAME] == "nextturn.request"]
+		turn_submission_events = event_df.loc[event_df[self.EventColumn.EVENT_NAME.value] == "nextturn.request"]
 		# Ensure the chronologically-first event is chosen (should be unimportant because there should be only one turn submission event per round)
 		round_first_turn_submission_events = turn_submission_events.groupby("ROUND", as_index=False).first()
-		round_first_turn_submission_event_times = round_first_turn_submission_events.loc[:, self.__EVENT_TIME_COL_NAME]
+		round_first_turn_submission_event_times = round_first_turn_submission_events.loc[:,
+												  self.EventColumn.EVENT_TIME.value]
 		round_first_turn_submission_event_end_times = itertools.chain(
 			(value for idx, value in round_first_turn_submission_event_times.iteritems()), (np.inf,))
 
@@ -65,7 +70,8 @@ class SessionGameRoundUtteranceFactory(object):
 		utts = tuple(seg_utt_factory(segments))
 		round_utts = tuple(game_round_utterances(round_first_turn_submission_event_end_times, utts)[1])
 		round_first_turn_submission_events.loc[:, self.UTTERANCE_SEQUENCE_COL_NAME] = round_utts
-		round_first_turn_submission_events.drop([self.__EVENT_ID_COL_NAME, self.__EVENT_NAME_COL_NAME], 1, inplace=True)
+		round_first_turn_submission_events.drop([self.EventColumn.EVENT_ID.value, self.EventColumn.EVENT_NAME.value], 1,
+												inplace=True)
 		return round_first_turn_submission_events
 
 
