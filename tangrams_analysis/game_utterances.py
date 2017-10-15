@@ -60,7 +60,6 @@ class SessionGameRoundUtteranceFactory(object):
 															 lambda source_id: source_participant_ids[source_id])
 		event_df = event_data.events
 		self.__anonymize_event_submitter_ids(event_df, event_data.initial_instructor_id)
-
 		event_df.sort_values(
 			[self.EventColumn.ROUND_ID.value, self.EventColumn.EVENT_ID.value, self.EventColumn.EVENT_TIME.value,
 			 self.EventColumn.ENTITY_ID.value],
