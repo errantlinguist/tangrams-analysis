@@ -2,7 +2,7 @@ import itertools
 from enum import Enum, unique
 from numbers import Number
 from string import ascii_uppercase
-from typing import Callable, Iterable, Iterator, Sequence, \
+from typing import Callable, Iterable, Iterator, List, Sequence, \
 	Tuple, TypeVar
 
 import numpy as np
@@ -78,7 +78,7 @@ class SessionGameRoundUtteranceFactory(object):
 
 		segments = utterances.read_segments(session.utts)
 		utts = tuple(seg_utt_factory(segments))
-		round_utts = tuple(game_round_utterances(round_first_turn_submission_event_end_times, utts)[1])
+		round_utts = game_round_utterances(round_first_turn_submission_event_end_times, utts)[1]
 		round_first_turn_submission_events.loc[:, self.UTTERANCE_SEQUENCE_COL_NAME] = round_utts
 		round_first_turn_submission_events.drop([self.EventColumn.EVENT_ID.value, self.EventColumn.EVENT_NAME.value], 1,
 												inplace=True)
@@ -90,12 +90,17 @@ class SessionGameRoundUtteranceFactory(object):
 
 
 def game_round_utterances(round_start_time_iter: Iterator[N],
-						  utts: Iterable[utterances.Utterance]) -> Tuple[Tuple[utterances.Utterance, ...], Iterator[
+						  utts: Iterable[utterances.Utterance]) -> Tuple[Tuple[utterances.Utterance, ...], List[
 	Tuple[utterances.Utterance, ...]]]:
-	first_round_start_time = next(round_start_time_iter)
+	currrent_round_start_time = next(round_start_time_iter)
 	# Get utterances preceding the first round
-	pre_game_utts = tuple(utt for utt in utts if utt.start_time < first_round_start_time)
+	pre_game_utts = tuple(utt for utt in utts if utt.start_time < currrent_round_start_time)
 	# TODO: optimize
-	game_round_utts = (tuple(utt for utt in utts if utt.start_time < next_round_start_time) for next_round_start_time in
-					   round_start_time_iter)
+	game_round_utts = []
+	for next_round_start_time in round_start_time_iter:
+		current_game_round_utts = tuple(
+			utt for utt in utts if (currrent_round_start_time <= utt.start_time < next_round_start_time))
+		game_round_utts.append(current_game_round_utts)
+		currrent_round_start_time = next_round_start_time
+
 	return pre_game_utts, game_round_utts
