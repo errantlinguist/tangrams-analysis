@@ -22,6 +22,7 @@ class SessionGameRoundUtteranceFactory(object):
 		EVENT_NAME = "NAME"
 		EVENT_SUBMITTER = "SUBMITTER"
 		EVENT_TIME = "TIME"
+		ROUND_ID = "ROUND"
 
 	UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
 
@@ -54,13 +55,13 @@ class SessionGameRoundUtteranceFactory(object):
 		event_df = event_data.events
 		self.__anonymize_event_submitter_ids(event_df, event_data.initial_instructor_id)
 
-		event_df.sort_values(["ROUND", self.EventColumn.EVENT_ID.value, self.EventColumn.EVENT_TIME.value, "ENTITY"],
+		event_df.sort_values([self.EventColumn.ROUND_ID.value, self.EventColumn.EVENT_ID.value, self.EventColumn.EVENT_TIME.value, "ENTITY"],
 							 inplace=True)
 
 		# Get the events which describe the referent entity at the time a new turn is submitted
 		turn_submission_events = event_df.loc[event_df[self.EventColumn.EVENT_NAME.value] == "nextturn.request"]
 		# Ensure the chronologically-first event is chosen (should be unimportant because there should be only one turn submission event per round)
-		round_first_turn_submission_events = turn_submission_events.groupby("ROUND", as_index=False).first()
+		round_first_turn_submission_events = turn_submission_events.groupby(self.EventColumn.ROUND_ID.value, as_index=False).first()
 		round_first_turn_submission_event_times = round_first_turn_submission_events.loc[:,
 												  self.EventColumn.EVENT_TIME.value]
 		round_first_turn_submission_event_end_times = itertools.chain(
