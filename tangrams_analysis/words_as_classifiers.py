@@ -116,6 +116,35 @@ class CrossValidationDataFrameFactory(object):
 		return CrossValidationDataFrames(dummified_training_feature_df, dummified_testing_feature_df)
 
 
+class CrossValidator(object):
+	def __init__(self, smoothing_freq_cutoff: Integral):
+		# self.parallelizer = parallelizer
+		self.smoothing_freq_cutoff = smoothing_freq_cutoff
+
+	def __call__(self, cross_validation_df: CrossValidationDataFrames):
+		training_df = cross_validation_df.training
+		token_type_row_idxs = smooth(create_token_type_row_idx_mapping(training_df), self.smoothing_freq_cutoff)
+
+		word_models = self.__train_models(token_type_row_idxs, training_df)
+
+		testing_df = cross_validation_df.testing
+		testing_y = training_df[INDEPENDENT_VARIABLE_COL_NAME]
+
+	def __train_models(self, token_type_row_idxs: Iterable[
+		Tuple[str, List[Integral]]], training_df: pd.DataFrame):
+		dependent_var_cols = tuple(
+			col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
+		result = {}
+		for token_class, training_inst_idxs in token_type_row_idxs:
+			training_insts = training_df.loc[training_inst_idxs]
+			training_x = training_insts.loc[:, dependent_var_cols]
+			training_y = training_insts.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
+			model = LogisticRegression()
+			model.fit(training_x, training_y)
+			result[token_class] = model
+		return result
+
+
 def create_token_type_row_idx_mapping(df: pd.DataFrame) -> TokenTypeRowIndexMapping:
 	# There should be an equivalent event for each unique entity in the game
 	observation_event_count = len(df["ENTITY"].unique())
@@ -139,24 +168,6 @@ def create_token_type_row_idx_mapping(df: pd.DataFrame) -> TokenTypeRowIndexMapp
 			token_type, count in
 			type_event_counts.items())
 	return TokenTypeRowIndexMapping(token_type_row_idxs, dict(type_counts))
-
-
-def cross_validate(cross_validation_df: CrossValidationDataFrames, smoothing_freq_cutoff: Integral):
-	training_df = cross_validation_df.training
-	dependent_var_cols = tuple(
-		col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
-
-	token_type_row_idxs = create_token_type_row_idx_mapping(training_df)
-	token_type_row_idxs = smooth(token_type_row_idxs, smoothing_freq_cutoff)
-	for token_class, training_inst_idxs in token_type_row_idxs:
-		training_insts = training_df.loc[training_inst_idxs]
-		training_x = training_insts.loc[:, dependent_var_cols]
-		training_y = training_insts.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
-		model = LogisticRegression()
-		model.fit(training_x, training_y)
-
-	testing_df = cross_validation_df.testing
-	testing_y = training_df[INDEPENDENT_VARIABLE_COL_NAME]
 
 
 def smooth(token_type_row_idxs: TokenTypeRowIndexMapping, smoothing_freq_cutoff: Integral) -> List[
@@ -202,9 +213,12 @@ def __main(args):
 		CachingSessionDataFrameFactory(game_utterances.SessionGameRoundUtteranceSequenceFactory(
 			utterances.TokenSequenceFactory())))
 	print("Creating cross-validation datasets from {} session(s).".format(len(infile_session_data)), file=sys.stderr)
+
+	# parallelizer = Parallel(n_jobs = -2, backend = "multiprocessing")
+	cross_validator = CrossValidator(smoothing_freq_cutoff)
 	# NOTE: This must be lazily-generated lest a dataframe be created in-memory for each cross-validation fold
 	for cross_validation_df in cross_validation_data_frame_factory(infile_session_data):
-		cross_validate(cross_validation_df, smoothing_freq_cutoff)
+		cross_validator(cross_validation_df)
 
 
 if __name__ == "__main__":
