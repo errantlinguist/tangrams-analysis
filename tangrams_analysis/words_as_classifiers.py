@@ -123,9 +123,8 @@ class CrossValidator(object):
 
 	def __call__(self, cross_validation_df: CrossValidationDataFrames):
 		training_df = cross_validation_df.training
-		token_type_row_idxs = smooth(create_token_type_row_idx_mapping(training_df), self.smoothing_freq_cutoff)
-
-		word_models = self.__train_models(token_type_row_idxs, training_df)
+		training_token_type_row_idxs = smooth(create_token_type_row_idx_mapping(training_df), self.smoothing_freq_cutoff)
+		word_models = self.__train_models(training_token_type_row_idxs, training_df)
 
 		testing_df = cross_validation_df.testing
 		testing_y = training_df[INDEPENDENT_VARIABLE_COL_NAME]
