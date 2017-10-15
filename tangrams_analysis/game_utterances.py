@@ -47,7 +47,7 @@ class SessionGameRoundUtteranceFactory(object):
 
 	@classmethod
 	def __first_events(cls, df: pd.DataFrame) -> pd.DataFrame:
-		min_event_time = df[cls.EventColumn.EVENT_TIME.value].min()
+		min_event_time = df.loc[:, cls.EventColumn.EVENT_TIME.value].min()
 		return df.loc[df[cls.EventColumn.EVENT_TIME.value] == min_event_time]
 
 	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
