@@ -63,7 +63,7 @@ class SessionData(object):
 		return self.__class__.__name__ + str(self.__dict__)
 
 	def read_events(self) -> pd.DataFrame:
-		return pd.read_csv(self.events, sep='\t', dialect=csv.excel_tab, float_precision="high",
+		return pd.read_csv(self.events, sep='\t', dialect=csv.excel_tab, float_precision="round_trip",
 						   encoding=ENCODING, memory_map=True, dtype=_EVENT_FILE_DTYPES)
 
 	def read_events_metadata(self) -> Dict[str, str]:
