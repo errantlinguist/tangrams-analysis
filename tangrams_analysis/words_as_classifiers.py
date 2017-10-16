@@ -119,17 +119,9 @@ class CrossValidationDataFrameFactory(object):
 class CrossValidator(object):
 	ORIGINAL_INDEX_COL_NAME = "OriginalIndex"
 
-	@staticmethod
-	def __split_dependent_independent_vars(df: pd.DataFrame, dependent_var_cols: Sequence[str]) -> Tuple[
-		pd.DataFrame, pd.DataFrame]:
-		x = df.loc[:, dependent_var_cols]
-		y = df.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
-		assert (len(x) == len(y))
-		return x, y
-
 	@classmethod
 	def __create_token_type_insts(cls, df: pd.DataFrame) -> DefaultDict[str, List[pd.Series]]:
-		df[cls.ORIGINAL_INDEX_COL_NAME] = df.index
+		df.loc[:, cls.ORIGINAL_INDEX_COL_NAME] = df.index
 		token_insts = (token_training_inst for row_training_inst_set in
 					   df.apply(create_token_observation_series, axis=1) for token_training_inst in
 					   row_training_inst_set)
@@ -165,19 +157,25 @@ class CrossValidator(object):
 			  file=sys.stderr)
 		oov_model = word_models[OUT_OF_VOCABULARY_TOKEN_LABEL]
 		# 2D array for entity description * word classification probabilities
-		word_classification_probs = np.zeros((len(testing_df), len(token_type_testing_insts)))
+		last_idx = testing_df[self.ORIGINAL_INDEX_COL_NAME].max()
+		word_classification_probs = np.zeros(last_idx, len(token_type_testing_insts))
 		for col_idx, (token_class, testing_insts) in enumerate(token_type_testing_insts.items()):
 			print("Testing classifier for token type \"{}\".".format(token_class), file=sys.stderr)
 			classifier = word_models.get(token_class, oov_model)
 			testing_inst_df = pd.DataFrame(testing_insts)
-			testing_x, testing_y = self.__split_dependent_independent_vars(testing_inst_df,
-																		   dependent_var_cols)
+			testing_x = testing_inst_df.loc[:, dependent_var_cols]
+			testing_y = testing_inst_df.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
+			orig_idxs = testing_inst_df.loc[:, self.ORIGINAL_INDEX_COL_NAME]
+
 			decision_probs = classifier.predict_proba(testing_x)
 			# decision_probs = classifier.predict_log_proba(testing_x)
 			true_class_idx = np.where(classifier.classes_ == True)[0]
 			truth_decision_probs = decision_probs[:, true_class_idx]
-			print(truth_decision_probs)
-		# word_classification_probs[:, col_idx] = truth_decision_probs
+			# print(truth_decision_probs)
+			print(testing_x.columns)
+			for orig_idx, truth_decision_prob in zip(orig_idxs, truth_decision_probs):
+				word_classification_probs[orig_idx, col_idx] = truth_decision_prob
+		print(word_classification_probs)
 
 	def __train_models(self, token_type_training_insts: Mapping[str, Iterable[pd.Series]],
 					   dependent_var_cols: Sequence[str]):
@@ -185,8 +183,8 @@ class CrossValidator(object):
 		for (token_type, training_insts) in token_type_training_insts.items():
 			training_inst_df = pd.DataFrame(training_insts)
 			# print(training_inst_df)
-			training_x, training_y = self.__split_dependent_independent_vars(training_inst_df,
-																			 dependent_var_cols)
+			training_x = training_inst_df.loc[:, dependent_var_cols]
+			training_y = training_inst_df.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
 			model = LogisticRegression()
 			model.fit(training_x, training_y)
 			word_models[token_type] = model
