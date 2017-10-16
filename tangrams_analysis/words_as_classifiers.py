@@ -158,7 +158,7 @@ class CrossValidator(object):
 		oov_model = word_models[OUT_OF_VOCABULARY_TOKEN_LABEL]
 		# 2D array for entity description * word classification probabilities
 		last_idx = testing_df[self.ORIGINAL_INDEX_COL_NAME].max()
-		word_classification_probs = np.zeros(last_idx, len(token_type_testing_insts))
+		word_classification_probs = np.zeros((last_idx + 1, len(token_type_testing_insts)))
 		for col_idx, (token_class, testing_insts) in enumerate(token_type_testing_insts.items()):
 			print("Testing classifier for token type \"{}\".".format(token_class), file=sys.stderr)
 			classifier = word_models.get(token_class, oov_model)
@@ -172,7 +172,6 @@ class CrossValidator(object):
 			true_class_idx = np.where(classifier.classes_ == True)[0]
 			truth_decision_probs = decision_probs[:, true_class_idx]
 			# print(truth_decision_probs)
-			print(testing_x.columns)
 			for orig_idx, truth_decision_prob in zip(orig_idxs, truth_decision_probs):
 				word_classification_probs[orig_idx, col_idx] = truth_decision_prob
 		print(word_classification_probs)
