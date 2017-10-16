@@ -6,8 +6,7 @@ import re
 import sys
 from collections import Counter, defaultdict, namedtuple
 from decimal import Decimal, Inexact, localcontext
-from numbers import Integral
-from typing import Callable, Iterable, Iterator, Mapping, Sequence, Tuple
+from typing import Callable, DefaultDict, Iterable, Iterator, List, Mapping, MutableSequence, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -118,6 +117,8 @@ class CrossValidationDataFrameFactory(object):
 
 
 class CrossValidator(object):
+	ORIGINAL_INDEX_COL_NAME = "OriginalIndex"
+
 	@staticmethod
 	def __split_dependent_independent_vars(df: pd.DataFrame, dependent_var_cols: Sequence[str]) -> Tuple[
 		pd.DataFrame, pd.DataFrame]:
@@ -126,52 +127,86 @@ class CrossValidator(object):
 		assert (len(x) == len(y))
 		return x, y
 
-	def __init__(self, smoothing_freq_cutoff: Integral):
+	@classmethod
+	def __create_token_type_insts(cls, df: pd.DataFrame) -> DefaultDict[str, List[pd.Series]]:
+		df[cls.ORIGINAL_INDEX_COL_NAME] = df.index
+		token_insts = (token_training_inst for row_training_inst_set in
+					   df.apply(create_token_observation_series, axis=1) for token_training_inst in
+					   row_training_inst_set)
+		result = defaultdict(list)
+		for token, inst in token_insts:
+			result[token].append(inst)
+		# NOTE: simple lists of Series objects are returned rather than complete DataFrame objects so that e.g. the different token types can be smoothed before creating a DataFrame for use in training/classification
+		return result
+
+	def __init__(self, smoothing_freq_cutoff: int):
 		# self.parallelizer = parallelizer
 		self.smoothing_freq_cutoff = smoothing_freq_cutoff
 
 	def __call__(self, cross_validation_df: CrossValidationDataFrames):
 		training_df = cross_validation_df.training
 		print("Training using a total of {} dataframe row(s).".format(len(training_df)), file=sys.stderr)
-		training_token_type_row_idxs = create_token_type_row_idx_mapping(training_df)
-		smooth(training_token_type_row_idxs, self.smoothing_freq_cutoff)
-		word_models, dependent_var_cols = self.__train_models(training_token_type_row_idxs.row_idxs, training_df)
+
+		token_type_training_insts = self.__create_token_type_insts(training_df)
+		print("Created training datasets for {} token type(s).".format(len(token_type_training_insts)),
+			  file=sys.stderr)
+		training_insts_per_observation = Decimal(len(training_df[game_utterances.EventColumn.ENTITY_ID.value].unique()))
+		smooth(token_type_training_insts, self.smoothing_freq_cutoff, training_insts_per_observation)
+		dependent_var_cols = tuple(
+			col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
+		word_models = self.__train_models(token_type_training_insts, dependent_var_cols)
+		print("Trained models for {} token type(s).".format(len(word_models)),
+			  file=sys.stderr)
 
 		testing_df = cross_validation_df.testing
 		print("Testing using a total of {} dataframe row(s).".format(len(testing_df)), file=sys.stderr)
-		# testing_df.to_csv("/home/tshore/Downloads/testingoutput.tsv", sep='\t', encoding="utf-8", index_label="Index")
-		testing_token_type_row_idxs = create_token_type_row_idx_mapping(testing_df)
+		token_type_testing_insts = self.__create_token_type_insts(testing_df)
+		print("Created testing datasets for {} token type(s).".format(len(token_type_testing_insts)),
+			  file=sys.stderr)
 		oov_model = word_models[OUT_OF_VOCABULARY_TOKEN_LABEL]
-		for token_class, testing_inst_idxs in testing_token_type_row_idxs.row_idxs.items():
-			print("Testing classifier for \"{}\".".format(token_class), file=sys.stderr)
+		# 2D array for entity description * word classification probabilities
+		word_classification_probs = np.zeros((len(testing_df), len(token_type_testing_insts)))
+		for col_idx, (token_class, testing_insts) in enumerate(token_type_testing_insts.items()):
+			print("Testing classifier for token type \"{}\".".format(token_class), file=sys.stderr)
 			classifier = word_models.get(token_class, oov_model)
-			testing_insts = (testing_df.loc[inst_idx] for inst_idx in testing_inst_idxs)
-			# assert (len(testing_insts) == len(testing_inst_idxs))
-			testing_x, testing_y = self.__split_dependent_independent_vars(pd.DataFrame(testing_insts),
+			testing_inst_df = pd.DataFrame(testing_insts)
+			testing_x, testing_y = self.__split_dependent_independent_vars(testing_inst_df,
 																		   dependent_var_cols)
-			# testing_x.to_csv("/home/tshore/Downloads/testingoutput_{}.tsv".format(token_class), sep='\t',
-			#				 encoding="utf-8", index_label="Index")
-			# print(len(testing_x))
-			# print(testing_x)
 			decision_probs = classifier.predict_proba(testing_x)
 			# decision_probs = classifier.predict_log_proba(testing_x)
 			true_class_idx = np.where(classifier.classes_ == True)[0]
-			print(decision_probs[:, true_class_idx])
+			truth_decision_probs = decision_probs[:, true_class_idx]
+			print(truth_decision_probs)
+		# word_classification_probs[:, col_idx] = truth_decision_probs
 
-	def __train_models(self, token_type_row_idxs: Iterable[
-		Tuple[str, Sequence[Integral]]], training_df: pd.DataFrame):
-		dependent_var_cols = tuple(
-			col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
+	def __train_models(self, token_type_training_insts: Mapping[str, Iterable[pd.Series]],
+					   dependent_var_cols: Sequence[str]):
 		word_models = {}
-		for (token_class, training_inst_idxs) in token_type_row_idxs.items():
-			training_insts = (training_df.loc[training_inst_idx] for training_inst_idx in training_inst_idxs)
-			# print(training_insts)
-			training_x, training_y = self.__split_dependent_independent_vars(pd.DataFrame(training_insts),
+		for (token_type, training_insts) in token_type_training_insts.items():
+			training_inst_df = pd.DataFrame(training_insts)
+			# print(training_inst_df)
+			training_x, training_y = self.__split_dependent_independent_vars(training_inst_df,
 																			 dependent_var_cols)
 			model = LogisticRegression()
 			model.fit(training_x, training_y)
-			word_models[token_class] = model
-		return word_models, dependent_var_cols
+			word_models[token_type] = model
+		return word_models
+
+
+def create_token_observation_series(row: pd.Series) -> List[Tuple[str, pd.Series]]:
+	token_observation_template = row.copy()
+	# noinspection PyUnresolvedReferences
+	token_observation_template.drop(
+		game_utterances.SessionGameRoundUtteranceSequenceFactory.UTTERANCE_SEQUENCE_COL_NAME, inplace=True)
+	result = []
+	utts = row[game_utterances.SessionGameRoundUtteranceSequenceFactory.UTTERANCE_SEQUENCE_COL_NAME]
+	for utt in utts:
+		tokens = utt.content
+		for token in tokens:
+			# noinspection PyUnresolvedReferences
+			token_observation = token_observation_template.copy()
+			result.append((token, token_observation))
+	return result
 
 
 def create_token_type_row_idx_mapping(df: pd.DataFrame) -> TokenTypeRowIndexMapping:
@@ -201,18 +236,33 @@ def create_token_type_row_idx_mapping(df: pd.DataFrame) -> TokenTypeRowIndexMapp
 	return TokenTypeRowIndexMapping(token_type_row_idxs, dict(type_counts))
 
 
-def smooth(token_type_row_idxs: TokenTypeRowIndexMapping, smoothing_freq_cutoff: Integral):
+def smooth(token_type_training_insts: DefaultDict[str, MutableSequence[pd.Series]], smoothing_freq_cutoff: int,
+		   training_insts_per_observation: Decimal):
+	token_type_observation_counts = __token_type_observation_counts(token_type_training_insts,
+																	training_insts_per_observation)
 	smoothed_token_types = frozenset(
-		token_type for token_type, count in token_type_row_idxs.type_counts.items() if count < smoothing_freq_cutoff)
-	row_idxs = token_type_row_idxs.row_idxs
+		token_type for token_type, count in token_type_observation_counts if count < smoothing_freq_cutoff)
 	for token_type in smoothed_token_types:
-		inst_idxs = row_idxs[token_type]
-		del row_idxs[token_type]
-		row_idxs[OUT_OF_VOCABULARY_TOKEN_LABEL].extend(inst_idxs)
+		training_insts = token_type_training_insts[token_type]
+		del token_type_training_insts[token_type]
+		token_type_training_insts[OUT_OF_VOCABULARY_TOKEN_LABEL].extend(training_insts)
 
-	smoothed_row_idxs = row_idxs[OUT_OF_VOCABULARY_TOKEN_LABEL]
-	print("Token class(es) used for smoothing: {}; {} data point(s) used as out-of-vocabulary instance(s).".format(
+	smoothed_row_idxs = token_type_training_insts[OUT_OF_VOCABULARY_TOKEN_LABEL]
+	print("Token type(s) used for smoothing: {}; {} data point(s) used as out-of-vocabulary instance(s).".format(
 		smoothed_token_types, len(smoothed_row_idxs)), file=sys.stderr)
+
+
+def __token_type_observation_counts(token_type_training_insts: Mapping[str, Sequence[pd.Series]],
+									training_insts_per_observation: Decimal) -> Tuple[Tuple[str, int], ...]:
+	token_type_training_inst_counts = ((token, len(training_insts)) for (token, training_insts) in
+									   token_type_training_insts.items())
+	with localcontext() as ctx:
+		ctx.traps[Inexact] = True
+		result = tuple(
+			(token_type, int((Decimal(count) / training_insts_per_observation).to_integral_exact())) for
+			token_type, count in
+			token_type_training_inst_counts)
+	return result
 
 
 def __create_argparser() -> argparse.ArgumentParser:
