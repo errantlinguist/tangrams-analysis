@@ -9,6 +9,7 @@ from decimal import Decimal, Inexact, localcontext
 from numbers import Integral
 from typing import Callable, Iterable, Iterator, Mapping, Sequence, Tuple
 
+import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 
@@ -145,15 +146,17 @@ class CrossValidator(object):
 			print("Testing classifier for \"{}\".".format(token_class), file=sys.stderr)
 			classifier = word_models.get(token_class, oov_model)
 			testing_insts = (testing_df.loc[inst_idx] for inst_idx in testing_inst_idxs)
-			#assert (len(testing_insts) == len(testing_inst_idxs))
-			testing_x, testing_y = self.__split_dependent_independent_vars(pd.DataFrame(testing_insts), dependent_var_cols)
+			# assert (len(testing_insts) == len(testing_inst_idxs))
+			testing_x, testing_y = self.__split_dependent_independent_vars(pd.DataFrame(testing_insts),
+																		   dependent_var_cols)
 			# testing_x.to_csv("/home/tshore/Downloads/testingoutput_{}.tsv".format(token_class), sep='\t',
 			#				 encoding="utf-8", index_label="Index")
 			# print(len(testing_x))
 			# print(testing_x)
 			decision_probs = classifier.predict_proba(testing_x)
 			# decision_probs = classifier.predict_log_proba(testing_x)
-			print(decision_probs)
+			true_class_idx = np.where(classifier.classes_ == True)[0]
+			print(decision_probs[:, true_class_idx])
 
 	def __train_models(self, token_type_row_idxs: Iterable[
 		Tuple[str, Sequence[Integral]]], training_df: pd.DataFrame):
@@ -162,8 +165,9 @@ class CrossValidator(object):
 		word_models = {}
 		for (token_class, training_inst_idxs) in token_type_row_idxs.items():
 			training_insts = (training_df.loc[training_inst_idx] for training_inst_idx in training_inst_idxs)
-			#print(training_insts)
-			training_x, training_y = self.__split_dependent_independent_vars(pd.DataFrame(training_insts), dependent_var_cols)
+			# print(training_insts)
+			training_x, training_y = self.__split_dependent_independent_vars(pd.DataFrame(training_insts),
+																			 dependent_var_cols)
 			model = LogisticRegression()
 			model.fit(training_x, training_y)
 			word_models[token_class] = model
