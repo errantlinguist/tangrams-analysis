@@ -157,23 +157,23 @@ class CrossValidator(object):
 		oov_model = word_models[OUT_OF_VOCABULARY_TOKEN_LABEL]
 		# 2D array for entity description * word classification probabilities
 		last_idx = testing_df[self.ORIGINAL_INDEX_COL_NAME].max()
-		word_classification_probs = np.zeros((last_idx + 1, len(token_type_testing_insts)))
+		decision_class_probs = defaultdict(lambda: np.zeros((last_idx + 1, len(token_type_testing_insts))))
 		for col_idx, (token_class, testing_insts) in enumerate(token_type_testing_insts.items()):
-			print("Testing classifier for token type \"{}\".".format(token_class), file=sys.stderr)
+			#print("Testing classifier for token type \"{}\".".format(token_class), file=sys.stderr)
 			classifier = word_models.get(token_class, oov_model)
 			testing_inst_df = pd.DataFrame(testing_insts)
 			testing_x = testing_inst_df.loc[:, dependent_var_cols]
 			testing_y = testing_inst_df.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
 			orig_idxs = testing_inst_df.loc[:, self.ORIGINAL_INDEX_COL_NAME]
 
-			# decision_probs = classifier.predict_proba(testing_x)
 			decision_probs = classifier.predict_log_proba(testing_x)
-			true_class_idx = np.where(classifier.classes_ == True)[0]
-			truth_decision_probs = decision_probs[:, true_class_idx]
-			# print(truth_decision_probs)
-			for orig_idx, truth_decision_prob in zip(orig_idxs, truth_decision_probs):
-				word_classification_probs[orig_idx, col_idx] += truth_decision_prob
-		print(word_classification_probs)
+			for class_idx, decision_class in enumerate(classifier.classes_):
+				all_probs_for_class = decision_class_probs[decision_class]
+				class_decision_probs = decision_probs[:, class_idx]
+				for orig_idx, truth_decision_prob in zip(orig_idxs, class_decision_probs):
+					all_probs_for_class[orig_idx, col_idx] += truth_decision_prob
+		for decision_class, probs in decision_class_probs.items():
+			print("Probs for class {}: {}".format(decision_class, probs))
 
 	def __train_models(self, token_type_training_insts: Mapping[str, Iterable[pd.Series]],
 					   dependent_var_cols: Sequence[str]):
