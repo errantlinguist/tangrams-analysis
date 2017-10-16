@@ -4,7 +4,7 @@ import argparse
 import itertools
 import re
 import sys
-from collections import Counter, defaultdict, namedtuple
+from collections import defaultdict, namedtuple
 from decimal import Decimal, Inexact, localcontext
 from typing import Callable, DefaultDict, Iterable, Iterator, List, Mapping, MutableSequence, Sequence, Tuple
 
@@ -17,7 +17,6 @@ import session_data as sd
 import utterances
 
 CrossValidationDataFrames = namedtuple("CrossValidationDataFrames", ("training", "testing"))
-TokenTypeRowIndexMapping = namedtuple("TokenTypeRowIndexMapping", ("row_idxs", "type_counts"))
 
 
 def __create_regex_disjunction(regexes: Iterable[str]) -> str:
@@ -167,7 +166,7 @@ class CrossValidator(object):
 			testing_y = testing_inst_df.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
 			orig_idxs = testing_inst_df.loc[:, self.ORIGINAL_INDEX_COL_NAME]
 
-			#decision_probs = classifier.predict_proba(testing_x)
+			# decision_probs = classifier.predict_proba(testing_x)
 			decision_probs = classifier.predict_log_proba(testing_x)
 			true_class_idx = np.where(classifier.classes_ == True)[0]
 			truth_decision_probs = decision_probs[:, true_class_idx]
@@ -204,33 +203,6 @@ def create_token_observation_series(row: pd.Series) -> List[Tuple[str, pd.Series
 			token_observation = token_observation_template.copy()
 			result.append((token, token_observation))
 	return result
-
-
-def create_token_type_row_idx_mapping(df: pd.DataFrame) -> TokenTypeRowIndexMapping:
-	# df.to_csv("/home/tshore/Downloads/tokenrowidx.tsv", sep='\t', encoding="utf-8", index_label="Index")
-	# There should be an equivalent event for each unique entity in the game
-	observation_event_count = len(df["ENTITY"].unique())
-	token_type_row_idxs = defaultdict(list)
-	type_event_counts = Counter()
-	for row in df.itertuples():
-		# noinspection PyProtectedMember
-		row_dict = row._asdict()
-		idx = row.Index
-		utts = row_dict[game_utterances.SessionGameRoundUtteranceSequenceFactory.UTTERANCE_SEQUENCE_COL_NAME]
-		for utt in utts:
-			tokens = utt.content
-			for token in tokens:
-				token_type_row_idxs[token].append(idx)
-				type_event_counts[token] += 1
-
-	with localcontext() as ctx:
-		ctx.traps[Inexact] = True
-		type_counts = tuple(
-			(token_type, int((Decimal(count) / Decimal(observation_event_count)).to_integral_exact())) for
-			token_type, count in
-			type_event_counts.items())
-
-	return TokenTypeRowIndexMapping(token_type_row_idxs, dict(type_counts))
 
 
 def smooth(token_type_training_insts: DefaultDict[str, MutableSequence[pd.Series]], smoothing_freq_cutoff: int,
