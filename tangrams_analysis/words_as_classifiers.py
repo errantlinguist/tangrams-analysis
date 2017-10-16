@@ -167,13 +167,13 @@ class CrossValidator(object):
 			testing_y = testing_inst_df.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
 			orig_idxs = testing_inst_df.loc[:, self.ORIGINAL_INDEX_COL_NAME]
 
-			decision_probs = classifier.predict_proba(testing_x)
-			# decision_probs = classifier.predict_log_proba(testing_x)
+			#decision_probs = classifier.predict_proba(testing_x)
+			decision_probs = classifier.predict_log_proba(testing_x)
 			true_class_idx = np.where(classifier.classes_ == True)[0]
 			truth_decision_probs = decision_probs[:, true_class_idx]
 			# print(truth_decision_probs)
 			for orig_idx, truth_decision_prob in zip(orig_idxs, truth_decision_probs):
-				word_classification_probs[orig_idx, col_idx] = truth_decision_prob
+				word_classification_probs[orig_idx, col_idx] += truth_decision_prob
 		print(word_classification_probs)
 
 	def __train_models(self, token_type_training_insts: Mapping[str, Iterable[pd.Series]],
