@@ -157,9 +157,13 @@ class CrossValidator(object):
 		oov_model = word_models[OUT_OF_VOCABULARY_TOKEN_LABEL]
 		# 2D array for entity description * word classification probabilities
 		last_idx = testing_df[self.ORIGINAL_INDEX_COL_NAME].max()
-		decision_class_probs = defaultdict(lambda: np.zeros((last_idx + 1, len(token_type_testing_insts))))
+
+		decision_classes = tuple(sorted(
+			frozenset(decision_class for classifier in word_models.values() for decision_class in classifier.classes_)))
+		decision_class_idxs = dict((decision_class, idx) for (idx, decision_class) in enumerate(decision_classes))
+		decision_class_probs = np.zeros((last_idx + 1, len(token_type_testing_insts), len(decision_class_idxs)))
 		for col_idx, (token_class, testing_insts) in enumerate(token_type_testing_insts.items()):
-			#print("Testing classifier for token type \"{}\".".format(token_class), file=sys.stderr)
+			# print("Testing classifier for token type \"{}\".".format(token_class), file=sys.stderr)
 			classifier = word_models.get(token_class, oov_model)
 			testing_inst_df = pd.DataFrame(testing_insts)
 			testing_x = testing_inst_df.loc[:, dependent_var_cols]
@@ -168,12 +172,12 @@ class CrossValidator(object):
 
 			decision_probs = classifier.predict_log_proba(testing_x)
 			for class_idx, decision_class in enumerate(classifier.classes_):
-				all_probs_for_class = decision_class_probs[decision_class]
 				class_decision_probs = decision_probs[:, class_idx]
+				result_matrix_class_idx = decision_class_idxs[decision_class]
 				for orig_idx, truth_decision_prob in zip(orig_idxs, class_decision_probs):
-					all_probs_for_class[orig_idx, col_idx] += truth_decision_prob
-		for decision_class, probs in decision_class_probs.items():
-			print("Probs for class {}: {}".format(decision_class, probs))
+					decision_class_probs[orig_idx, col_idx, result_matrix_class_idx] += truth_decision_prob
+
+		print(decision_class_probs)
 
 	def __train_models(self, token_type_training_insts: Mapping[str, Iterable[pd.Series]],
 					   dependent_var_cols: Sequence[str]):
