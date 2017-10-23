@@ -6,7 +6,8 @@ import re
 import sys
 from collections import defaultdict, namedtuple
 from decimal import Decimal, Inexact, localcontext
-from typing import Callable, DefaultDict, Dict, Iterable, Iterator, List, Mapping, MutableSequence, Sequence, Tuple
+from typing import Callable, DefaultDict, Dict, Iterable, Iterator, List, Mapping, MutableMapping, MutableSequence, \
+	Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -28,6 +29,7 @@ DEPENDENT_VARIABLE_COL_NAME_PATTERN = re.compile(__create_regex_disjunction(
 INDEPENDENT_VARIABLE_COL_NAME = "REFERENT"
 
 DYAD_ID_COL_NAME = "DYAD"
+ORIGINAL_INDEX_COL_NAME = "OriginalIndex"
 OUT_OF_VOCABULARY_TOKEN_LABEL = "__OUT_OF_VOCABULARY__"
 '''
 See T. Shore and G. Skantze. 2017. "Enhancing reference resolution in dialogue using participant feedback." Grounding Language Understanding 2017
@@ -116,33 +118,6 @@ class CrossValidationDataFrameFactory(object):
 
 
 class CrossValidator(object):
-	ORIGINAL_INDEX_COL_NAME = "OriginalIndex"
-
-	@classmethod
-	def __create_token_type_insts(cls, df: pd.DataFrame) -> DefaultDict[str, List[pd.Series]]:
-		df.loc[:, cls.ORIGINAL_INDEX_COL_NAME] = df.index
-		token_insts = (token_training_inst for row_training_inst_set in
-					   df.apply(create_token_observation_series, axis=1) for token_training_inst in
-					   row_training_inst_set)
-		result = defaultdict(list)
-		for token, inst in token_insts:
-			result[token].append(inst)
-		# NOTE: simple lists of Series objects are returned rather than complete DataFrame objects so that e.g. the different token types can be smoothed before creating a DataFrame for use in training/classification
-		return result
-
-	@staticmethod
-	def __train_models(token_type_training_insts: Mapping[str, Iterable[pd.Series]],
-					   dependent_var_cols: Sequence[str]) -> Dict[str, LogisticRegression]:
-		word_models = {}
-		for (token_type, training_insts) in token_type_training_insts.items():
-			training_inst_df = pd.DataFrame(training_insts)
-			# print(training_inst_df)
-			training_x = training_inst_df.loc[:, dependent_var_cols]
-			training_y = training_inst_df.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
-			model = LogisticRegression()
-			model.fit(training_x, training_y)
-			word_models[token_type] = model
-		return word_models
 
 	def __init__(self, smoothing_freq_cutoff: int):
 		# self.parallelizer = parallelizer
@@ -150,27 +125,23 @@ class CrossValidator(object):
 
 	def __call__(self, cross_validation_df: CrossValidationDataFrames):
 		training_df = cross_validation_df.training
-		print("Training using a total of {} dataframe row(s).".format(len(training_df)), file=sys.stderr)
-
-		token_type_training_insts = self.__create_token_type_insts(training_df)
-		print("Created training datasets for {} token type(s).".format(len(token_type_training_insts)),
-			  file=sys.stderr)
-		training_insts_per_observation = Decimal(len(training_df[game_utterances.EventColumn.ENTITY_ID.value].unique()))
-		smooth(token_type_training_insts, self.smoothing_freq_cutoff, training_insts_per_observation)
 		dependent_var_cols = tuple(
 			col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
-		word_models = self.__train_models(token_type_training_insts, dependent_var_cols)
+		training_insts_per_observation = Decimal(len(training_df[game_utterances.EventColumn.ENTITY_ID.value].unique()))
+		word_model_trainer = WordModelTrainer(dependent_var_cols, INDEPENDENT_VARIABLE_COL_NAME, lambda token_type_training_insts : smooth(token_type_training_insts, self.smoothing_freq_cutoff, training_insts_per_observation))
+		print("Training using a total of {} dataframe row(s).".format(len(training_df)), file=sys.stderr)
+		word_models = word_model_trainer(training_df)
 		print("Trained models for {} token type(s).".format(len(word_models)),
 			  file=sys.stderr)
 
 		testing_df = cross_validation_df.testing
 		print("Testing using a total of {} dataframe row(s).".format(len(testing_df)), file=sys.stderr)
-		token_type_testing_insts = self.__create_token_type_insts(testing_df)
+		token_type_testing_insts = create_token_type_insts(testing_df)
 		print("Created testing datasets for {} token type(s).".format(len(token_type_testing_insts)),
 			  file=sys.stderr)
 		oov_model = word_models[OUT_OF_VOCABULARY_TOKEN_LABEL]
 		# 2D array for entity description * word classification probabilities
-		last_idx = testing_df[self.ORIGINAL_INDEX_COL_NAME].max()
+		last_idx = testing_df[ORIGINAL_INDEX_COL_NAME].max()
 
 		decision_classes = tuple(sorted(
 			frozenset(decision_class for classifier in word_models.values() for decision_class in classifier.classes_)))
@@ -182,7 +153,7 @@ class CrossValidator(object):
 			testing_inst_df = pd.DataFrame(testing_insts)
 			testing_x = testing_inst_df.loc[:, dependent_var_cols]
 			testing_y = testing_inst_df.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
-			orig_idxs = testing_inst_df.loc[:, self.ORIGINAL_INDEX_COL_NAME]
+			orig_idxs = testing_inst_df.loc[:, ORIGINAL_INDEX_COL_NAME]
 
 			decision_probs = classifier.predict_log_proba(testing_x)
 			for class_idx, decision_class in enumerate(classifier.classes_):
@@ -192,6 +163,33 @@ class CrossValidator(object):
 					decision_class_probs[orig_idx, col_idx, result_matrix_class_idx] += truth_decision_prob
 
 		print(decision_class_probs)
+
+class WordModelTrainer(object):
+
+	def __init__(self, dependent_var_cols  : Sequence[str], independent_var_cols : Sequence[str], smoother : Callable[[MutableMapping[str, MutableSequence[pd.Series]]], None]):
+		self.dependent_var_cols = dependent_var_cols
+		self.independent_var_cols = independent_var_cols
+		self.smoother = smoother
+
+	def __call__(self, training_df : pd.DataFrame):
+		print("Training using a total of {} dataframe row(s).".format(len(training_df)), file=sys.stderr)
+		token_type_training_insts = create_token_type_insts(training_df)
+		print("Created training datasets for {} token type(s).".format(len(token_type_training_insts)),
+			  file=sys.stderr)
+		self.smoother(token_type_training_insts)
+		return self.__train_models(token_type_training_insts)
+
+	def __train_models(self, token_type_training_insts: Mapping[str, Iterable[pd.Series]]) -> Dict[str, LogisticRegression]:
+		word_models = {}
+		for (token_type, training_insts) in token_type_training_insts.items():
+			training_inst_df = pd.DataFrame(training_insts)
+			# print(training_inst_df)
+			training_x = training_inst_df.loc[:, self.dependent_var_cols]
+			training_y = training_inst_df.loc[:, self.independent_var_cols]
+			model = LogisticRegression()
+			model.fit(training_x, training_y)
+			word_models[token_type] = model
+		return word_models
 
 
 def create_token_observation_series(row: pd.Series) -> List[Tuple[str, pd.Series]]:
@@ -207,6 +205,19 @@ def create_token_observation_series(row: pd.Series) -> List[Tuple[str, pd.Series
 			# noinspection PyUnresolvedReferences
 			token_observation = token_observation_template.copy()
 			result.append((token, token_observation))
+	return result
+
+
+
+def create_token_type_insts(df: pd.DataFrame) -> DefaultDict[str, List[pd.Series]]:
+	df.loc[:, ORIGINAL_INDEX_COL_NAME] = df.index
+	token_insts = (token_training_inst for row_training_inst_set in
+				   df.apply(create_token_observation_series, axis=1) for token_training_inst in
+				   row_training_inst_set)
+	result = defaultdict(list)
+	for token, inst in token_insts:
+		result[token].append(inst)
+	# NOTE: simple lists of Series objects are returned rather than complete DataFrame objects so that e.g. the different token types can be smoothed before creating a DataFrame for use in training/classification
 	return result
 
 
