@@ -39,7 +39,7 @@ DEFAULT_TOKEN_CLASS_SMOOTHING_FREQ_CUTOFF = 4
 CATEGORICAL_VAR_COL_NAMES = ("SHAPE", "SUBMITTER")
 # NOTE: For some reason, "pandas.get_dummies(..., columns=[col_name_1,...])" works with list objects but not with tuples
 CATEGORICAL_DEPENDENT_VAR_COL_NAMES = ["SHAPE"]
-assert all(x in CATEGORICAL_VAR_COL_NAMES for x in CATEGORICAL_DEPENDENT_VAR_COL_NAMES)
+assert all(col_name in CATEGORICAL_VAR_COL_NAMES for col_name in CATEGORICAL_DEPENDENT_VAR_COL_NAMES)
 
 
 class CachingSessionDataFrameFactory(object):
