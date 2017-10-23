@@ -95,8 +95,7 @@ class SessionGameRoundUtteranceSequenceFactory(object):
 		# Ensure the chronologically-first events are chosen (should be unimportant because there should be only one turn submission event per round)
 		round_first_turn_submission_events = round_time_turn_submission_events.apply(self.__first_events)
 
-		segments = utterances.read_segments(session.utts)
-		utts = tuple(seg_utt_factory(segments))
+		utts = tuple(seg_utt_factory(utterances.read_segments(session.utts)))
 		round_utt_seq_factory = GameRoundUtteranceSequenceFactory(round_first_turn_submission_events, utts)
 		round_first_turn_submission_events.loc[:,
 		self.UTTERANCE_SEQUENCE_COL_NAME] = round_first_turn_submission_events.apply(round_utt_seq_factory, axis=1)
