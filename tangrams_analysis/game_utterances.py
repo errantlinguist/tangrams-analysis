@@ -1,4 +1,3 @@
-import itertools
 from enum import Enum, unique
 from numbers import Integral, Number
 from string import ascii_uppercase
@@ -105,7 +104,8 @@ class SessionGameRoundUtteranceSequenceFactory(object):
 		round_first_turn_submission_events.loc[:,
 		self.UTTERANCE_SEQUENCE_COL_NAME] = round_first_turn_submission_events.apply(round_utt_seq_factory, axis=1)
 
-		round_first_turn_submission_events.drop([EventColumn.EVENT_ID.value, EventColumn.EVENT_NAME.value, "SELECTED"], 1,
+		round_first_turn_submission_events.drop([EventColumn.EVENT_ID.value, EventColumn.EVENT_NAME.value, "SELECTED"],
+												1,
 												inplace=True)
 		# Assert that all entities are represented in each round's set of events
 		assert len(round_first_turn_submission_events) % len(
