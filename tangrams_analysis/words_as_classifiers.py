@@ -221,7 +221,7 @@ def create_token_type_insts(df: pd.DataFrame) -> DefaultDict[str, List[pd.Series
 	return result
 
 
-def smooth(token_type_training_insts: DefaultDict[str, MutableSequence[pd.Series]], smoothing_freq_cutoff: int,
+def smooth(token_type_training_insts: MutableMapping[str, MutableSequence[pd.Series]], smoothing_freq_cutoff: int,
 		   training_insts_per_observation: Decimal):
 	observation_counts = token_type_observation_counts(token_type_training_insts,
 																	training_insts_per_observation)
@@ -230,7 +230,12 @@ def smooth(token_type_training_insts: DefaultDict[str, MutableSequence[pd.Series
 	for token_type in smoothed_token_types:
 		training_insts = token_type_training_insts[token_type]
 		del token_type_training_insts[token_type]
-		token_type_training_insts[OUT_OF_VOCABULARY_TOKEN_LABEL].extend(training_insts)
+		try:
+			oov_instances = token_type_training_insts[OUT_OF_VOCABULARY_TOKEN_LABEL]
+		except KeyError:
+			oov_instances = []
+			
+		oov_instances.extend(training_insts)
 
 	smoothed_row_idxs = token_type_training_insts[OUT_OF_VOCABULARY_TOKEN_LABEL]
 	print("Token type(s) used for smoothing: {}; {} data point(s) used as out-of-vocabulary instance(s).".format(
