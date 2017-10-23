@@ -223,10 +223,10 @@ def create_token_type_insts(df: pd.DataFrame) -> DefaultDict[str, List[pd.Series
 
 def smooth(token_type_training_insts: DefaultDict[str, MutableSequence[pd.Series]], smoothing_freq_cutoff: int,
 		   training_insts_per_observation: Decimal):
-	token_type_observation_counts = __token_type_observation_counts(token_type_training_insts,
+	observation_counts = token_type_observation_counts(token_type_training_insts,
 																	training_insts_per_observation)
 	smoothed_token_types = frozenset(
-		token_type for token_type, count in token_type_observation_counts if count < smoothing_freq_cutoff)
+		token_type for token_type, count in observation_counts if count < smoothing_freq_cutoff)
 	for token_type in smoothed_token_types:
 		training_insts = token_type_training_insts[token_type]
 		del token_type_training_insts[token_type]
@@ -237,7 +237,7 @@ def smooth(token_type_training_insts: DefaultDict[str, MutableSequence[pd.Series
 		smoothed_token_types, len(smoothed_row_idxs)), file=sys.stderr)
 
 
-def __token_type_observation_counts(token_type_training_insts: Mapping[str, Sequence[pd.Series]],
+def token_type_observation_counts(token_type_training_insts: Mapping[str, Sequence[pd.Series]],
 									training_insts_per_observation: Decimal) -> Tuple[Tuple[str, int], ...]:
 	token_type_training_inst_counts = ((token, len(training_insts)) for (token, training_insts) in
 									   token_type_training_insts.items())
