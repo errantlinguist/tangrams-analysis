@@ -30,7 +30,7 @@ class GameRoundUtteranceSequenceFactory(object):
 		self.utts = utts
 		self.cache = {}
 
-	def __call__(self, row: pd.Series):
+	def __call__(self, row: pd.Series) -> Tuple[utterances.Utterance]:
 		round_id = row[EventColumn.ROUND_ID.value]
 		try:
 			result = self.cache[round_id]
