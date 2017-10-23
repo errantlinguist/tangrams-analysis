@@ -6,7 +6,7 @@ import re
 import sys
 from collections import defaultdict, namedtuple
 from decimal import Decimal, Inexact, localcontext
-from typing import Callable, DefaultDict, Iterable, Iterator, List, Mapping, MutableSequence, Sequence, Tuple
+from typing import Callable, DefaultDict, Dict, Iterable, Iterator, List, Mapping, MutableSequence, Sequence, Tuple
 
 import numpy as np
 import pandas as pd
@@ -130,6 +130,20 @@ class CrossValidator(object):
 		# NOTE: simple lists of Series objects are returned rather than complete DataFrame objects so that e.g. the different token types can be smoothed before creating a DataFrame for use in training/classification
 		return result
 
+	@staticmethod
+	def __train_models(token_type_training_insts: Mapping[str, Iterable[pd.Series]],
+					   dependent_var_cols: Sequence[str]) -> Dict[str, LogisticRegression]:
+		word_models = {}
+		for (token_type, training_insts) in token_type_training_insts.items():
+			training_inst_df = pd.DataFrame(training_insts)
+			# print(training_inst_df)
+			training_x = training_inst_df.loc[:, dependent_var_cols]
+			training_y = training_inst_df.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
+			model = LogisticRegression()
+			model.fit(training_x, training_y)
+			word_models[token_type] = model
+		return word_models
+
 	def __init__(self, smoothing_freq_cutoff: int):
 		# self.parallelizer = parallelizer
 		self.smoothing_freq_cutoff = smoothing_freq_cutoff
@@ -178,19 +192,6 @@ class CrossValidator(object):
 					decision_class_probs[orig_idx, col_idx, result_matrix_class_idx] += truth_decision_prob
 
 		print(decision_class_probs)
-
-	def __train_models(self, token_type_training_insts: Mapping[str, Iterable[pd.Series]],
-					   dependent_var_cols: Sequence[str]):
-		word_models = {}
-		for (token_type, training_insts) in token_type_training_insts.items():
-			training_inst_df = pd.DataFrame(training_insts)
-			# print(training_inst_df)
-			training_x = training_inst_df.loc[:, dependent_var_cols]
-			training_y = training_inst_df.loc[:, INDEPENDENT_VARIABLE_COL_NAME]
-			model = LogisticRegression()
-			model.fit(training_x, training_y)
-			word_models[token_type] = model
-		return word_models
 
 
 def create_token_observation_series(row: pd.Series) -> List[Tuple[str, pd.Series]]:
