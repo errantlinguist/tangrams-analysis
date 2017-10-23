@@ -99,8 +99,6 @@ class SessionGameRoundUtteranceSequenceFactory(object):
 		# Find the utterances made for each event
 		round_first_turn_submission_event_times = round_first_turn_submission_events.loc[:,
 												  EventColumn.EVENT_TIME.value]
-		round_first_turn_submission_event_end_times = itertools.chain(
-			(value for idx, value in round_first_turn_submission_event_times.iteritems()), (np.inf,))
 		segments = utterances.read_segments(session.utts)
 		utts = tuple(seg_utt_factory(segments))
 		round_utt_seq_factory = GameRoundUtteranceSequenceFactory(round_first_turn_submission_events, utts)
