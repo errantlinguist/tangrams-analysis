@@ -171,7 +171,7 @@ class WordModelTrainer(object):
 		self.independent_var_cols = independent_var_cols
 		self.smoother = smoother
 
-	def __call__(self, training_df : pd.DataFrame):
+	def __call__(self, training_df : pd.DataFrame) -> Dict[str, LogisticRegression]:
 		print("Training using a total of {} dataframe row(s).".format(len(training_df)), file=sys.stderr)
 		token_type_training_insts = create_token_type_insts(training_df)
 		print("Created training datasets for {} token type(s).".format(len(token_type_training_insts)),
