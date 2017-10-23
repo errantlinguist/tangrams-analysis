@@ -118,7 +118,6 @@ class CrossValidationDataFrameFactory(object):
 
 
 class CrossValidator(object):
-
 	def __init__(self, smoothing_freq_cutoff: int):
 		# self.parallelizer = parallelizer
 		self.smoothing_freq_cutoff = smoothing_freq_cutoff
@@ -128,7 +127,10 @@ class CrossValidator(object):
 		dependent_var_cols = tuple(
 			col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
 		training_insts_per_observation = Decimal(len(training_df[game_utterances.EventColumn.ENTITY_ID.value].unique()))
-		word_model_trainer = WordModelTrainer(dependent_var_cols, INDEPENDENT_VARIABLE_COL_NAME, lambda token_type_training_insts : smooth(token_type_training_insts, self.smoothing_freq_cutoff, training_insts_per_observation))
+		word_model_trainer = WordModelTrainer(dependent_var_cols, INDEPENDENT_VARIABLE_COL_NAME,
+											  lambda token_type_training_insts: smooth(token_type_training_insts,
+																					   self.smoothing_freq_cutoff,
+																					   training_insts_per_observation))
 		print("Training using a total of {} dataframe row(s).".format(len(training_df)), file=sys.stderr)
 		word_models = word_model_trainer(training_df)
 		print("Trained models for {} token type(s).".format(len(word_models)),
@@ -164,14 +166,15 @@ class CrossValidator(object):
 
 		print(decision_class_probs)
 
-class WordModelTrainer(object):
 
-	def __init__(self, dependent_var_cols  : Sequence[str], independent_var_cols : Sequence[str], smoother : Callable[[MutableMapping[str, MutableSequence[pd.Series]]], None]):
+class WordModelTrainer(object):
+	def __init__(self, dependent_var_cols: Sequence[str], independent_var_cols: Sequence[str],
+				 smoother: Callable[[MutableMapping[str, MutableSequence[pd.Series]]], None]):
 		self.dependent_var_cols = dependent_var_cols
 		self.independent_var_cols = independent_var_cols
 		self.smoother = smoother
 
-	def __call__(self, training_df : pd.DataFrame) -> Dict[str, LogisticRegression]:
+	def __call__(self, training_df: pd.DataFrame) -> Dict[str, LogisticRegression]:
 		print("Training using a total of {} dataframe row(s).".format(len(training_df)), file=sys.stderr)
 		token_type_training_insts = create_token_type_insts(training_df)
 		print("Created training datasets for {} token type(s).".format(len(token_type_training_insts)),
@@ -179,7 +182,8 @@ class WordModelTrainer(object):
 		self.smoother(token_type_training_insts)
 		return self.__train_models(token_type_training_insts)
 
-	def __train_models(self, token_type_training_insts: Mapping[str, Iterable[pd.Series]]) -> Dict[str, LogisticRegression]:
+	def __train_models(self, token_type_training_insts: Mapping[str, Iterable[pd.Series]]) -> Dict[
+		str, LogisticRegression]:
 		word_models = {}
 		for (token_type, training_insts) in token_type_training_insts.items():
 			training_inst_df = pd.DataFrame(training_insts)
@@ -208,7 +212,6 @@ def create_token_observation_series(row: pd.Series) -> List[Tuple[str, pd.Series
 	return result
 
 
-
 def create_token_type_insts(df: pd.DataFrame) -> DefaultDict[str, List[pd.Series]]:
 	df.loc[:, ORIGINAL_INDEX_COL_NAME] = df.index
 	token_insts = (token_training_inst for row_training_inst_set in
@@ -224,7 +227,7 @@ def create_token_type_insts(df: pd.DataFrame) -> DefaultDict[str, List[pd.Series
 def smooth(token_type_training_insts: MutableMapping[str, MutableSequence[pd.Series]], smoothing_freq_cutoff: int,
 		   training_insts_per_observation: Decimal):
 	observation_counts = token_type_observation_counts(token_type_training_insts,
-																	training_insts_per_observation)
+													   training_insts_per_observation)
 	smoothed_token_types = frozenset(
 		token_type for token_type, count in observation_counts if count < smoothing_freq_cutoff)
 	for token_type in smoothed_token_types:
@@ -234,7 +237,7 @@ def smooth(token_type_training_insts: MutableMapping[str, MutableSequence[pd.Ser
 			oov_instances = token_type_training_insts[OUT_OF_VOCABULARY_TOKEN_LABEL]
 		except KeyError:
 			oov_instances = []
-			
+
 		oov_instances.extend(training_insts)
 
 	smoothed_row_idxs = token_type_training_insts[OUT_OF_VOCABULARY_TOKEN_LABEL]
@@ -243,7 +246,7 @@ def smooth(token_type_training_insts: MutableMapping[str, MutableSequence[pd.Ser
 
 
 def token_type_observation_counts(token_type_training_insts: Mapping[str, Sequence[pd.Series]],
-									training_insts_per_observation: Decimal) -> Tuple[Tuple[str, int], ...]:
+								  training_insts_per_observation: Decimal) -> Tuple[Tuple[str, int], ...]:
 	token_type_training_inst_counts = ((token, len(training_insts)) for (token, training_insts) in
 									   token_type_training_insts.items())
 	with localcontext() as ctx:
