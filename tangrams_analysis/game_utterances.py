@@ -18,6 +18,7 @@ N = TypeVar('N', bound=Number)
 class EventColumn(Enum):
 	DYAD_ID = "DYAD"
 	ENTITY_ID = "ENTITY"
+	ENTITY_SHAPE = "SHAPE"
 	EVENT_ID = "EVENT"
 	EVENT_NAME = "NAME"
 	EVENT_SUBMITTER = "SUBMITTER"

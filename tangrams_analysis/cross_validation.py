@@ -7,9 +7,9 @@ import pandas as pd
 import game_utterances
 import session_data as sd
 
-CATEGORICAL_VAR_COL_NAMES = ("SHAPE", "SUBMITTER")
+CATEGORICAL_VAR_COL_NAMES = (game_utterances.EventColumn.ENTITY_SHAPE.value, game_utterances.EventColumn.EVENT_SUBMITTER.value)
 # NOTE: For some reason, "pandas.get_dummies(..., columns=[col_name_1,...])" works with list objects but not with tuples
-CATEGORICAL_DEPENDENT_VAR_COL_NAMES = ["SHAPE"]
+CATEGORICAL_DEPENDENT_VAR_COL_NAMES = [game_utterances.EventColumn.ENTITY_SHAPE.value]
 assert all(col_name in CATEGORICAL_VAR_COL_NAMES for col_name in CATEGORICAL_DEPENDENT_VAR_COL_NAMES)
 
 CrossValidationDataFrames = namedtuple("CrossValidationDataFrames", ("training", "testing"))
