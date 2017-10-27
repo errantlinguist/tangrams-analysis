@@ -16,6 +16,7 @@ N = TypeVar('N', bound=Number)
 
 @unique
 class EventColumn(Enum):
+	DYAD_ID = "DYAD"
 	ENTITY_ID = "ENTITY"
 	EVENT_ID = "EVENT"
 	EVENT_NAME = "NAME"
