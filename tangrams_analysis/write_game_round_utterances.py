@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 
 import argparse
+import csv
 import sys
 from typing import Callable
 
@@ -38,7 +39,7 @@ def __main(args):
 		in
 		infile_session_data)
 	# noinspection PyUnresolvedReferences
-	session_df.to_csv(sys.stdout, sep='\t', encoding="utf-8", index_label="Index")
+	session_df.to_csv(sys.stdout, sep=csv.excel_tab.delimiter, encoding="utf-8", index_label="Index")
 
 
 if __name__ == "__main__":
