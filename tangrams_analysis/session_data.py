@@ -9,7 +9,7 @@ import pandas as pd
 DECIMAL_VALUE_TYPE = Decimal
 ENCODING = 'utf-8'
 
-_EVENT_FILE_DTYPES = {"SHAPE": "category", "SPEAKER" : "category", "SUBMITTER": "category", "TOKEN" : "category"}
+_EVENT_FILE_DTYPES = {"SHAPE": "category", "SPEAKER": "category", "SUBMITTER": "category", "TOKEN": "category"}
 
 
 @unique
@@ -63,18 +63,19 @@ class SessionData(object):
 		return self.__class__.__name__ + str(self.__dict__)
 
 	def read_events(self) -> pd.DataFrame:
-		return pd.read_csv(self.events, sep=csv.excel_tab.delimiter, dialect=csv.excel_tab, float_precision="round_trip",
+		return pd.read_csv(self.events, sep=csv.excel_tab.delimiter, dialect=csv.excel_tab,
+						   float_precision="round_trip",
 						   encoding=ENCODING, memory_map=True, dtype=_EVENT_FILE_DTYPES)
 
 	def read_events_metadata(self) -> Dict[str, str]:
 		with open(self.events_metadata, 'r', encoding=ENCODING) as infile:
-			rows = csv.reader(infile, dialect="excel-tab")
+			rows = csv.reader(infile, dialect=csv.excel_tab)
 			return dict(rows)
 
 	def read_participant_metadata(self) -> Dict[str, Dict[str, str]]:
 		result = {}
 		with open(self.participant_metadata, 'r', encoding=ENCODING) as infile:
-			rows = csv.reader(infile, dialect="excel-tab")
+			rows = csv.reader(infile, dialect=csv.excel_tab)
 			headed_rows = dict((row[0], row[1:]) for row in rows)
 		participant_ids = headed_rows[ParticipantMetadataRow.PARTICIPANT_ID.value]
 		participant_id_idxs = tuple((participant_id, idx) for (idx, participant_id) in enumerate(participant_ids))
