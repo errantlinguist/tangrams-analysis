@@ -1,4 +1,5 @@
 lxml
 numpy
 pandas
+python-dateutil
 sklearn
