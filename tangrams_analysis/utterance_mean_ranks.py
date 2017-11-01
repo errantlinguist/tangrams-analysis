@@ -1,20 +1,14 @@
 #!/usr/bin/env python3
 
 import argparse
-import csv
 import sys
 
-import pandas as pd
-
-import iristk
+import cross_validation
 import game_utterances
-import utterances
 import session_data as sd
+import utterances
 
 DEFAULT_EXTRACTION_FILE_SUFFIX = ".extraction.tsv"
-ENCODING = 'utf-8'
-
-INPUT_DTYPES = {"Cleaning.DISFLUENCIES": bool, "Cleaning.DUPLICATES": bool, "Cleaning.FILLERS": bool}
 
 
 def __create_argparser() -> argparse.ArgumentParser:
@@ -34,23 +28,18 @@ def __main(args):
 	print("Looking for session data underneath {}.".format(inpaths), file=sys.stderr)
 	infile_session_data = tuple(sorted(sd.walk_session_data(inpaths), key=lambda item: item[0]))
 	game_round_utt_factory = game_utterances.SessionGameRoundUtteranceSequenceFactory(
-			utterances.TokenSequenceFactory())
+		utterances.TokenSequenceFactory())
 	print("Mapping utterances to events from {} session(s).".format(len(infile_session_data)), file=sys.stderr)
 	for session_dir, session_data in infile_session_data:
 		session_df = game_round_utt_factory(session_data)
-		print(session_df)
+	# print(session_df)
 
 	results_file_inpath = args.results_file
 	print("Processing \"{}\".".format(results_file_inpath), file=sys.stderr)
-	cv_results = pd.read_csv(results_file_inpath, sep=csv.excel_tab.delimiter, dialect=csv.excel_tab, float_precision="round_trip",
-							 encoding=ENCODING, memory_map=True, parse_dates=["TIME", "EVENT_TIME"],
-							 date_parser=iristk.parse_timestamp,
-							 dtype=INPUT_DTYPES)
+	cv_results = cross_validation.read_results_file(results_file_inpath)
 	# print(cv_results.dtypes)
 	event_times = cv_results["EVENT_TIME"]
 	print(event_times)
-
-
 
 
 # print(event_times.transform(lambda val: type(val)))
