@@ -28,12 +28,12 @@ class CachingSessionDataFrameFactory(object):
 
 	def __call__(self, infile: str, session: sd.SessionData) -> pd.DataFrame:
 		try:
-			session_data_frame = self.cache[infile]
+			result = self.cache[infile]
 		except KeyError:
-			session_data_frame = self.session_data_frame_factory(session)
-			session_data_frame[game_utterances.EventColumn.DYAD_ID.value] = infile
-			self.cache[infile] = session_data_frame
-		return session_data_frame
+			result = self.session_data_frame_factory(session)
+			result[game_utterances.EventColumn.DYAD_ID.value] = infile
+			self.cache[infile] = result
+		return result
 
 
 class CrossValidationData(object):
