@@ -42,6 +42,15 @@ def normalize_result_dyad_paths(cv_results: pd.DataFrame):
 		game_utterances.EventColumn.DYAD_ID.value].transform(os.path.dirname)
 
 
+def normalize_session_paths(all_session_data: pd.DataFrame):
+	common_session_path = os.path.commonpath(
+		(path for path in all_session_data[game_utterances.EventColumn.DYAD_ID.value].unique()))
+	print("Common session path is \"{}\"; Removing from dyad IDs.".format(common_session_path), file=sys.stderr)
+	all_session_data[game_utterances.EventColumn.DYAD_ID.value] = all_session_data[
+		game_utterances.EventColumn.DYAD_ID.value].transform(
+		lambda dyad_id: remove_prefix(dyad_id, common_session_path))
+
+
 def remove_prefix(text: str, prefix: str) -> str:
 	# https://stackoverflow.com/a/16891418/1391325
 	return text[len(prefix):] if text.startswith(prefix) else text
@@ -76,12 +85,7 @@ def __main(args):
 		(create_session_df(session_dir, session_data, game_round_utt_factory) for session_dir, session_data in
 		 infile_session_data), copy=False)
 	print("Dataframe shape: {}".format(all_session_data.shape), file=sys.stderr)
-	common_session_path = os.path.commonpath(
-		(path for path in all_session_data[game_utterances.EventColumn.DYAD_ID.value].unique()))
-	print("Common session path is \"{}\"; Removing from dyad IDs.".format(common_session_path), file=sys.stderr)
-	all_session_data[game_utterances.EventColumn.DYAD_ID.value] = all_session_data[
-		game_utterances.EventColumn.DYAD_ID.value].transform(
-		lambda dyad_id: remove_prefix(dyad_id, common_session_path))
+	normalize_session_paths(all_session_data)
 	# print(all_session_data[game_utterances.EventColumn.DYAD_ID.value])
 
 	results_file_inpath = args.results_file
