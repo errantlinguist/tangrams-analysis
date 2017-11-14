@@ -5,6 +5,7 @@ Use with e.g. "find ~/Documents/Projects/Tangrams/Data/Derived/ -iname "*.tsv" -
 
 import argparse
 import csv
+import itertools
 import sys
 from typing import Dict
 
@@ -49,7 +50,9 @@ def __main(args):
 	print("Will read {} file(s).".format(len(inpaths)), file=sys.stderr)
 	utt_ref_lang = create_utterance_referring_token_map(*inpaths)
 	writer = csv.writer(sys.stdout, dialect=OUTPUT_CSV_DIALECT)
-	writer.writerows(sorted(utt_ref_lang.items(), key=lambda item: item[0]))
+	header = (UTTERANCE_COL_NAME, REFERRING_LANGUAGE_COL_NAME)
+	rows = itertools.chain((header,), (sorted(utt_ref_lang.items(), key=lambda item: item[0])))
+	writer.writerows(rows)
 
 
 if __name__ == "__main__":
