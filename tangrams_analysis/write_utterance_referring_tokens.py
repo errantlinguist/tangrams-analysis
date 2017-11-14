@@ -8,8 +8,8 @@ import csv
 import sys
 from typing import Dict
 
-ENCODING = "utf-8"
 INPUT_CSV_DIALECT = csv.excel_tab
+INPUT_ENCODING = "utf-8"
 OUTPUT_CSV_DIALECT = csv.excel_tab
 REFERRING_LANGUAGE_COL_NAME = "REFERRING_TOKENS"
 UTTERANCE_COL_NAME = "UTTERANCE"
@@ -18,7 +18,7 @@ UTTERANCE_COL_NAME = "UTTERANCE"
 def create_utterance_referring_token_map(*inpaths: str) -> Dict[str, str]:
 	result = {}
 	for inpath in inpaths:
-		with open(inpath, "r", encoding=ENCODING) as inf:
+		with open(inpath, "r", encoding=INPUT_ENCODING) as inf:
 			rows = csv.reader(inf, dialect=INPUT_CSV_DIALECT)
 			header_col_idxs = dict((col, idx) for (idx, col) in enumerate(next(rows)))
 			utt_col_idx = header_col_idxs[UTTERANCE_COL_NAME]
