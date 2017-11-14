@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-Use with e.g. find ~/Documents/Projects/Tangrams/Data/Derived/ -iname "*.tsv" -exec ./write_utterance_referring_tokens.py {} +
+Use with e.g. "find ~/Documents/Projects/Tangrams/Data/Derived/ -iname "*.tsv" -exec ./write_utterance_referring_tokens.py {} +"
 """
 
 import argparse
