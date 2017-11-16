@@ -38,7 +38,7 @@ def create_utterance_referring_token_map(*inpaths: str) -> Dict[str, str]:
 
 def __create_argparser() -> argparse.ArgumentParser:
 	result = argparse.ArgumentParser(
-		description="Finds all tabular utterance referring language files and creates a single map of unique utterances to the canonical referring tokens in that utterance.")
+		description="Reads tabular utterance files and creates a single map of unique utterances to the canonical referring tokens in that utterance.")
 	result.add_argument("inpaths", metavar="INPATH", nargs='+',
 						help="The files to process.")
 
