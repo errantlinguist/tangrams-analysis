@@ -8,6 +8,7 @@ import pandas as pd
 
 DECIMAL_VALUE_TYPE = Decimal
 ENCODING = 'utf-8'
+EVENTS_METADATA_CSV_DIALECT = csv.excel_tab
 
 _EVENT_FILE_DTYPES = {"SHAPE": "category", "SPEAKER": "category", "SUBMITTER": "category", "TOKEN": "category"}
 
@@ -69,7 +70,7 @@ class SessionData(object):
 
 	def read_events_metadata(self) -> Dict[str, str]:
 		with open(self.events_metadata, 'r', encoding=ENCODING) as infile:
-			rows = csv.reader(infile, dialect=csv.excel_tab)
+			rows = csv.reader(infile, dialect=EVENTS_METADATA_CSV_DIALECT)
 			return dict(rows)
 
 	def read_participant_metadata(self) -> Dict[str, Dict[str, str]]:
