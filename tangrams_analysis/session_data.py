@@ -10,7 +10,7 @@ DECIMAL_VALUE_TYPE = Decimal
 ENCODING = 'utf-8'
 EVENTS_METADATA_CSV_DIALECT = csv.excel_tab
 
-_EVENT_FILE_DTYPES = {"SHAPE": "category", "SPEAKER": "category", "SUBMITTER": "category", "TOKEN": "category"}
+_EVENT_FILE_DTYPES = {"SHAPE": "category", "SUBMITTER": "category", "TOKEN": "category"}
 
 
 @unique
