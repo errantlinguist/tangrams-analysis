@@ -1,5 +1,7 @@
 import datetime
 
+LOGFILE_ENCODING = "utf-8"
+
 
 def parse_timestamp(date_string: str) -> datetime.datetime:
 	"""""
