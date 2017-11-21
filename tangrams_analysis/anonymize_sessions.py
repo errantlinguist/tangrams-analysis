@@ -27,6 +27,8 @@ RegexReplacementFormatter = namedtuple("RegexReplacementFormatter", "format_str 
 
 @unique
 class ScreenshotFilenameFormatter(Enum):
+	GAME_START = RegexReplacementFormatter("game-start-{}-{}.png",
+										   re.compile("game-start-([^-]+)-([^\\.]+?).png"))
 	SELECTION = RegexReplacementFormatter("selection-piece-id{}-{}-{}.png",
 										  re.compile("selection-piece-id([^-]+)-([^-]+)-([^\\.]+?).png"))
 	TURN = RegexReplacementFormatter("turn-{}-{}-{}.png",
@@ -37,8 +39,10 @@ class SessionAnonymizer(object):
 	def __init__(self, initial_player_id: str):
 		self.initial_player_id = initial_player_id
 		self.screenshot_format_funcs = {
+			ScreenshotFilenameFormatter.GAME_START: self.__anonymize_game_start_screenshot_filename,
 			ScreenshotFilenameFormatter.SELECTION: self.__anonymize_selection_screenshot_filename,
 			ScreenshotFilenameFormatter.TURN: self.__anonymize_turn_screenshot_filename}
+		assert len(self.screenshot_format_funcs) == len(ScreenshotFilenameFormatter)
 
 	def __call__(self, session_dir: str, session_data: sd.SessionData, player_event_log_filenames: Mapping[str, str]):
 		self.anonymize_events(session_data)
@@ -47,6 +51,12 @@ class SessionAnonymizer(object):
 
 		self.rename_player_files(session_dir, player_event_log_filenames)
 		self.rename_screenshot_files(os.path.join(session_dir, "screenshots"))
+
+	def __anonymize_game_start_screenshot_filename(self, match: Match, format_str: str) -> str:
+		timestamp = match.group(1)
+		player_id = match.group(2)
+		anonymized_participant_id = self.__anonymize_player_id(player_id)
+		return format_str.format(timestamp, anonymized_participant_id)
 
 	def __anonymize_selection_screenshot_filename(self, match: Match, format_str: str) -> str:
 		img_id = match.group(1)
