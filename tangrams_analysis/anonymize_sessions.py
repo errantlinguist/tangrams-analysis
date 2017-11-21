@@ -51,7 +51,7 @@ class SessionAnonymizer(object):
 		anonymized_participant_id = self.__anonymize_player_id(player_id)
 		return SCREENSHOT_TURN_FILENAME_FORMAT_STRING.format(round_id, timestamp, anonymized_participant_id)
 
-	def anonymize_screenshot_filename(self, filename: str):
+	def anonymize_screenshot_filename(self, filename: str) -> str:
 		result, number_of_subs_made = SCREENSHOT_SELECTION_FILENAME_PATTERN.subn(
 			self.__anonymize_selection_screenshot_filename,
 			filename, count=1)
