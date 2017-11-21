@@ -20,7 +20,7 @@ def append_prop_rows(props: PropertyMapping, rows: MutableSequence[str],
 		if isinstance(prop_value, dict):
 			append_prop_rows(prop_value, rows, prop_name_sort_key, qualified_prop_name + ".")
 		else:
-			row = qualified_prop_name + " = " + prop_value
+			row = qualified_prop_name + "=" + prop_value
 			rows.append(row)
 
 
