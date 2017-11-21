@@ -13,16 +13,16 @@ import session_data as sd
 PROPERTIES_FILE_ENCODING = "utf-8"
 
 EVENT_LOG_FILENAME_PATTERN = re.compile("events-([^-].).*")
-PLAYER_A_INITIAL_ROLE_LOG_MESSAGE_FORMAT_STRING = '"playerRoles":[["MOVE_SUBMISSION","{}"],'
-PLAYER_B_INITIAL_ROLE_LOG_MESSAGE_FORMAT_STRING = '],["WAITING_FOR_NEXT_MOVE","{}"]]'
-PLAYER_INITIAL_ROLE_LOG_MESSAGE_PATTERN = re.compile(r'.*?\"playerRoles\":\[\["MOVE_SUBMISSION\",\"([^\"]+)"\].*')
-PLAYER_ID_LOG_MESSAGE_FORMAT_STRING = "\"PLAYER_ID\":\"{}\""
+EVENT_LOG_PLAYER_A_INITIAL_ROLE_FORMAT_STRING = '"playerRoles":[["MOVE_SUBMISSION","{}"],'
+EVENT_LOG_PLAYER_B_INITIAL_ROLE_FORMAT_STRING = '],["WAITING_FOR_NEXT_MOVE","{}"]]'
+EVENT_LOG_PLAYER_INITIAL_ROLE_PATTERN = re.compile(r'.*?\"playerRoles\":\[\["MOVE_SUBMISSION\",\"([^\"]+)"\].*')
+EVENT_LOG_PLAYER_ID_FORMAT_STRING = "\"PLAYER_ID\":\"{}\""
 
 SESSION_DIR_FILENAME_FORMAT_STRINGS = ("events-{}.txt", "img-info-{}.txt", "system-{}.log")
-SELECTION_SCREENSHOT_FILENAME_FORMAT_STRING = "selection-piece-id{}-{}-{}.png"
-SELECTION_SCREENSHOT_FILENAME_PATTERN = re.compile("selection-piece-id([^-]+)-([^-]+)-([^\.]+?).png")
-TURN_SCREENSHOT_FILENAME_FORMAT_STRING = "turn-{}-{}-{}.png"
-TURN_SCREENSHOT_FILENAME_PATTERN = re.compile("turn-([^-]+)-([^-]+)-([^\.]+?).png")
+SCREENSHOT_SELECTION_FILENAME_FORMAT_STRING = "selection-piece-id{}-{}-{}.png"
+SCREENSHOT_SELECTION_FILENAME_PATTERN = re.compile("selection-piece-id([^-]+)-([^-]+)-([^\.]+?).png")
+SCREENSHOT_TURN_FILENAME_FORMAT_STRING = "turn-{}-{}-{}.png"
+SCREENSHOT_TURN_FILENAME_PATTERN = re.compile("turn-([^-]+)-([^-]+)-([^\.]+?).png")
 
 
 class SessionAnonymizer(object):
@@ -42,20 +42,20 @@ class SessionAnonymizer(object):
 		timestamp = match.group(2)
 		player_id = match.group(3)
 		anonymized_participant_id = self.__anonymize_player_id(player_id)
-		return SELECTION_SCREENSHOT_FILENAME_FORMAT_STRING.format(img_id, timestamp, anonymized_participant_id)
+		return SCREENSHOT_SELECTION_FILENAME_FORMAT_STRING.format(img_id, timestamp, anonymized_participant_id)
 
 	def __anonymize_turn_screenshot_filename(self, match) -> str:
 		round_id = match.group(1)
 		timestamp = match.group(2)
 		player_id = match.group(3)
 		anonymized_participant_id = self.__anonymize_player_id(player_id)
-		return TURN_SCREENSHOT_FILENAME_FORMAT_STRING.format(round_id, timestamp, anonymized_participant_id)
+		return SCREENSHOT_TURN_FILENAME_FORMAT_STRING.format(round_id, timestamp, anonymized_participant_id)
 
 	def anonymize_screenshot_filename(self, filename: str):
-		result, number_of_subs_made = SELECTION_SCREENSHOT_FILENAME_PATTERN.subn(self.__anonymize_selection_screenshot_filename,
-																	   filename, count=1)
+		result, number_of_subs_made = SCREENSHOT_SELECTION_FILENAME_PATTERN.subn(self.__anonymize_selection_screenshot_filename,
+																				 filename, count=1)
 		if number_of_subs_made < 1:
-			result, number_of_subs_made = TURN_SCREENSHOT_FILENAME_PATTERN.subn(self.__anonymize_turn_screenshot_filename, filename, count=1)
+			result, number_of_subs_made = SCREENSHOT_TURN_FILENAME_PATTERN.subn(self.__anonymize_turn_screenshot_filename, filename, count=1)
 		return result
 
 	def anonymize_event_log_files(self, player_event_log_filenames: Mapping[str, str], session_dir: str):
@@ -68,15 +68,15 @@ class SessionAnonymizer(object):
 					anonymized_line = line
 					for player_id in player_event_log_filenames:
 						anonymized_participant_id = self.__anonymize_player_id(player_id)
-						initial_role_log_message_format_str = PLAYER_A_INITIAL_ROLE_LOG_MESSAGE_FORMAT_STRING if anonymized_participant_id == "A" else PLAYER_B_INITIAL_ROLE_LOG_MESSAGE_FORMAT_STRING
+						initial_role_log_message_format_str = EVENT_LOG_PLAYER_A_INITIAL_ROLE_FORMAT_STRING if anonymized_participant_id == "A" else EVENT_LOG_PLAYER_B_INITIAL_ROLE_FORMAT_STRING
 						initial_role_replacee_pattern = initial_role_log_message_format_str.format(player_id)
 						initial_role_replacement_pattern = initial_role_log_message_format_str.format(
 							anonymized_participant_id)
 						anonymized_line = anonymized_line.replace(initial_role_replacee_pattern,
 																  initial_role_replacement_pattern)
 
-						player_id_replacee_pattern = PLAYER_ID_LOG_MESSAGE_FORMAT_STRING.format(player_id)
-						player_id_replacement_pattern = PLAYER_ID_LOG_MESSAGE_FORMAT_STRING.format(
+						player_id_replacee_pattern = EVENT_LOG_PLAYER_ID_FORMAT_STRING.format(player_id)
+						player_id_replacement_pattern = EVENT_LOG_PLAYER_ID_FORMAT_STRING.format(
 							anonymized_participant_id)
 						anonymized_line = anonymized_line.replace(player_id_replacee_pattern,
 																  player_id_replacement_pattern)
@@ -136,7 +136,7 @@ def parse_initial_player_id(event_log_file: str) -> str:
 	result = None
 	with open(event_log_file, 'r', encoding=iristk.LOGFILE_ENCODING) as inf:
 		for line in inf:
-			match = PLAYER_INITIAL_ROLE_LOG_MESSAGE_PATTERN.match(line)
+			match = EVENT_LOG_PLAYER_INITIAL_ROLE_PATTERN.match(line)
 			if match:
 				result = match.group(1)
 				break
