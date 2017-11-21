@@ -84,7 +84,9 @@ def __main(args):
 	all_session_data = pd.concat(
 		(create_session_df(session_dir, session_data, game_round_utt_factory) for session_dir, session_data in
 		 infile_session_data), copy=False)
+	# noinspection PyUnresolvedReferences
 	print("Dataframe shape: {}".format(all_session_data.shape), file=sys.stderr)
+	# noinspection PyTypeChecker
 	normalize_session_paths(all_session_data)
 	# print(all_session_data[game_utterances.EventColumn.DYAD_ID.value])
 
