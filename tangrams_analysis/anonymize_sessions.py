@@ -4,6 +4,8 @@ import argparse
 import os.path
 import re
 import sys
+from collections import namedtuple
+from enum import Enum, unique
 from typing import Mapping, Match
 
 import iristk
@@ -19,15 +21,24 @@ EVENT_LOG_PLAYER_INITIAL_ROLE_PATTERN = re.compile(r'.*?\"playerRoles\":\[\["MOV
 EVENT_LOG_PLAYER_ID_FORMAT_STRING = "\"PLAYER_ID\":\"{}\""
 
 SESSION_DIR_FILENAME_FORMAT_STRINGS = ("events-{}.txt", "img-info-{}.txt", "system-{}.log")
-SCREENSHOT_SELECTION_FILENAME_FORMAT_STRING = "selection-piece-id{}-{}-{}.png"
-SCREENSHOT_SELECTION_FILENAME_PATTERN = re.compile("selection-piece-id([^-]+)-([^-]+)-([^\.]+?).png")
-SCREENSHOT_TURN_FILENAME_FORMAT_STRING = "turn-{}-{}-{}.png"
-SCREENSHOT_TURN_FILENAME_PATTERN = re.compile("turn-([^-]+)-([^-]+)-([^\.]+?).png")
+
+RegexReplacementFormatter = namedtuple("RegexReplacementFormatter", "format_str pattern")
+
+
+@unique
+class ScreenshotFilenameFormatter(Enum):
+	SELECTION = RegexReplacementFormatter("selection-piece-id{}-{}-{}.png",
+										  re.compile("selection-piece-id([^-]+)-([^-]+)-([^\\.]+?).png"))
+	TURN = RegexReplacementFormatter("turn-{}-{}-{}.png",
+									 re.compile("turn-([^-]+)-([^-]+)-([^\\.]+?).png"))
 
 
 class SessionAnonymizer(object):
 	def __init__(self, initial_player_id: str):
 		self.initial_player_id = initial_player_id
+		self.screenshot_format_funcs = {
+			ScreenshotFilenameFormatter.SELECTION: self.__anonymize_selection_screenshot_filename,
+			ScreenshotFilenameFormatter.TURN: self.__anonymize_turn_screenshot_filename}
 
 	def __call__(self, session_dir: str, session_data: sd.SessionData, player_event_log_filenames: Mapping[str, str]):
 		self.anonymize_events(session_data)
@@ -37,27 +48,27 @@ class SessionAnonymizer(object):
 		self.rename_player_files(session_dir, player_event_log_filenames)
 		self.rename_screenshot_files(os.path.join(session_dir, "screenshots"))
 
-	def __anonymize_selection_screenshot_filename(self, match: Match) -> str:
+	def __anonymize_selection_screenshot_filename(self, match: Match, format_str: str) -> str:
 		img_id = match.group(1)
 		timestamp = match.group(2)
 		player_id = match.group(3)
 		anonymized_participant_id = self.__anonymize_player_id(player_id)
-		return SCREENSHOT_SELECTION_FILENAME_FORMAT_STRING.format(img_id, timestamp, anonymized_participant_id)
+		return format_str.format(img_id, timestamp, anonymized_participant_id)
 
-	def __anonymize_turn_screenshot_filename(self, match: Match) -> str:
+	def __anonymize_turn_screenshot_filename(self, match: Match, format_str: str) -> str:
 		round_id = match.group(1)
 		timestamp = match.group(2)
 		player_id = match.group(3)
 		anonymized_participant_id = self.__anonymize_player_id(player_id)
-		return SCREENSHOT_TURN_FILENAME_FORMAT_STRING.format(round_id, timestamp, anonymized_participant_id)
+		return format_str.format(round_id, timestamp, anonymized_participant_id)
 
 	def anonymize_screenshot_filename(self, filename: str) -> str:
-		result, number_of_subs_made = SCREENSHOT_SELECTION_FILENAME_PATTERN.subn(
-			self.__anonymize_selection_screenshot_filename,
-			filename, count=1)
-		if number_of_subs_made < 1:
-			result, number_of_subs_made = SCREENSHOT_TURN_FILENAME_PATTERN.subn(
-				self.__anonymize_turn_screenshot_filename, filename, count=1)
+		result = filename
+		for screenshot_formatter, format_func in self.screenshot_format_funcs.items():
+			result, number_of_subs_made = screenshot_formatter.value.pattern.subn(
+				lambda match: format_func(match, screenshot_formatter.value.format_str), result, count=1)
+			if number_of_subs_made > 0:
+				break
 		return result
 
 	def anonymize_event_log_files(self, player_event_log_filenames: Mapping[str, str], session_dir: str):
