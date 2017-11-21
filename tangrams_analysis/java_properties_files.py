@@ -1,17 +1,30 @@
 import os
 import re
 
-from typing import Dict, Iterable, Iterator, Union
+from typing import Dict, Iterable, Iterator, Mapping, MutableSequence, Union
 
 ATTRIBUTE_VALUE_PAIR_DELIM_PATTERN = re.compile("(?<!\\\)[=:]")
 COMMENT_LINE_PREFIXES = ('#', '!')
 PROPERTIES_FILEPATH_PATTERN = re.compile(".+?\.properties$")
 
-PropertyGroup = Union[str, "PropertyDict"]
-PropertyDict = Dict[str, PropertyGroup]
+MutablePropertyGroup = Union[str, "MutablePropertyMapping"]
+MutablePropertyMapping = Dict[str, MutablePropertyGroup]
+PropertyGroup = Union[str, "PropertyMapping"]
+PropertyMapping = Mapping[str, PropertyGroup]
 
 
-def parse_properties(lines: Iterable[str]) -> PropertyDict:
+def append_prop_rows(props: PropertyMapping, rows: MutableSequence[str],
+					 prop_name_sort_key=lambda prop_name: prop_name, prop_name_prefix=""):
+	for prop_name, prop_value in sorted(props.items(), key=prop_name_sort_key):
+		qualified_prop_name = prop_name_prefix + prop_name
+		if isinstance(prop_value, dict):
+			append_prop_rows(prop_value, rows, prop_name_sort_key, qualified_prop_name + ".")
+		else:
+			row = qualified_prop_name + " = " + prop_value
+			rows.append(row)
+
+
+def parse_properties(lines: Iterable[str]) -> MutablePropertyMapping:
 	"""
 	NOTE: This method cannot handle logical lines spread over multiple natural lines using escaped newline characters.
 	See <https://docs.oracle.com/javase/8/docs/api/java/util/Properties.html#load-java.io.Reader->
@@ -40,7 +53,7 @@ def walk_properties_files(*inpaths: str) -> Iterator[str]:
 					yield resolved_path
 
 
-def __fetch_prop_group(props: PropertyDict, prop_name: str) -> PropertyGroup:
+def __fetch_prop_group(props: MutablePropertyMapping, prop_name: str) -> MutablePropertyGroup:
 	try:
 		result = props[prop_name]
 	except KeyError:
@@ -49,7 +62,7 @@ def __fetch_prop_group(props: PropertyDict, prop_name: str) -> PropertyGroup:
 	return result
 
 
-def __set_nested_prop_value(props: PropertyDict, prop_name_components: Iterable[str], prop_value: str):
+def __set_nested_prop_value(props: MutablePropertyMapping, prop_name_components: Iterable[str], prop_value: str):
 	terminal_prop_group = props
 	name_component_iter = iter(prop_name_components)
 	next_name_component = next(name_component_iter)
@@ -66,7 +79,7 @@ def __set_nested_prop_value(props: PropertyDict, prop_name_components: Iterable[
 			reached_terminal_group = True
 
 
-def __set_prop_value(props: PropertyDict, prop_name: str, prop_value: str):
+def __set_prop_value(props: MutablePropertyMapping, prop_name: str, prop_value: str):
 	prop_name_components = prop_name.split('.')
 	if len(prop_name_components) < 2:
 		props[prop_name] = prop_value
