@@ -4,7 +4,7 @@ import argparse
 import os.path
 import re
 import sys
-from typing import Mapping
+from typing import Mapping, Match
 
 import iristk
 import java_properties_files
@@ -37,14 +37,14 @@ class SessionAnonymizer(object):
 		self.rename_player_files(session_dir, player_event_log_filenames)
 		self.rename_screenshot_files(os.path.join(session_dir, "screenshots"))
 
-	def __anonymize_selection_screenshot_filename(self, match) -> str:
+	def __anonymize_selection_screenshot_filename(self, match: Match) -> str:
 		img_id = match.group(1)
 		timestamp = match.group(2)
 		player_id = match.group(3)
 		anonymized_participant_id = self.__anonymize_player_id(player_id)
 		return SCREENSHOT_SELECTION_FILENAME_FORMAT_STRING.format(img_id, timestamp, anonymized_participant_id)
 
-	def __anonymize_turn_screenshot_filename(self, match) -> str:
+	def __anonymize_turn_screenshot_filename(self, match: Match) -> str:
 		round_id = match.group(1)
 		timestamp = match.group(2)
 		player_id = match.group(3)
@@ -52,10 +52,12 @@ class SessionAnonymizer(object):
 		return SCREENSHOT_TURN_FILENAME_FORMAT_STRING.format(round_id, timestamp, anonymized_participant_id)
 
 	def anonymize_screenshot_filename(self, filename: str):
-		result, number_of_subs_made = SCREENSHOT_SELECTION_FILENAME_PATTERN.subn(self.__anonymize_selection_screenshot_filename,
-																				 filename, count=1)
+		result, number_of_subs_made = SCREENSHOT_SELECTION_FILENAME_PATTERN.subn(
+			self.__anonymize_selection_screenshot_filename,
+			filename, count=1)
 		if number_of_subs_made < 1:
-			result, number_of_subs_made = SCREENSHOT_TURN_FILENAME_PATTERN.subn(self.__anonymize_turn_screenshot_filename, filename, count=1)
+			result, number_of_subs_made = SCREENSHOT_TURN_FILENAME_PATTERN.subn(
+				self.__anonymize_turn_screenshot_filename, filename, count=1)
 		return result
 
 	def anonymize_event_log_files(self, player_event_log_filenames: Mapping[str, str], session_dir: str):
