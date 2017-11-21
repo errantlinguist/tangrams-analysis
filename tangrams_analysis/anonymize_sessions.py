@@ -50,9 +50,11 @@ class SessionAnonymizer(object):
 		return TURN_SCREENSHOT_FILENAME_FORMAT_STRING.format(round_id, timestamp, anonymized_participant_id)
 
 	def anonymize_screenshot_filename(self, filename: str):
-		selection_replaced = SELECTION_SCREENSHOT_FILENAME_PATTERN.sub(self.__anonymize_selection_screenshot_filename,
-																	   filename)
-		return TURN_SCREENSHOT_FILENAME_PATTERN.sub(self.__anonymize_turn_screenshot_filename, selection_replaced)
+		result, number_of_subs_made = SELECTION_SCREENSHOT_FILENAME_PATTERN.subn(self.__anonymize_selection_screenshot_filename,
+																	   filename, count=1)
+		if number_of_subs_made < 1:
+			result, number_of_subs_made = TURN_SCREENSHOT_FILENAME_PATTERN.subn(self.__anonymize_turn_screenshot_filename, filename, count=1)
+		return result
 
 	def anonymize_event_log_files(self, player_event_log_filenames: Mapping[str, str], session_dir: str):
 		for player_event_log_filename in player_event_log_filenames.values():
