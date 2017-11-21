@@ -10,12 +10,14 @@ import iristk
 import java_properties_files
 import session_data as sd
 
+PROPERTIES_FILE_ENCODING = "utf-8"
+
 EVENT_LOG_FILENAME_PATTERN = re.compile("events-([^-].).*")
 PLAYER_A_INITIAL_ROLE_LOG_MESSAGE_FORMAT_STRING = '"playerRoles":[["MOVE_SUBMISSION","{}"],'
 PLAYER_B_INITIAL_ROLE_LOG_MESSAGE_FORMAT_STRING = '],["WAITING_FOR_NEXT_MOVE","{}"]]'
 PLAYER_INITIAL_ROLE_LOG_MESSAGE_PATTERN = re.compile(r'.*?\"playerRoles\":\[\["MOVE_SUBMISSION\",\"([^\"]+)"\].*')
 PLAYER_ID_LOG_MESSAGE_FORMAT_STRING = "\"PLAYER_ID\":\"{}\""
-PROPERTIES_FILE_ENCODING = "utf-8"
+
 SESSION_DIR_FILENAME_FORMAT_STRINGS = ("events-{}.txt", "img-info-{}.txt", "system-{}.log")
 SELECTION_SCREENSHOT_FILENAME_FORMAT_STRING = "selection-piece-id{}-{}-{}.png"
 SELECTION_SCREENSHOT_FILENAME_PATTERN = re.compile("selection-piece-id([^-]+)-([^-]+)-([^\.]+?).png")
