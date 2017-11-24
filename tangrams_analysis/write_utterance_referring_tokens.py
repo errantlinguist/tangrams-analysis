@@ -13,7 +13,7 @@ INPUT_CSV_DIALECT = csv.excel_tab
 INPUT_ENCODING = "utf-8"
 OUTPUT_CSV_DIALECT = csv.excel_tab
 REFERRING_LANGUAGE_COL_NAME = "REFERRING_TOKENS"
-UTTERANCE_COL_NAME = "UTTERANCE"
+UTTERANCE_COL_NAME = "TOKENS"
 
 
 def create_utterance_referring_token_map(*inpaths: str) -> Dict[str, str]:
