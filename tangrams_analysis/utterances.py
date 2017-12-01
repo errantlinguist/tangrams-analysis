@@ -80,10 +80,6 @@ class Utterance(object):
 	def __repr__(self):
 		return self.__class__.__name__ + str(self.__dict__)
 
-	@property
-	def __key(self):
-		return self.segment_id, self.speaker_id, self.start_time, self.end_time, self.content
-
 
 def is_semantically_relevant_token(token: str) -> bool:
 	return token not in METALANGUAGE_TOKENS and token not in FILLER_TOKENS and not is_disfluency(token)
