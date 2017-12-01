@@ -16,8 +16,8 @@ INFILE_DIALECT = csv.excel_tab
 OUTPUT_DIALECT = csv.excel_tab
 TOKEN_DELIMITER_PATTERN = re.compile("\\s+")
 
-__SENTENCE_TOKEN_DELIMITER = " "
 __DOCUMENT_SENTENCE_DELIMITER = " "
+__SENTENCE_TOKEN_DELIMITER = " "
 
 
 def capitalize_first_letter(token: str) -> str:
