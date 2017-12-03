@@ -1,3 +1,11 @@
+"""
+Functionalities for creating Utterance objects representing an individual utterance in dialogue from Higgins Annotation Tool (HAT) annotations <http://www.speech.kth.se/hat/>.
+"""
+
+__author__ = "Todd Shore <errantlinguist+github@gmail.com>"
+__copyright__ = "Copyright 2017 Todd Shore"
+__license__ = "Apache License, Version 2.0"
+
 import sys
 from collections import defaultdict
 from typing import Any, Callable, DefaultDict, Iterable, Iterator, List, Sequence, Tuple
