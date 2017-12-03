@@ -1,3 +1,11 @@
+"""
+Utilities for processing files used and created by IrisTK <http://www.iristk.net/>.
+"""
+
+__author__ = "Todd Shore <errantlinguist+github@gmail.com>"
+__copyright__ = "Copyright 2017 Todd Shore"
+__license__ = "Apache License, Version 2.0"
+
 import datetime
 
 LOGFILE_ENCODING = "utf-8"
