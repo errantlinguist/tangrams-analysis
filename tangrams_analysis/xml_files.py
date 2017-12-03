@@ -1,3 +1,11 @@
+"""
+Utilities for manipulating XML files.
+"""
+
+__author__ = "Todd Shore <tcshore@kth.se>"
+__copyright__ = "Copyright 2017 Todd Shore"
+__license__ = "Apache License, Version 2.0"
+
 import mimetypes
 import os
 import re
@@ -13,7 +21,7 @@ def add_xml_schema_location(root: xml.etree.ElementTree.Element, location: str):
 	root.attrib['{{{pre}}}schemaLocation'.format(pre=XSI)] = location
 
 
-def walk_xml_files(*inpaths : str) -> Iterator[str]:
+def walk_xml_files(*inpaths: str) -> Iterator[str]:
 	for inpath in inpaths:
 		for dirpath, _, filenames in os.walk(inpath, followlinks=True):
 			for filename in filenames:
