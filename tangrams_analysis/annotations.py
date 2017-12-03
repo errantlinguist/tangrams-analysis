@@ -1,3 +1,11 @@
+"""
+Functionalities for reading and writing Higgins Annotation Tool (HAT) XML annotation files <http://www.speech.kth.se/hat/>.
+"""
+
+__author__ = "Todd Shore <errantlinguist+github@gmail.com>"
+__copyright__ = "Copyright (C) 2016-2017 Todd Shore"
+__license__ = "GNU General Public License, Version 3"
+
 import re
 from collections import defaultdict
 from xml.sax.saxutils import escape
