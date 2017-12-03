@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """
+Computes means of multiple cross-validation results files.
+
 Use with e.g. "find ~/Documents/Projects/Tangrams/Data/output/ -iname "*.tsv" -exec ./batch_ranks.py {} +"
 """
+
+__author__ = "Todd Shore <errantlinguist+github@gmail.com>"
+__copyright__ = "Copyright 2017 Todd Shore"
+__license__ = "Apache License, Version 2.0"
 
 import argparse
 import csv

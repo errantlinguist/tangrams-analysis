@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+"""
+A script for anonymizing recorded sessions of the game "tangrams-restricted". WARNING: Not yet finished/tested!
+"""
+
+__author__ = "Todd Shore <errantlinguist+github@gmail.com>"
+__copyright__ = "Copyright 2017 Todd Shore"
+__license__ = "Apache License, Version 2.0"
+
 import argparse
 import csv
 import os.path
@@ -193,9 +201,9 @@ class SessionAnonymizer(object):
 				break
 		return result
 
-	def anonymize_system_logs(self, session_dir: str, player_ids = Iterable[str]):
+	def anonymize_system_logs(self, session_dir: str, player_ids=Iterable[str]):
 		# Try matching the longest player ID first
-		sorted_player_ids = tuple( sorted(player_ids, reverse=True))
+		sorted_player_ids = tuple(sorted(player_ids, reverse=True))
 		for file in os.listdir(session_dir):
 			if SYSTEM_LOGFILE_PATTERN.match(file):
 				filepath = os.path.join(session_dir, file)
@@ -211,8 +219,6 @@ class SessionAnonymizer(object):
 
 				with open(filepath, 'w', encoding=SYSTEM_LOGFILE_ENCODING) as outf:
 					outf.writelines(anonymized_lines)
-
-
 
 	def rename_player_files(self, session_dir: str, player_ids: Iterable[str]):
 		for player_id in player_ids:

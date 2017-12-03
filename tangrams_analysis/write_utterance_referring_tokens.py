@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """
+Reads tabular utterance files and creates a single map of unique utterances to the canonical referring tokens in that utterance.
+
 Use with e.g. "find ~/Documents/Projects/Tangrams/Data/Derived/ -iname "*.tsv" -exec ./write_utterance_referring_tokens.py {} +"
 """
+
+__author__ = "Todd Shore <errantlinguist+github@gmail.com>"
+__copyright__ = "Copyright 2017 Todd Shore"
+__license__ = "Apache License, Version 2.0"
 
 import argparse
 import csv

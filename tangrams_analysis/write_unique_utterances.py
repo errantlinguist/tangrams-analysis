@@ -1,7 +1,13 @@
 #!/usr/bin/env python3
 """
+Writes all unique Higgins Annotation Tool (HAT) XML annotation segments <http://www.speech.kth.se/hat/> to the standard output stream.
+
 Use with e.g. "find ~/Documents/Projects/Tangrams/Data/Derived/ -iname "*.xml" -exec ./write_utterance_referring_tokens.py {} +"
 """
+
+__author__ = "Todd Shore <errantlinguist+github@gmail.com>"
+__copyright__ = "Copyright 2017 Todd Shore"
+__license__ = "Apache License, Version 2.0"
 
 import argparse
 import sys
@@ -29,7 +35,7 @@ def create_utterance_set(*inpaths: str) -> Set[str]:
 
 def __create_argparser() -> argparse.ArgumentParser:
 	result = argparse.ArgumentParser(
-		description="Writes all unique utterances to standard out.")
+		description="Writes all unique Higgins Annotation Tool (HAT) XML annotation segments to the standard output stream.")
 	result.add_argument("inpaths", metavar="INPATH", nargs='+',
 						help="The files to process.")
 
