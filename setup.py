@@ -7,5 +7,4 @@ setup(name='tangrams_analysis',
       author='Todd Shore',
       author_email='errantlinguist+github@gmail.com',
       license='Apache License, Version 2.0',
-      packages=['tangrams_analysis'],
-      zip_safe=False)
+      packages=['tangrams_analysis'])
