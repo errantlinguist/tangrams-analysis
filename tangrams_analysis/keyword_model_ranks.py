@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+"""
+Correlates keyword TF-IDF score with the cross-validation ranks for rounds in which the given keywords were used.
+"""
+
+__author__ = "Todd Shore <errantlinguist+github@gmail.com>"
+__copyright__ = "Copyright 2017 Todd Shore"
+__license__ = "Apache License, Version 2.0"
+
 import argparse
 import csv
 import re
