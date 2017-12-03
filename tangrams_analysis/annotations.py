@@ -4,7 +4,7 @@ Functionalities for reading and writing Higgins Annotation Tool (HAT) XML annota
 
 __author__ = "Todd Shore <errantlinguist+github@gmail.com>"
 __copyright__ = "Copyright (C) 2016-2017 Todd Shore"
-__license__ = "GNU General Public License, Version 3"
+__license__ = "Apache License, Version 2.0"
 
 import re
 from collections import defaultdict
