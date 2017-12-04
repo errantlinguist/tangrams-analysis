@@ -15,7 +15,8 @@ import os.path
 import re
 import sys
 from enum import Enum, unique
-from typing import Any, Iterable, Iterator, Sequence, Tuple
+from numbers import Number
+from typing import Any, Iterable, Iterator, Tuple
 
 import pandas as pd
 from nltk.util import ngrams as nltk_ngrams
@@ -28,30 +29,48 @@ import utterances
 class CrossValidationResultsDataColumn(Enum):
 	DYAD_ID = "DYAD"
 	ROUND_ID = "ROUND"
+	TOKEN_SEQS = "TOKEN_SEQS"
 
 
 class KeywordScorer(object):
 
 	def __init__(self, session_keyword_scores: pd.DataFrame):
 		self.session_keyword_scores = session_keyword_scores
+		self.score_cache = {}
 
 	def __call__(self, row: pd.Series):
-		dyad_id = row["DYAD"]
+		dyad_id = row[CrossValidationResultsDataColumn.DYAD_ID.value]
+		token_seqs = row[CrossValidationResultsDataColumn.TOKEN_SEQS.value]
+		token_seq_scores = (self.__fetch_scores(seq, dyad_id) for seq in token_seqs)
 
 	# tokens = row["REFERRING_TOKENS"]
 	# TODO: Finish
 	# return self.__score_keywords(tokens, dyad_id)
 
-	def __score_keywords(self, tokens: Sequence[str], dyad_id: str):
+	def __calculate_score(self, ngram: Tuple[str], dyad_id: str) -> Number:
+		dyad_keyword_scores = self.session_keyword_scores.loc[
+			((self.session_keyword_scores["SESSION"] == dyad_id) & (self.session_keyword_scores["NGRAM"] == ngram))]
+		assert dyad_keyword_scores.shape[0] < 2
+		if dyad_keyword_scores.shape[0] < 1:
+			logging.warning("No score for ngram: %s; Session: %s", ngram, dyad_id)
+			result = 0
+		else:
+			result = dyad_keyword_scores.iloc[0]
+		return result
+
+	def __fetch_scores(self, tokens: Tuple[str], dyad_id: str) -> Iterator[Number]:
 		ngrams_by_length = (nltk_ngrams(tokens, n) for n in range(1, len(tokens)))
 		ngrams = (ngram for length_list in ngrams_by_length for ngram in length_list)
+		return (self.__fetch_score(ngram, dyad_id) for ngram in ngrams)
 
-		for ngram in ngrams:
-			dyad_keyword_scores = self.session_keyword_scores.loc[
-				((self.session_keyword_scores["SESSION"] == dyad_id) & (self.session_keyword_scores["NGRAM"] == ngram))]
-			assert dyad_keyword_scores.shape[0] < 2
-			if dyad_keyword_scores.shape[0] < 1:
-				logging.warning("No score for ngram: %s; Session: %s", ngram, dyad_id)
+	def __fetch_score(self, ngram: Tuple[str], dyad_id: str) -> Number:
+		key = (ngram, dyad_id)
+		try:
+			result = self.score_cache[key]
+		except KeyError:
+			result = self.__calculate_score(ngram, dyad_id)
+			self.score_cache[key] = result
+		return result
 
 
 class TokenSequenceFactory(object):
@@ -86,7 +105,7 @@ class RoundUtteranceTokenSequenceJoiner(object):
 		self.session_utts = session_utts
 		self.__session_dyad_token_seq_getter = self.__dyad_round_token_seqs_only_instructor if only_instructor else self.__dyad_round_token_seqs
 
-	def __call__(self, row: pd.Series) -> pd.Series:
+	def __call__(self, row: pd.Series) -> Tuple[Any, ...]:
 		dyad_to_match = row[CrossValidationResultsDataColumn.DYAD_ID.value]
 		round_to_match = row[CrossValidationResultsDataColumn.ROUND_ID.value]
 		dyad_round_token_seqs = self.__session_dyad_token_seq_getter(dyad_to_match, round_to_match)
@@ -180,15 +199,25 @@ def __main(args):
 	else:
 		session_paths = args.sessions
 		session_utts = pd.concat(read_utts_dfs(session_paths))
+		# noinspection PyUnresolvedReferences
 		logging.debug("Session utterances dataframe shape: %s", session_utts.shape)
+		# noinspection PyUnresolvedReferences
 		utt_session_set = frozenset(session_utts[UtteranceTabularDataColumn.DYAD_ID.value].unique())
 		if utt_session_set != cv_sessions:
 			raise ValueError("Set of sessions for utterances is not equal to that for cross-validation results.")
 		else:
-			session_utts[UtteranceTabularDataColumn.TOKEN_SEQ.value] = session_utts[UtteranceTabularDataColumn.TOKEN_SEQ.value].transform(lambda token_seq : tuple(token for token in token_seq if utterances.is_semantically_relevant_token(token)))
-			cv_results["TOKEN_SEQS"] = cv_results.apply(RoundUtteranceTokenSequenceJoiner(session_utts), axis=1)
+			# noinspection PyUnresolvedReferences
+			session_utts[UtteranceTabularDataColumn.TOKEN_SEQ.value] = session_utts[
+				UtteranceTabularDataColumn.TOKEN_SEQ.value].transform(lambda token_seq: tuple(
+				token for token in token_seq if utterances.is_semantically_relevant_token(token)))
+			# noinspection PyTypeChecker
+			cv_results[CrossValidationResultsDataColumn.TOKEN_SEQS.value] = cv_results.apply(
+				RoundUtteranceTokenSequenceJoiner(session_utts), axis=1)
+			cv_results["TF-IDF"] = cv_results.apply(KeywordScorer(session_keyword_scores), axis=1)
 			print(cv_results["TOKEN_SEQS"])
-			# TODO: Finish
+
+
+# TODO: Finish
 
 
 if __name__ == "__main__":
