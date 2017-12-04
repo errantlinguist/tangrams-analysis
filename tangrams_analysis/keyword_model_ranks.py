@@ -29,7 +29,7 @@ class TokenSequenceFactory(object):
 		self.token_seq_singletons = {}
 
 	def __call__(self, token_str: str) -> Tuple[str]:
-		content = self._TOKEN_DELIMITER_PATTERN.split(token_str)
+		content = tuple(self._TOKEN_DELIMITER_PATTERN.split(token_str))
 		if content:
 			try:
 				result = self.token_seq_singletons[content]
