@@ -98,7 +98,7 @@ class TokenSequenceFactory(object):
 		self.token_filter = token_filter
 		self.token_seq_singletons = {}
 
-	def __call__(self, tokens: Iterable[str]) -> Tuple[str]:
+	def __call__(self, tokens: Iterable[str]) -> Tuple[str, ...]:
 		content = tuple(stripped_token for stripped_token in (token.strip() for token in tokens) if
 						stripped_token and self.token_filter(stripped_token))
 		if content:
