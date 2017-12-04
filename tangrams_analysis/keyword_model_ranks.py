@@ -15,6 +15,7 @@ import sys
 from typing import Sequence, Tuple
 
 import pandas as pd
+from nltk.util import ngrams as nltk_ngrams
 
 CV_RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 CV_RESULTS_FILE_ENCODING = "utf-8"
@@ -22,8 +23,21 @@ KEYWORDS_FILE_CSV_DIALECT = csv.excel_tab
 KEYWORDS_FILE_ENCODING = "utf-8"
 
 
+class KeywordScorer(object):
+
+	def __init__(self, session_keyword_scores: pd.DataFrame):
+		self.session_keyword_scores = session_keyword_scores
+
+	def __call__(self, tokens: Sequence[str]):
+		ngrams_by_length = (nltk_ngrams(tokens, n) for n in range(1, len(tokens)))
+		ngrams = (ngram for length_list in ngrams_by_length for ngram in length_list)
+
+		for ngram in ngrams:
+			print(ngram)
+
+
 class TokenSequenceFactory(object):
-	_TOKEN_DELIMITER_PATTERN = re.compile("\\s+")
+	_TOKEN_DELIMITER_PATTERN = re.compile(",\\s*")
 
 	def __init__(self):
 		self.token_seq_singletons = {}
@@ -44,10 +58,6 @@ class TokenSequenceFactory(object):
 
 __TOKEN_SEQ_FACTORY = TokenSequenceFactory()
 __CV_RESULTS_FILE_CONVERTERS = {"REFERRING_TOKENS": __TOKEN_SEQ_FACTORY, "REFERRING_TOKEN_TYPES": __TOKEN_SEQ_FACTORY}
-
-
-def keyword_score(tokens: Sequence[str]):
-	pass
 
 
 def read_csv_results_file(infile: str) -> pd.DataFrame:
@@ -85,11 +95,14 @@ def __main(args):
 	session_keyword_scores = read_keyword_scores(keywords_file)
 	keyword_sessions = frozenset(session_keyword_scores["SESSION"].unique())
 	print("Read keyword scores for {} session(s).".format(len(keyword_sessions)), file=sys.stderr)
-	if keyword_sessions == cv_sessions:
-		pass
-	# TODO: Finish
-	else:
+	if keyword_sessions != cv_sessions:
 		raise ValueError("Set of sessions for keywords is not equal to that for cross-validation results.")
+	else:
+		keyword_scorer = KeywordScorer(session_keyword_scores)
+		cv_results["REFERRING_TOKENS"].transform(keyword_scorer)
+
+
+# TODO: Finish
 
 
 if __name__ == "__main__":

@@ -1,4 +1,5 @@
 lxml
+nltk
 numpy
 pandas
 python-dateutil
