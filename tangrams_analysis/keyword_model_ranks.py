@@ -186,8 +186,7 @@ def __main(args):
 			raise ValueError("Set of sessions for utterances is not equal to that for cross-validation results.")
 		else:
 			session_utts[UtteranceTabularDataColumn.TOKEN_SEQ.value] = session_utts[UtteranceTabularDataColumn.TOKEN_SEQ.value].transform(lambda token_seq : tuple(token for token in token_seq if utterances.is_semantically_relevant_token(token)))
-			round_utt_joiner = RoundUtteranceTokenSequenceJoiner(session_utts)
-			cv_results["TOKEN_SEQS"] = cv_results.apply(round_utt_joiner, axis=1)
+			cv_results["TOKEN_SEQS"] = cv_results.apply(RoundUtteranceTokenSequenceJoiner(session_utts), axis=1)
 			print(cv_results["TOKEN_SEQS"])
 			# TODO: Finish
 
