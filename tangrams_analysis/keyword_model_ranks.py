@@ -28,16 +28,24 @@ class KeywordScorer(object):
 	def __init__(self, session_keyword_scores: pd.DataFrame):
 		self.session_keyword_scores = session_keyword_scores
 
-	def __call__(self, tokens: Sequence[str]):
+	def __call__(self, row: pd.Series):
+		dyad_id = row["DYAD"]
+		tokens = row["REFERRING_TOKENS"]
+		return self.__score_keywords(tokens, dyad_id)
+
+	def __score_keywords(self, tokens: Sequence[str], dyad_id: str):
 		ngrams_by_length = (nltk_ngrams(tokens, n) for n in range(1, len(tokens)))
 		ngrams = (ngram for length_list in ngrams_by_length for ngram in length_list)
 
 		for ngram in ngrams:
-			print(ngram)
+			dyad_keyword_scores = self.session_keyword_scores.loc[
+				((self.session_keyword_scores["SESSION"] == dyad_id) & (self.session_keyword_scores["NGRAM"] == ngram))]
+			if dyad_keyword_scores.shape[0] < 1:
+				print("No score for ngram: {}; Session: {}".format(ngram, dyad_id))
 
 
 class TokenSequenceFactory(object):
-	_TOKEN_DELIMITER_PATTERN = re.compile(",\\s*")
+	_TOKEN_DELIMITER_PATTERN = re.compile("(?:,\\s*?)|(?:\\s+)")
 
 	def __init__(self):
 		self.token_seq_singletons = {}
@@ -58,6 +66,7 @@ class TokenSequenceFactory(object):
 
 __TOKEN_SEQ_FACTORY = TokenSequenceFactory()
 __CV_RESULTS_FILE_CONVERTERS = {"REFERRING_TOKENS": __TOKEN_SEQ_FACTORY, "REFERRING_TOKEN_TYPES": __TOKEN_SEQ_FACTORY}
+__KEYWORDS_FILE_CONVERTERS = {"NGRAM": __TOKEN_SEQ_FACTORY}
 
 
 def read_csv_results_file(infile: str) -> pd.DataFrame:
@@ -69,7 +78,7 @@ def read_csv_results_file(infile: str) -> pd.DataFrame:
 def read_keyword_scores(keywords_file: str) -> pd.DataFrame:
 	return pd.read_csv(keywords_file, dialect=KEYWORDS_FILE_CSV_DIALECT, sep=KEYWORDS_FILE_CSV_DIALECT.delimiter,
 					   float_precision="round_trip",
-					   encoding=KEYWORDS_FILE_ENCODING, memory_map=True)
+					   encoding=KEYWORDS_FILE_ENCODING, memory_map=True, converters=__KEYWORDS_FILE_CONVERTERS)
 
 
 def __create_argparser() -> argparse.ArgumentParser:
@@ -99,7 +108,7 @@ def __main(args):
 		raise ValueError("Set of sessions for keywords is not equal to that for cross-validation results.")
 	else:
 		keyword_scorer = KeywordScorer(session_keyword_scores)
-		cv_results["REFERRING_TOKENS"].transform(keyword_scorer)
+		cv_results.apply(keyword_scorer, axis=1)
 
 
 # TODO: Finish
