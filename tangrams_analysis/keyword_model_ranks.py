@@ -10,17 +10,24 @@ __license__ = "Apache License, Version 2.0"
 
 import argparse
 import csv
+import logging
+import os.path
 import re
 import sys
-from typing import Sequence, Tuple
+from enum import Enum, unique
+from typing import Any, Iterable, Iterator, Sequence, Tuple
 
 import pandas as pd
 from nltk.util import ngrams as nltk_ngrams
 
-CV_RESULTS_FILE_CSV_DIALECT = csv.excel_tab
-CV_RESULTS_FILE_ENCODING = "utf-8"
-KEYWORDS_FILE_CSV_DIALECT = csv.excel_tab
-KEYWORDS_FILE_ENCODING = "utf-8"
+import session_data as sd
+import utterances
+
+
+@unique
+class CrossValidationResultsDataColumn(Enum):
+	DYAD_ID = "DYAD"
+	ROUND_ID = "ROUND"
 
 
 class KeywordScorer(object):
@@ -30,8 +37,10 @@ class KeywordScorer(object):
 
 	def __call__(self, row: pd.Series):
 		dyad_id = row["DYAD"]
-		tokens = row["REFERRING_TOKENS"]
-		return self.__score_keywords(tokens, dyad_id)
+
+	# tokens = row["REFERRING_TOKENS"]
+	# TODO: Finish
+	# return self.__score_keywords(tokens, dyad_id)
 
 	def __score_keywords(self, tokens: Sequence[str], dyad_id: str):
 		ngrams_by_length = (nltk_ngrams(tokens, n) for n in range(1, len(tokens)))
@@ -40,8 +49,9 @@ class KeywordScorer(object):
 		for ngram in ngrams:
 			dyad_keyword_scores = self.session_keyword_scores.loc[
 				((self.session_keyword_scores["SESSION"] == dyad_id) & (self.session_keyword_scores["NGRAM"] == ngram))]
+			assert dyad_keyword_scores.shape[0] < 2
 			if dyad_keyword_scores.shape[0] < 1:
-				print("No score for ngram: {}; Session: {}".format(ngram, dyad_id))
+				logging.warning("No score for ngram: %s; Session: %s", ngram, dyad_id)
 
 
 class TokenSequenceFactory(object):
@@ -50,7 +60,7 @@ class TokenSequenceFactory(object):
 	def __init__(self):
 		self.token_seq_singletons = {}
 
-	def __call__(self, token_str: str) -> Tuple[str]:
+	def __call__(self, token_str: str) -> Tuple[str, ...]:
 		content = tuple(self._TOKEN_DELIMITER_PATTERN.split(token_str))
 		if content:
 			try:
@@ -64,54 +74,122 @@ class TokenSequenceFactory(object):
 		return result
 
 
-__TOKEN_SEQ_FACTORY = TokenSequenceFactory()
-__CV_RESULTS_FILE_CONVERTERS = {"REFERRING_TOKENS": __TOKEN_SEQ_FACTORY, "REFERRING_TOKEN_TYPES": __TOKEN_SEQ_FACTORY}
-__KEYWORDS_FILE_CONVERTERS = {"NGRAM": __TOKEN_SEQ_FACTORY}
+@unique
+class UtteranceTabularDataColumn(Enum):
+	DYAD_ID = "DYAD"
+	TOKEN_SEQ = "TOKENS"
+	ROUND_ID = "ROUND"
 
 
-def read_csv_results_file(infile: str) -> pd.DataFrame:
-	return pd.read_csv(infile, dialect=CV_RESULTS_FILE_CSV_DIALECT, sep=CV_RESULTS_FILE_CSV_DIALECT.delimiter,
-					   float_precision="round_trip",
-					   encoding=CV_RESULTS_FILE_ENCODING, memory_map=True, converters=__CV_RESULTS_FILE_CONVERTERS)
+class RoundUtteranceTokenSequenceJoiner(object):
+	def __init__(self, session_utts: pd.DataFrame, only_instructor: bool = True):
+		self.session_utts = session_utts
+		self.__session_dyad_token_seq_getter = self.__dyad_round_token_seqs_only_instructor if only_instructor else self.__dyad_round_token_seqs
+
+	def __call__(self, row: pd.Series) -> pd.Series:
+		dyad_to_match = row[CrossValidationResultsDataColumn.DYAD_ID.value]
+		round_to_match = row[CrossValidationResultsDataColumn.ROUND_ID.value]
+		dyad_round_token_seqs = self.__session_dyad_token_seq_getter(dyad_to_match, round_to_match)
+		logging.debug("Found %d utterance(s) for round %d of session \"%s\".", len(dyad_round_token_seqs),
+					  round_to_match,
+					  dyad_to_match)
+		return tuple(seq for seq in dyad_round_token_seqs if seq)
+
+	def __dyad_round_token_seqs(self, dyad_to_match: str, round_to_match: Any) -> pd.Series:
+		return self.session_utts.loc[(self.session_utts[UtteranceTabularDataColumn.DYAD_ID.value] == dyad_to_match) & (
+				self.session_utts[
+					UtteranceTabularDataColumn.ROUND_ID.value] == round_to_match), UtteranceTabularDataColumn.TOKEN_SEQ.value]
+
+	def __dyad_round_token_seqs_only_instructor(self, dyad_to_match: str, round_to_match: Any) -> pd.Series:
+		return self.session_utts.loc[(self.session_utts[UtteranceTabularDataColumn.DYAD_ID.value] == dyad_to_match) & (
+				self.session_utts[UtteranceTabularDataColumn.ROUND_ID.value] == round_to_match) & (
+											 self.session_utts[
+												 "DIALOGUE_ROLE"] == "INSTRUCTOR"), UtteranceTabularDataColumn.TOKEN_SEQ.value]
 
 
-def read_keyword_scores(keywords_file: str) -> pd.DataFrame:
-	return pd.read_csv(keywords_file, dialect=KEYWORDS_FILE_CSV_DIALECT, sep=KEYWORDS_FILE_CSV_DIALECT.delimiter,
-					   float_precision="round_trip",
-					   encoding=KEYWORDS_FILE_ENCODING, memory_map=True, converters=__KEYWORDS_FILE_CONVERTERS)
+_TOKEN_SEQ_FACTORY = TokenSequenceFactory()
+
+
+class TabularDataFileDatum(object):
+	def __init__(self, csv_dialect, encoding: str, converters):
+		self.csv_dialect = csv_dialect
+		self.encoding = encoding
+		self.converters = converters
+
+	def read_df(self, inpath: str):
+		return pd.read_csv(inpath, dialect=self.csv_dialect, sep=self.csv_dialect.delimiter,
+						   float_precision="round_trip",
+						   encoding=self.encoding, memory_map=True, converters=self.converters)
+
+
+@unique
+class TabularDataFile(Enum):
+	CV_RESULT = TabularDataFileDatum(csv.excel_tab, "utf-8", {"REFERRING_TOKENS": _TOKEN_SEQ_FACTORY,
+															  "REFERRING_TOKEN_TYPES": _TOKEN_SEQ_FACTORY})
+	KEYWORDS = TabularDataFileDatum(csv.excel_tab, "utf-8", {"NGRAM": _TOKEN_SEQ_FACTORY})
+	UTTS = TabularDataFileDatum(csv.excel_tab, "utf-8",
+								{UtteranceTabularDataColumn.TOKEN_SEQ.value: _TOKEN_SEQ_FACTORY})
+
+
+def read_utts_dfs(session_paths: Iterable[str]) -> Iterator[pd.DataFrame]:
+	print("Reading utterances from {}.".format(session_paths), file=sys.stderr)
+	session_dirs = tuple(sd.walk_session_dirs(session_paths))
+	session_parent_dirs = (os.path.dirname(session_dir) for session_dir in session_dirs)
+	common_session_id_prefix = os.path.commonpath(session_parent_dirs) + os.path.sep
+	logging.debug("Common parent path for all sessions is \"%s\".", common_session_id_prefix)
+	print("Reading utterances for {} session(s).".format(len(session_dirs)), file=sys.stderr)
+	return (__read_utts_df(session_dir, common_session_id_prefix) for session_dir in session_dirs)
+
+
+def __read_utts_df(session_dir: str, common_session_id_prefix: str) -> pd.DataFrame:
+	dyad_id = session_dir[len(common_session_id_prefix):] if session_dir.startswith(
+		common_session_id_prefix) else session_dir
+	utts_file = os.path.join(session_dir, "utts.tsv")
+	result = TabularDataFile.UTTS.value.read_df(utts_file)
+	result[UtteranceTabularDataColumn.DYAD_ID.value] = dyad_id
+	return result
 
 
 def __create_argparser() -> argparse.ArgumentParser:
 	result = argparse.ArgumentParser(
 		description="Correlates keyword TF-IDF score with the cross-validation ranks for rounds in which the given keywords were used.")
-	result.add_argument("infile", metavar="PATH",
-						help="The cross-validation result file to read.")
-	result.add_argument("-k", "--keywords", metavar="PATH",
+	result.add_argument("sessions", metavar="PATH", nargs='+',
+						help="Paths(s) containing session directories to use for getting utterance information.")
+	result.add_argument("-r", "--results", metavar="PATH", required=True,
+						help="The cross-validation results file to read.")
+	result.add_argument("-k", "--keywords", metavar="PATH", required=True,
 						help="The keyword TF-IDF score file.")
 	return result
 
 
 def __main(args):
-	infile = args.infile
-	print("Reading cross-validation ranks from \"{}\".".format(infile), file=sys.stderr)
-	cv_results = read_csv_results_file(infile)
-	print("Cross-validation results dataframe shape: {}".format(cv_results.shape), file=sys.stderr)
+	cv_results_infile = args.results
+	print("Reading cross-validation ranks from \"{}\".".format(cv_results_infile), file=sys.stderr)
+	cv_results = TabularDataFile.CV_RESULT.value.read_df(cv_results_infile)
+	logging.debug("Cross-validation results dataframe shape: %s", cv_results.shape)
 	cv_sessions = frozenset(cv_results["DYAD"].unique())
 	print("Read results for {} session(s).".format(len(cv_sessions)), file=sys.stderr)
 
 	keywords_file = args.keywords
 	print("Reading keyword scores from \"{}\".".format(keywords_file), file=sys.stderr)
-	session_keyword_scores = read_keyword_scores(keywords_file)
+	session_keyword_scores = TabularDataFile.KEYWORDS.value.read_df(keywords_file)
 	keyword_sessions = frozenset(session_keyword_scores["SESSION"].unique())
 	print("Read keyword scores for {} session(s).".format(len(keyword_sessions)), file=sys.stderr)
 	if keyword_sessions != cv_sessions:
 		raise ValueError("Set of sessions for keywords is not equal to that for cross-validation results.")
 	else:
-		keyword_scorer = KeywordScorer(session_keyword_scores)
-		cv_results.apply(keyword_scorer, axis=1)
-
-
-# TODO: Finish
+		session_paths = args.sessions
+		session_utts = pd.concat(read_utts_dfs(session_paths))
+		logging.debug("Session utterances dataframe shape: %s", session_utts.shape)
+		utt_session_set = frozenset(session_utts[UtteranceTabularDataColumn.DYAD_ID.value].unique())
+		if utt_session_set != cv_sessions:
+			raise ValueError("Set of sessions for utterances is not equal to that for cross-validation results.")
+		else:
+			session_utts[UtteranceTabularDataColumn.TOKEN_SEQ.value] = session_utts[UtteranceTabularDataColumn.TOKEN_SEQ.value].transform(lambda token_seq : tuple(token for token in token_seq if utterances.is_semantically_relevant_token(token)))
+			round_utt_joiner = RoundUtteranceTokenSequenceJoiner(session_utts)
+			cv_results["TOKEN_SEQS"] = cv_results.apply(round_utt_joiner, axis=1)
+			print(cv_results["TOKEN_SEQS"])
+			# TODO: Finish
 
 
 if __name__ == "__main__":
