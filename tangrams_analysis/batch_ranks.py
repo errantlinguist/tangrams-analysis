@@ -34,8 +34,6 @@ def __main(args):
 		mean_rank = results["RANK"].mean()
 		writer.writerow((inpath, mean_rank))
 
-	pass
-
 
 if __name__ == "__main__":
 	__main(__create_argparser().parse_args())
