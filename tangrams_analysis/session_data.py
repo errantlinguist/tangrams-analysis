@@ -1,12 +1,10 @@
 import csv
 import os
-from decimal import Decimal
 from enum import Enum, unique
 from typing import Dict, Iterator, Iterable, Tuple
 
 import pandas as pd
 
-DECIMAL_VALUE_TYPE = Decimal
 ENCODING = 'utf-8'
 EVENTS_METADATA_CSV_DIALECT = csv.excel_tab
 
