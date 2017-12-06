@@ -30,6 +30,7 @@ def __main(args):
 	writer = csv.writer(sys.stdout, dialect=csv.excel_tab)
 	writer.writerow(("FILE", "MEAN_RANK"))
 	for inpath in sorted(inpaths):
+		print("Reading \"{}\".".format(inpath), file=sys.stderr)
 		results = pd.read_csv(inpath, dialect=csv.excel_tab, sep=csv.excel_tab.delimiter)
 		mean_rank = results["RANK"].mean()
 		writer.writerow((inpath, mean_rank))
