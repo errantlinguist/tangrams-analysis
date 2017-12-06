@@ -24,10 +24,14 @@ _INFILE_DTYPES = {"DYAD": "category", "ENTITY": "category", "WORD": "category", 
 
 
 def create_word_metric_row(word: str, confidences: pd.DataFrame) -> Tuple[str, Real, Real, Real, Real, Integral]:
+	positive_ex_count = confidences.loc[(confidences["WORD"] == word) & confidences["TARGET"] == True].shape[0]
+	negative_ex_count = confidences.loc[(confidences["WORD"] == word) & confidences["TARGET"] != True].shape[0]
+	positive_obs_weight = float(negative_ex_count) / positive_ex_count
 	word_model_ref_scores = confidences.loc[(confidences["WORD"] == word)]
-	probs_of_being_correct = word_model_ref_scores.apply(__prob_of_being_correct, axis=1)
+	probs_of_being_correct = word_model_ref_scores.apply(lambda row: __prob_of_being_correct(row, positive_obs_weight),
+														 axis=1)
 	perplexity = word_model_perplexity(probs_of_being_correct)
-	observation_count = len(word_model_ref_scores)
+	observation_count = word_model_ref_scores.shape[0]
 	return word, probs_of_being_correct.mean(), probs_of_being_correct.var(), probs_of_being_correct.std(), perplexity, observation_count,
 
 
@@ -49,10 +53,10 @@ def word_model_perplexity(probs_of_being_correct: pd.Series) -> Real:
 	return 2 ** normalized_log_prob_sum
 
 
-def __prob_of_being_correct(row: pd.Series) -> Real:
+def __prob_of_being_correct(row: pd.Series, positive_obs_weight: Real) -> Real:
 	is_target = row["TARGET"]
 	confidence_score = row["CONFIDENCE"]
-	return confidence_score if is_target else 1.0 - confidence_score
+	return confidence_score * positive_obs_weight if is_target else 1.0 - confidence_score
 
 
 def __create_argparser() -> argparse.ArgumentParser:
