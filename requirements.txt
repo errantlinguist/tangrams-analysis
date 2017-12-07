@@ -3,4 +3,5 @@ nltk
 numpy
 pandas
 python-dateutil
+Pillow
 sklearn
