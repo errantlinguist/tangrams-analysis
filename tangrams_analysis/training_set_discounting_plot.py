@@ -56,8 +56,15 @@ def create_training_set_size_series(df: pd.DataFrame, dyad_ids: Sequence[str]) -
 		lambda discount_value: (max_training_set_size - discount_value) / np.longfloat(max_training_set_size))
 
 
-def rr(rank: Integral) -> np.longfloat:
-	return __LONGFLOAT_ONE / np.longfloat(rank)
+def plot_ranks(discount_mean_ranks: pd.DataFrame) -> sns.axisgrid.FacetGrid:
+	sns.set()
+	# https://stackoverflow.com/a/47407428/1391325
+	# Use lmplot to plot scatter points
+	graph = sns.lmplot(x="TRAINING_SET_SIZE", y="RR", hue="DYAD", data=discount_mean_ranks, fit_reg=False)
+	# Use regplot to plot the regression line for the whole points
+	sns.regplot(x="TRAINING_SET_SIZE", y="RR", data=discount_mean_ranks, scatter=False, ax=graph.axes[0, 0])
+	graph.set_axis_labels("Training set size", "MRR")
+	return graph
 
 
 def read_results_file(inpath: str) -> pd.DataFrame:
@@ -69,21 +76,26 @@ def read_results_file(inpath: str) -> pd.DataFrame:
 	return result
 
 
+def rr(rank: Integral) -> np.longfloat:
+	return __LONGFLOAT_ONE / np.longfloat(rank)
+
+
 def __create_argparser() -> argparse.ArgumentParser:
 	result = argparse.ArgumentParser(
 		description="Plots the results of using different training set discount values.")
-	result.add_argument("inpaths", metavar="INPATH", nargs='+',
+	result.add_argument("infiles", metavar="INPATH", nargs='+',
 						help="The files to process.")
-
+	result.add_argument("-o", "--outfile", metavar="OUTFILE",
+						help="The path to write the plot graphics to.")
 	return result
 
 
 def __main(args):
-	inpaths = args.inpaths
-	print("Will read {} file(s).".format(len(inpaths)), file=sys.stderr)
-	cv_results = pd.concat((read_results_file(inpath) for inpath in inpaths))
+	infiles = args.infiles
+	print("Will read {} file(s).".format(len(infiles)), file=sys.stderr)
+	cv_results = pd.concat((read_results_file(infile) for infile in infiles))
 	print(
-		"Read {} cross-validation round(s) from {} file(s) with {} column(s).".format(cv_results.shape[0], len(inpaths),
+		"Read {} cross-validation round(s) from {} file(s) with {} column(s).".format(cv_results.shape[0], len(infiles),
 																					  cv_results.shape[1]),
 		file=sys.stderr)
 	dyad_ids = tuple(sorted(cv_results["DYAD"].unique()))
@@ -94,14 +106,15 @@ def __main(args):
 	discount_results = cv_results.groupby(["DYAD", "TRAINING_SET_SIZE"], as_index=False)
 	discount_mean_ranks = discount_results.agg({"RANK": "mean", "RR": "mean"})
 	print("Plotting.", file=sys.stderr)
-	sns.set()
-	# https://stackoverflow.com/a/47407428/1391325
-	# Use lmplot to plot scatter points
-	graph = sns.lmplot(x="TRAINING_SET_SIZE", y="RR", hue="DYAD", data=discount_mean_ranks, fit_reg=False)
-	# Use regplot to plot the regression line for the whole points
-	sns.regplot(x="TRAINING_SET_SIZE", y="RR", data=discount_mean_ranks, scatter=False, ax=graph.axes[0, 0])
-	graph.set_axis_labels("Training set size", "MRR")
-	plt.show()
+	graph = plot_ranks(discount_mean_ranks)
+	print(type(graph))
+
+	outfile = args.outfile
+	if outfile:
+		print("Writing to \"{}\".".format(outfile), file=sys.stderr)
+		graph.savefig(outfile, format='eps', dpi=1000)
+	else:
+		plt.show()
 
 
 if __name__ == "__main__":
