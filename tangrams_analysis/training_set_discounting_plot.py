@@ -94,6 +94,7 @@ def __main(args):
 	discount_results = cv_results.groupby(["DYAD", "TRAINING_SET_SIZE"], as_index=False)
 	discount_mean_ranks = discount_results.agg({"RANK": "mean", "RR": "mean"})
 	print("Plotting.", file=sys.stderr)
+	sns.set()
 	# https://stackoverflow.com/a/47407428/1391325
 	# Use lmplot to plot scatter points
 	graph = sns.lmplot(x="TRAINING_SET_SIZE", y="RR", hue="DYAD", data=discount_mean_ranks, fit_reg=False)
