@@ -69,6 +69,8 @@ def is_semantically_relevant_token(token: str) -> bool:
 
 
 class TokenSequenceFactory(object):
+    EMPTY_SEQ = ()
+
     def __init__(self, token_filter: Callable[[str], bool] = is_semantically_relevant_token):
         self.token_filter = token_filter
         self.token_seq_singletons = {}
@@ -82,7 +84,7 @@ class TokenSequenceFactory(object):
                 result = tuple(sys.intern(token) for token in content)
                 self.token_seq_singletons[result] = result
         else:
-            result = None
+            result = self.EMPTY_SEQ
 
         return result
 
