@@ -20,7 +20,7 @@ import utterances
 
 def __create_argparser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
-        description="Writes all unique Higgins Annotation Tool (HAT) XML annotation segments to the standard output stream.")
+        description="Visualizes usage of vocabulary across sessions as a heatmap.")
     result.add_argument("inpaths", metavar="INPATH", nargs='+',
                         help="The files to process.")
 
