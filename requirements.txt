@@ -4,4 +4,4 @@ numpy
 pandas
 python-dateutil
 Pillow
-sklearn
+scikit-learn
