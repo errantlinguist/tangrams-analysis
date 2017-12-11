@@ -19,7 +19,6 @@ import typing
 
 import pandas as pd
 
-DYAD_ID_COL_NAME = "DYAD"
 MULTIVALUE_DELIM_PATTERN = re.compile("\\s*,\\s*")
 RESULTS_FILE_ENCODING = "utf-8"
 RESULTS_FILE_CSV_DIALECT = csv.excel_tab
@@ -41,13 +40,11 @@ __RESULTS_FILE_DTYPES = {"DYAD": "category", "SHAPE": "category", "ONLY_INSTRUCT
 
 
 def read_results_file(inpath: str) -> pd.DataFrame:
-	dyad_id = __dyad_id(inpath)
-	print("Reading \"{}\" for session \"{}\"".format(inpath, dyad_id), file=sys.stderr)
+	print("Reading \"{}\".".format(inpath), file=sys.stderr)
 	result = pd.read_csv(inpath, dialect=RESULTS_FILE_CSV_DIALECT, sep=RESULTS_FILE_CSV_DIALECT.delimiter,
 						 float_precision="round_trip",
 						 encoding=RESULTS_FILE_ENCODING, memory_map=True, converters=__RESULTS_FILE_CONVERTERS,
 						 dtype=__RESULTS_FILE_DTYPES)
-	result[DYAD_ID_COL_NAME] = dyad_id
 	return result
 
 
