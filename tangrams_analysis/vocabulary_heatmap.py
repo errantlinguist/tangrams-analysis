@@ -33,6 +33,7 @@ class SessionVocabularyCountDataColumn(Enum):
 __SESSION_WORD_COUNT_DF_COLS = (
 	SessionVocabularyCountDataColumn.DYAD_ID.value, SessionVocabularyCountDataColumn.TOKEN_TYPE.value,
 	SessionVocabularyCountDataColumn.TOKEN_COUNT.value)
+# noinspection PyTypeChecker
 assert len(__SESSION_WORD_COUNT_DF_COLS) == len(SessionVocabularyCountDataColumn)
 
 
