@@ -13,12 +13,11 @@ from xml.sax.saxutils import escape
 import lxml.builder
 import lxml.etree as etree
 
-import xml_files
-
 HAT_DATA_NAMESPACE = "http://www.speech.kth.se/higgins/2005/annotation/"
 HAT_DATA_NAMESPACE_NAME = "hat"
 HAT_DATA_SCHEMA_LOCATION = "http://www.speech.kth.se/higgins/2005/annotation/annotation.xsd"
-ANNOTATION_NAMESPACES = {HAT_DATA_NAMESPACE_NAME: HAT_DATA_NAMESPACE, "xsi": xml_files.XSI}
+ANNOTATION_NAMESPACES = {HAT_DATA_NAMESPACE_NAME: HAT_DATA_NAMESPACE,
+						 "xsi": "http://www.w3.org/2001/XMLSchema-instance"}
 
 ELEMENT_MAKER = lxml.builder.ElementMaker(
 	nsmap=ANNOTATION_NAMESPACES)
@@ -200,21 +199,6 @@ class TrackDatum(object):
 				except KeyError:
 					# Attr not present; just continue
 					pass
-
-
-def create_skeleton_annnotation_elem(audio_file_path: str):
-	"""
-	FIXME: Buggy!!!
-	:param audio_file_path: The audio file to create an empty annotation file for.
-	:return: A new XML element.
-	"""
-	root = ELEMENT_MAKER.Element("hat:annotation", ANNOTATION_NAMESPACES)
-	xml_files.add_xml_schema_location(root, HAT_DATA_SCHEMA_LOCATION)
-	tracks = ELEMENT_MAKER.SubElement(root, "hat:tracks")
-	__create_track_source_elem(tracks, "source1", "0", audio_file_path)
-	__create_track_source_elem(tracks, "source2", "1", audio_file_path)
-	ELEMENT_MAKER.SubElement(root, "hat:segments")
-	return root
 
 
 def is_blank_or_none(string: str):
