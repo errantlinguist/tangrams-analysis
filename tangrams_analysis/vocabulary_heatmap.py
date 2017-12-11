@@ -11,12 +11,17 @@ __copyright__ = "Copyright 2017 Todd Shore"
 __license__ = "Apache License, Version 2.0"
 
 import argparse
+import logging
 import os
 import sys
+import typing
 from collections import Counter
 from enum import Enum, unique
+from typing import Dict
 
+import matplotlib.pyplot as plt
 import pandas as pd
+import seaborn as sns
 
 import utterances
 
@@ -35,10 +40,11 @@ __SESSION_WORD_COUNT_DF_COLS = (
 assert len(__SESSION_WORD_COUNT_DF_COLS) == len(SessionVocabularyCountDataColumn)
 
 
-def create_session_word_count_df(utts: pd.DataFrame) -> pd.DataFrame:
+def create_session_word_count_dict(utts: pd.DataFrame) -> Dict[str, typing.Counter[str]]:
+	logging.debug("Creating session word count dict.")
 	session_utts = utts.groupby(SessionVocabularyCountDataColumn.DYAD_ID.value)
 
-	rows = []
+	result = {}
 	for session, utts in session_utts:
 		token_type_counts = Counter()
 		for row in utts.itertuples(index=False):
@@ -47,9 +53,18 @@ def create_session_word_count_df(utts: pd.DataFrame) -> pd.DataFrame:
 			token_seq = row_as_dict[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value]
 			token_type_counts.update(token_seq)
 
-		session_rows = ((session, token_type, count) for token_type, count in token_type_counts.items())
-		rows.extend(session_rows)
+		result[session] = token_type_counts
 
+	return result
+
+
+def create_session_word_count_df(utts: pd.DataFrame) -> pd.DataFrame:
+	logging.debug("Creating session word count DF.")
+	# TODO: It is not necessary to calculate counts for all words for all sessions since the pivot table populates missing values anyway; Re-implement
+	session_word_counts = create_session_word_count_dict(utts)
+	vocab = frozenset(word for word_counts in session_word_counts.values() for word in word_counts.keys())
+	rows = ((session, word, word_counts.get(word, 0)) for session, word_counts in session_word_counts.items() for word
+			in vocab)
 	return pd.DataFrame(data=rows, columns=__SESSION_WORD_COUNT_DF_COLS)
 
 
@@ -83,10 +98,23 @@ def __main(args):
 	print("Read {} unique utterance(s) from {} file(s) with {} column(s).".format(utts.shape[0], len(inpaths),
 																				  utts.shape[1]), file=sys.stderr)
 	session_word_count_df = create_session_word_count_df(utts)
-	session_word_count_df.sort_values(
-		[SessionVocabularyCountDataColumn.DYAD_ID.value, SessionVocabularyCountDataColumn.TOKEN_TYPE.value],
-		inplace=True)
-	print(session_word_count_df)
+	session_word_count_pivot_table = session_word_count_df.pivot_table(
+		SessionVocabularyCountDataColumn.TOKEN_COUNT.value,
+		SessionVocabularyCountDataColumn.DYAD_ID.value,
+		SessionVocabularyCountDataColumn.TOKEN_TYPE.value, fill_value=0)
+	print(
+		"Created a (session * word count) pivot table with dimensions {}.".format(session_word_count_pivot_table.shape),
+		file=sys.stderr)
+
+	print("Creating heatmap.")
+	sns.set()
+	# Draw a heatmap with the numeric values in each cell
+	# f, ax = plt.subplots(figsize=(9, 6))
+	ax = sns.heatmap(session_word_count_pivot_table)
+	plt.show()
+
+
+# print(session_word_count_pivot_table)
 
 
 if __name__ == "__main__":
