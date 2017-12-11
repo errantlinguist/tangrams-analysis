@@ -93,13 +93,6 @@ class TokenSequenceFactory(object):
 		return result
 
 
-@unique
-class UtteranceTabularDataColumn(Enum):
-	DYAD_ID = "DYAD"
-	TOKEN_SEQ = "TOKENS"
-	ROUND_ID = "ROUND"
-
-
 class RoundUtteranceTokenSequenceJoiner(object):
 	def __init__(self, session_utts: pd.DataFrame, only_instructor: bool = True):
 		self.session_utts = session_utts
@@ -115,15 +108,17 @@ class RoundUtteranceTokenSequenceJoiner(object):
 		return tuple(seq for seq in dyad_round_token_seqs if seq)
 
 	def __dyad_round_token_seqs(self, dyad_to_match: str, round_to_match: Any) -> pd.Series:
-		return self.session_utts.loc[(self.session_utts[UtteranceTabularDataColumn.DYAD_ID.value] == dyad_to_match) & (
-				self.session_utts[
-					UtteranceTabularDataColumn.ROUND_ID.value] == round_to_match), UtteranceTabularDataColumn.TOKEN_SEQ.value]
+		return self.session_utts.loc[
+			(self.session_utts[utterances.UtteranceTabularDataColumn.DYAD_ID.value] == dyad_to_match) & (
+					self.session_utts[
+						utterances.UtteranceTabularDataColumn.ROUND_ID.value] == round_to_match), utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value]
 
 	def __dyad_round_token_seqs_only_instructor(self, dyad_to_match: str, round_to_match: Any) -> pd.Series:
-		return self.session_utts.loc[(self.session_utts[UtteranceTabularDataColumn.DYAD_ID.value] == dyad_to_match) & (
-				self.session_utts[UtteranceTabularDataColumn.ROUND_ID.value] == round_to_match) & (
-											 self.session_utts[
-												 "DIALOGUE_ROLE"] == "INSTRUCTOR"), UtteranceTabularDataColumn.TOKEN_SEQ.value]
+		return self.session_utts.loc[
+			(self.session_utts[utterances.UtteranceTabularDataColumn.DYAD_ID.value] == dyad_to_match) & (
+					self.session_utts[utterances.UtteranceTabularDataColumn.ROUND_ID.value] == round_to_match) & (
+					self.session_utts[
+						"DIALOGUE_ROLE"] == "INSTRUCTOR"), utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value]
 
 
 _TOKEN_SEQ_FACTORY = TokenSequenceFactory()
@@ -147,7 +142,7 @@ class TabularDataFile(Enum):
 															  "REFERRING_TOKEN_TYPES": _TOKEN_SEQ_FACTORY})
 	KEYWORDS = TabularDataFileDatum(csv.excel_tab, "utf-8", {"NGRAM": _TOKEN_SEQ_FACTORY})
 	UTTS = TabularDataFileDatum(csv.excel_tab, "utf-8",
-								{UtteranceTabularDataColumn.TOKEN_SEQ.value: _TOKEN_SEQ_FACTORY})
+								{utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value: _TOKEN_SEQ_FACTORY})
 
 
 def read_utts_dfs(session_paths: Iterable[str]) -> Iterator[pd.DataFrame]:
@@ -165,7 +160,7 @@ def __read_utts_df(session_dir: str, common_session_id_prefix: str) -> pd.DataFr
 		common_session_id_prefix) else session_dir
 	utts_file = os.path.join(session_dir, "utts.tsv")
 	result = TabularDataFile.UTTS.value.read_df(utts_file)
-	result[UtteranceTabularDataColumn.DYAD_ID.value] = dyad_id
+	result[utterances.UtteranceTabularDataColumn.DYAD_ID.value] = dyad_id
 	return result
 
 
@@ -202,13 +197,13 @@ def __main(args):
 		# noinspection PyUnresolvedReferences
 		logging.debug("Session utterances dataframe shape: %s", session_utts.shape)
 		# noinspection PyUnresolvedReferences
-		utt_session_set = frozenset(session_utts[UtteranceTabularDataColumn.DYAD_ID.value].unique())
+		utt_session_set = frozenset(session_utts[utterances.UtteranceTabularDataColumn.DYAD_ID.value].unique())
 		if utt_session_set != cv_sessions:
 			raise ValueError("Set of sessions for utterances is not equal to that for cross-validation results.")
 		else:
 			# noinspection PyUnresolvedReferences
-			session_utts[UtteranceTabularDataColumn.TOKEN_SEQ.value] = session_utts[
-				UtteranceTabularDataColumn.TOKEN_SEQ.value].transform(lambda token_seq: tuple(
+			session_utts[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value] = session_utts[
+				utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value].transform(lambda token_seq: tuple(
 				token for token in token_seq if utterances.is_semantically_relevant_token(token)))
 			# noinspection PyTypeChecker
 			cv_results[CrossValidationResultsDataColumn.TOKEN_SEQS.value] = cv_results.apply(

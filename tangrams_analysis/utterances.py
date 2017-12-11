@@ -8,6 +8,7 @@ __license__ = "Apache License, Version 2.0"
 
 import sys
 from collections import defaultdict
+from enum import Enum, unique
 from typing import Any, Callable, DefaultDict, Iterable, Iterator, List, Sequence, Tuple
 from xml.etree.ElementTree import Element, parse as parse_etree
 
@@ -111,6 +112,13 @@ class TokenSequenceFactory(object):
 			result = None
 
 		return result
+
+
+@unique
+class UtteranceTabularDataColumn(Enum):
+	DYAD_ID = "DYAD"
+	TOKEN_SEQ = "TOKENS"
+	ROUND_ID = "ROUND"
 
 
 def create_speaker_dict(utts: Iterable[Utterance]) -> DefaultDict[str, List[Utterance]]:
