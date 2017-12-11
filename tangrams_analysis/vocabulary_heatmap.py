@@ -13,12 +13,9 @@ __license__ = "Apache License, Version 2.0"
 import argparse
 import sys
 
-import utterances
-
 import pandas as pd
-import logging
 
-from typing import Iterable
+import utterances
 
 
 def __create_argparser() -> argparse.ArgumentParser:
