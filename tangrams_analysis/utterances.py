@@ -14,6 +14,10 @@ from xml.etree.ElementTree import Element, parse as parse_etree
 
 import annotations
 
+import pandas as pd
+import csv
+import re
+
 """
 NOTE: See "../src/main/resources/se/kth/speech/nlp/fillers.txt"
 """
@@ -170,6 +174,22 @@ def is_disfluency(token: str) -> bool:
 
 def join_utt_sentence_reprs(utts: Iterable[Utterance]) -> str:
 	return ' '.join(token_seq_repr(utt.content) for utt in utts)
+
+UTTS_FILE_ENCODING = "utf-8"
+UTTS_FILE_CSV_DIALECT = csv.excel_tab
+UTTS_DTYPES = {UtteranceTabularDataColumn.DIALOGUE_ROLE.value : "categorical", UtteranceTabularDataColumn.SPEAKER_ID.value : "categorical" }
+UTTS_CONVERTERS = {UtteranceTabularDataColumn.DIALOGUE_ROLE.value : str.intern, UtteranceTabularDataColumn.SPEAKER_ID.value : str.intern}
+
+TOKEN_DELIMITER_PATTERN = re.compile("\\s+")
+
+def __parse_utt_token_seq(input : str) -> Tuple[str]:
+	return tuple(TOKEN_DELIMITER_PATTERN.split(input))
+
+#class UtteranceTabularDataReader(object):
+#	def __index__(self):
+
+#def read_utterances(infile_path: str) -> pd.DataFrame:
+#	pd.read_csv(infile_path, dialect=UTTS_FILE_CSV_DIALECT, sep=UTTS_FILE_CSV_DIALECT.delimiter, float_precision="round_trip")
 
 
 def read_segments(infile_path: str) -> Iterator[Element]:
