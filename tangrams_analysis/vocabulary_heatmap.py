@@ -12,10 +12,13 @@ __license__ = "Apache License, Version 2.0"
 
 import argparse
 import sys
+import os
 
 import pandas as pd
 
 import utterances
+
+DYAD_ID_COL_NAME = "DYAD"
 
 
 def __create_argparser() -> argparse.ArgumentParser:
@@ -27,9 +30,17 @@ def __create_argparser() -> argparse.ArgumentParser:
     return result
 
 
+def __dyad_id(infile: str) -> str:
+    session_dir = os.path.dirname(infile)
+    return os.path.split(session_dir)[1]
+
+
 def __read_utts_file(inpath: str, utt_reader: utterances.UtteranceTabularDataReader) -> pd.DataFrame:
-    print("Reading utt file at \"{}\".".format(inpath), file=sys.stderr)
-    return utt_reader(inpath)
+    dyad_id = __dyad_id(inpath)
+    print("Reading utt file at \"{}\" as dyad \"{}\"".format(inpath, dyad_id), file=sys.stderr)
+    result = utt_reader(inpath)
+    result[DYAD_ID_COL_NAME] = dyad_id
+    return result
 
 
 def __main(args):
@@ -37,7 +48,7 @@ def __main(args):
     print("Will read {} file(s).".format(len(inpaths)), file=sys.stderr)
     utt_reader = utterances.UtteranceTabularDataReader()
     utts = pd.concat((__read_utts_file(inpath, utt_reader) for inpath in inpaths))
-    print("Read {} unique utterance(s) from {} file(s).".format(utts.shape[0], len(inpaths)), file=sys.stderr)
+    print("Read {} unique utterance(s) from {} file(s) with {} column(s).".format(utts.shape[0], len(inpaths), utts.shape[1]), file=sys.stderr)
     print(utts)
 
 
