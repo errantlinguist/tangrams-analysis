@@ -6,17 +6,17 @@ __author__ = "Todd Shore <errantlinguist+github@gmail.com>"
 __copyright__ = "Copyright 2017 Todd Shore"
 __license__ = "Apache License, Version 2.0"
 
+import csv
+import re
 import sys
 from collections import defaultdict
 from enum import Enum, unique
 from typing import Any, Callable, DefaultDict, Iterable, Iterator, List, Optional, Sequence, Tuple
 from xml.etree.ElementTree import Element, parse as parse_etree
 
-import annotations
-
 import pandas as pd
-import csv
-import re
+
+import annotations
 
 """
 NOTE: See "../src/main/resources/se/kth/speech/nlp/fillers.txt"
