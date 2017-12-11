@@ -60,7 +60,6 @@ def create_session_word_count_dict(utts: pd.DataFrame) -> Dict[str, typing.Count
 
 def create_session_word_count_df(utts: pd.DataFrame) -> pd.DataFrame:
 	logging.debug("Creating session word count DF.")
-	# TODO: It is not necessary to calculate counts for all words for all sessions since the pivot table populates missing values anyway; Re-implement
 	session_word_counts = create_session_word_count_dict(utts)
 	vocab = frozenset(word for word_counts in session_word_counts.values() for word in word_counts.keys())
 	rows = ((session, word, word_counts.get(word, 0)) for session, word_counts in session_word_counts.items() for word
@@ -98,10 +97,10 @@ def __main(args):
 	print("Read {} unique utterance(s) from {} file(s) with {} column(s).".format(utts.shape[0], len(inpaths),
 																				  utts.shape[1]), file=sys.stderr)
 	session_word_count_df = create_session_word_count_df(utts)
-	session_word_count_pivot_table = session_word_count_df.pivot_table(
-		SessionVocabularyCountDataColumn.TOKEN_COUNT.value,
-		SessionVocabularyCountDataColumn.DYAD_ID.value,
-		SessionVocabularyCountDataColumn.TOKEN_TYPE.value, fill_value=0)
+	session_word_count_pivot_table = session_word_count_df.pivot(
+		values=SessionVocabularyCountDataColumn.TOKEN_COUNT.value,
+		index=SessionVocabularyCountDataColumn.DYAD_ID.value,
+		columns=SessionVocabularyCountDataColumn.TOKEN_TYPE.value)
 	print(
 		"Created a (session * word count) pivot table with dimensions {}.".format(session_word_count_pivot_table.shape),
 		file=sys.stderr)
