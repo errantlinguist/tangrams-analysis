@@ -55,7 +55,7 @@ def __replace_blue(array: np.array, v: Number):
 
 def create_filtered_image(img: Image.Image, rgb: Tuple[Number, Number, Number]) -> Image.Image:
 	rgb_img = img.convert("RGBA")
-	data = np.array(rgb_img)
+	data = np.array(rgb_img.getdata())
 	__replace_red(data, rgb[0])
 	__replace_green(data, rgb[1])
 	__replace_blue(data, rgb[2])
