@@ -116,7 +116,6 @@ class TokenSequenceFactory(object):
 
 @unique
 class UtteranceTabularDataColumn(Enum):
-	DYAD_ID = "DYAD"
 	TOKEN_SEQ = "TOKENS"
 	ROUND_ID = "ROUND"
 

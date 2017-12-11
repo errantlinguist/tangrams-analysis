@@ -24,6 +24,8 @@ from nltk.util import ngrams as nltk_ngrams
 import session_data as sd
 import utterances
 
+UTTERANCE_DYAD_ID = "DYAD"
+
 
 @unique
 class CrossValidationResultsDataColumn(Enum):
@@ -109,13 +111,13 @@ class RoundUtteranceTokenSequenceJoiner(object):
 
 	def __dyad_round_token_seqs(self, dyad_to_match: str, round_to_match: Any) -> pd.Series:
 		return self.session_utts.loc[
-			(self.session_utts[utterances.UtteranceTabularDataColumn.DYAD_ID.value] == dyad_to_match) & (
+			(self.session_utts[UTTERANCE_DYAD_ID] == dyad_to_match) & (
 					self.session_utts[
 						utterances.UtteranceTabularDataColumn.ROUND_ID.value] == round_to_match), utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value]
 
 	def __dyad_round_token_seqs_only_instructor(self, dyad_to_match: str, round_to_match: Any) -> pd.Series:
 		return self.session_utts.loc[
-			(self.session_utts[utterances.UtteranceTabularDataColumn.DYAD_ID.value] == dyad_to_match) & (
+			(self.session_utts[UTTERANCE_DYAD_ID] == dyad_to_match) & (
 					self.session_utts[utterances.UtteranceTabularDataColumn.ROUND_ID.value] == round_to_match) & (
 					self.session_utts[
 						"DIALOGUE_ROLE"] == "INSTRUCTOR"), utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value]
@@ -160,7 +162,7 @@ def __read_utts_df(session_dir: str, common_session_id_prefix: str) -> pd.DataFr
 		common_session_id_prefix) else session_dir
 	utts_file = os.path.join(session_dir, "utts.tsv")
 	result = TabularDataFile.UTTS.value.read_df(utts_file)
-	result[utterances.UtteranceTabularDataColumn.DYAD_ID.value] = dyad_id
+	result[UTTERANCE_DYAD_ID] = dyad_id
 	return result
 
 
@@ -197,7 +199,7 @@ def __main(args):
 		# noinspection PyUnresolvedReferences
 		logging.debug("Session utterances dataframe shape: %s", session_utts.shape)
 		# noinspection PyUnresolvedReferences
-		utt_session_set = frozenset(session_utts[utterances.UtteranceTabularDataColumn.DYAD_ID.value].unique())
+		utt_session_set = frozenset(session_utts[UTTERANCE_DYAD_ID].unique())
 		if utt_session_set != cv_sessions:
 			raise ValueError("Set of sessions for utterances is not equal to that for cross-validation results.")
 		else:
