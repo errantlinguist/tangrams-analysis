@@ -116,8 +116,12 @@ class TokenSequenceFactory(object):
 
 @unique
 class UtteranceTabularDataColumn(Enum):
-	TOKEN_SEQ = "TOKENS"
 	ROUND_ID = "ROUND"
+	SPEAKER_ID = "SPEAKER"
+	DIALOGUE_ROLE = "DIALOGUE_ROLE"
+	START_TIME = "START_TIME"
+	END_TIME = "END_TIME"
+	TOKEN_SEQ = "TOKENS"
 
 
 def create_speaker_dict(utts: Iterable[Utterance]) -> DefaultDict[str, List[Utterance]]:
