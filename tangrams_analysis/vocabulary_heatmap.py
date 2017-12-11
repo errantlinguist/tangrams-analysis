@@ -13,10 +13,8 @@ __license__ = "Apache License, Version 2.0"
 import argparse
 import os
 import sys
-import typing
 from collections import Counter
 from enum import Enum, unique
-from typing import Iterable
 
 import pandas as pd
 
@@ -37,21 +35,22 @@ __SESSION_WORD_COUNT_DF_COLS = (
 assert len(__SESSION_WORD_COUNT_DF_COLS) == len(SessionVocabularyCountDataColumn)
 
 
-def count_tokens(token_seqs: Iterable[Iterable[str]]) -> typing.Counter[str]:
-	result = Counter()
-	for token_seq in token_seqs:
-		result.update(token_seq)
-	return result
-
-
 def create_session_word_count_df(utts: pd.DataFrame) -> pd.DataFrame:
 	session_utts = utts.groupby(SessionVocabularyCountDataColumn.DYAD_ID.value)
-	session_token_counts = session_utts[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value].agg(count_tokens)
-	session_word_count_rows = []
-	for session, token_counts in session_token_counts.iteritems():
-		for token_type, count in token_counts.items():
-			session_word_count_rows.append((session, token_type, count))
-	return pd.DataFrame(data=session_word_count_rows, columns=__SESSION_WORD_COUNT_DF_COLS)
+
+	rows = []
+	for session, utts in session_utts:
+		token_type_counts = Counter()
+		for row in utts.itertuples(index=False):
+			# noinspection PyProtectedMember
+			row_as_dict = row._asdict()
+			token_seq = row_as_dict[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value]
+			token_type_counts.update(token_seq)
+
+		session_rows = ((session, token_type, count) for token_type, count in token_type_counts.items())
+		rows.extend(session_rows)
+
+	return pd.DataFrame(data=rows, columns=__SESSION_WORD_COUNT_DF_COLS)
 
 
 def __create_argparser() -> argparse.ArgumentParser:
