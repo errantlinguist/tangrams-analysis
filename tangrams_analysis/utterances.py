@@ -74,7 +74,7 @@ class TokenSequenceFactory(object):
         self.token_seq_singletons = {}
 
     def __call__(self, tokens: Iterable[str]) -> Tuple[str, ...]:
-        content = tuple(tokens)
+        content = tuple(token for token in tokens if self.token_filter(token))
         if content:
             try:
                 result = self.token_seq_singletons[content]
