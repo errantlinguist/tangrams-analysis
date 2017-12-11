@@ -70,6 +70,7 @@ def __main(args):
 		"Read {} cross-validation round(s) from {} file(s) with {} column(s).".format(cv_results.shape[0], len(inpaths),
 																					  cv_results.shape[1]),
 		file=sys.stderr)
+	cv_results.pivot_table("RANK", "")
 
 
 if __name__ == "__main__":

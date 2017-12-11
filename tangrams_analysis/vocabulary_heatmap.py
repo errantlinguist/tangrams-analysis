@@ -23,7 +23,7 @@ import matplotlib.pyplot as plt
 import pandas as pd
 import seaborn as sns
 
-from .. import utterances
+import utterances
 
 
 @unique
