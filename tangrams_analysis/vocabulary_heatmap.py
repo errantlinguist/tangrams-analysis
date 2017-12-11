@@ -17,12 +17,23 @@ import os
 import typing
 from typing import Iterable
 from collections import Counter
+from enum import Enum, unique
 
 import pandas as pd
 
 import utterances
 
-DYAD_ID_COL_NAME = "DYAD"
+
+@unique
+class SessionVocabularyCountDataColumn(Enum):
+    DYAD_ID = "DYAD"
+    TOKEN_TYPE = "TOKEN_TYPE"
+    TOKEN_COUNT = "TOKEN_COUNT"
+
+
+__SESSION_WORD_COUNT_DF_COLS = (
+    SessionVocabularyCountDataColumn.DYAD_ID.value, SessionVocabularyCountDataColumn.TOKEN_TYPE.value,
+    SessionVocabularyCountDataColumn.TOKEN_COUNT.value)
 
 
 def count_tokens(token_seqs: Iterable[Iterable[str]]) -> typing.Counter[str]:
@@ -33,13 +44,13 @@ def count_tokens(token_seqs: Iterable[Iterable[str]]) -> typing.Counter[str]:
 
 
 def create_session_word_count_df(utts: pd.DataFrame) -> pd.DataFrame:
-    session_utts = utts.groupby(DYAD_ID_COL_NAME)
+    session_utts = utts.groupby(SessionVocabularyCountDataColumn.DYAD_ID.value)
     session_token_counts = session_utts[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value].agg(count_tokens)
     session_word_count_rows = []
     for session, token_counts in session_token_counts.iteritems():
         for token_type, count in token_counts.items():
             session_word_count_rows.append((session, token_type, count))
-    return pd.DataFrame(data=session_word_count_rows, columns=("DYAD", "TOKEN_TYPE", "TOKEN_COUNT"))
+    return pd.DataFrame(data=session_word_count_rows, columns=__SESSION_WORD_COUNT_DF_COLS)
 
 
 def __create_argparser() -> argparse.ArgumentParser:
@@ -60,7 +71,7 @@ def __read_utts_file(inpath: str, utt_reader: utterances.UtteranceTabularDataRea
     dyad_id = __dyad_id(inpath)
     print("Reading utt file at \"{}\" as dyad \"{}\"".format(inpath, dyad_id), file=sys.stderr)
     result = utt_reader(inpath)
-    result[DYAD_ID_COL_NAME] = dyad_id
+    result[SessionVocabularyCountDataColumn.DYAD_ID.value] = dyad_id
     return result
 
 
@@ -72,6 +83,9 @@ def __main(args):
     print("Read {} unique utterance(s) from {} file(s) with {} column(s).".format(utts.shape[0], len(inpaths),
                                                                                   utts.shape[1]), file=sys.stderr)
     session_word_count_df = create_session_word_count_df(utts)
+    session_word_count_df.sort_values(
+        [SessionVocabularyCountDataColumn.DYAD_ID.value, SessionVocabularyCountDataColumn.TOKEN_TYPE.value],
+        inplace=True)
     print(session_word_count_df)
 
 
