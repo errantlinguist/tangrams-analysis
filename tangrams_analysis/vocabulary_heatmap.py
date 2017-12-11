@@ -32,6 +32,16 @@ def count_tokens(token_seqs: Iterable[Iterable[str]]) -> typing.Counter[str]:
     return result
 
 
+def create_session_word_count_df(utts: pd.DataFrame) -> pd.DataFrame:
+    session_utts = utts.groupby(DYAD_ID_COL_NAME)
+    session_token_counts = session_utts[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value].agg(count_tokens)
+    session_word_count_rows = []
+    for session, token_counts in session_token_counts.iteritems():
+        for token_type, count in token_counts.items():
+            session_word_count_rows.append((session, token_type, count))
+    return pd.DataFrame(data=session_word_count_rows, columns=("DYAD", "TOKEN_TYPE", "TOKEN_COUNT"))
+
+
 def __create_argparser() -> argparse.ArgumentParser:
     result = argparse.ArgumentParser(
         description="Visualizes usage of vocabulary across sessions as a heatmap.")
@@ -61,9 +71,8 @@ def __main(args):
     utts = pd.concat((__read_utts_file(inpath, utt_reader) for inpath in inpaths))
     print("Read {} unique utterance(s) from {} file(s) with {} column(s).".format(utts.shape[0], len(inpaths),
                                                                                   utts.shape[1]), file=sys.stderr)
-    session_utts = utts.groupby(DYAD_ID_COL_NAME)
-    session_token_counts = session_utts[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value].agg(count_tokens)
-    print(session_token_counts)
+    session_word_count_df = create_session_word_count_df(utts)
+    print(session_word_count_df)
 
 
 if __name__ == "__main__":
