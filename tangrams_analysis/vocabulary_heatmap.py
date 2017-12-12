@@ -96,6 +96,7 @@ def __main(args):
 	utts = pd.concat((__read_utts_file(inpath, utt_reader) for inpath in inpaths))
 	print("Read {} unique utterance(s) from {} file(s) with {} column(s).".format(utts.shape[0], len(inpaths),
 																				  utts.shape[1]), file=sys.stderr)
+	# noinspection PyTypeChecker
 	session_word_count_df = create_session_word_count_df(utts)
 	session_word_count_pivot_table = session_word_count_df.pivot(
 		values=SessionVocabularyCountDataColumn.TOKEN_COUNT.value,
