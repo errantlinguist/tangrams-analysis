@@ -15,7 +15,7 @@ import re
 import sys
 import typing
 from enum import Enum, unique
-from typing import Any, Iterable, Iterator, Sequence, Tuple
+from typing import Any, Iterable, Iterator, Tuple
 
 import pandas as pd
 
@@ -45,11 +45,18 @@ UTTERANCE_DYAD_ID_COL_NAME = "DYAD"
 class CrossValidationResultsDataColumn(Enum):
 	DYAD_ID = "DYAD"
 	ROUND_ID = "ROUND"
-	TOKEN_SEQS = "TOKEN_SEQS"
+	UTTERANCES = "UTTERANCES"
 	ONLY_INSTRUCTOR = "ONLY_INSTRUCTOR"
 
 
-class DyadRoundTokenSequenceFinder(object):
+class DyadRoundUtteranceFactory(object):
+
+	@staticmethod
+	def __create_utterance_from_df_row(row: pd.Series) -> utterances.Utterance:
+		return utterances.Utterance(row[utterances.UtteranceTabularDataColumn.DIALOGUE_ROLE.value],
+									row[utterances.UtteranceTabularDataColumn.START_TIME.value],
+									row[utterances.UtteranceTabularDataColumn.END_TIME.value],
+									row[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value])
 
 	@staticmethod
 	def __find_utt_rows(dyad: str, game_round: Any, only_instr: bool, utts: pd.DataFrame) -> pd.DataFrame:
@@ -73,13 +80,14 @@ class DyadRoundTokenSequenceFinder(object):
 							   utterances.UtteranceTabularDataColumn.START_TIME.value,
 							   utterances.UtteranceTabularDataColumn.END_TIME.value], inplace=True)
 
-	def __call__(self, row: pd.Series) -> Tuple[Sequence[str], ...]:
+	def __call__(self, row: pd.Series) -> Tuple[utterances.Utterance, ...]:
 		dyad = row[CrossValidationResultsDataColumn.DYAD_ID.value]
 		game_round = row[CrossValidationResultsDataColumn.ROUND_ID.value]
 		only_instr = row[CrossValidationResultsDataColumn.ONLY_INSTRUCTOR.value]
 		round_utt_rows = self.__find_utt_rows(dyad, game_round, only_instr, self.utts)
 		assert round_utt_rows.shape[0] > 0
-		return tuple(token_seq for token_seq in round_utt_rows[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value] if token_seq)
+		utts = round_utt_rows.apply(self.__create_utterance_from_df_row, axis=1)
+		return tuple(utt for utt in utts if utt.content)
 
 
 def read_results_file(inpath: str) -> pd.DataFrame:
@@ -88,6 +96,14 @@ def read_results_file(inpath: str) -> pd.DataFrame:
 						 float_precision="round_trip",
 						 encoding=RESULTS_FILE_ENCODING, memory_map=True, converters=__RESULTS_FILE_CONVERTERS,
 						 dtype=__RESULTS_FILE_DTYPES)
+	return result
+
+
+def read_utts_file(inpath: str, utt_reader: utterances.UtteranceTabularDataReader) -> pd.DataFrame:
+	dyad_id = __dyad_id(inpath)
+	print("Reading utt file at \"{}\" as dyad \"{}\".".format(inpath, dyad_id), file=sys.stderr)
+	result = utt_reader(inpath)
+	result[UTTERANCE_DYAD_ID_COL_NAME] = dyad_id
 	return result
 
 
@@ -113,14 +129,6 @@ def __dyad_id(infile: str) -> str:
 	return os.path.split(session_dir)[1]
 
 
-def __read_utts_file(inpath: str, utt_reader: utterances.UtteranceTabularDataReader) -> pd.DataFrame:
-	dyad_id = __dyad_id(inpath)
-	print("Reading utt file at \"{}\" as dyad \"{}\".".format(inpath, dyad_id), file=sys.stderr)
-	result = utt_reader(inpath)
-	result[UTTERANCE_DYAD_ID_COL_NAME] = dyad_id
-	return result
-
-
 def __main(args):
 	infiles = args.infiles
 	print("Will read {} cross-validation results file(s).".format(len(infiles)), file=sys.stderr)
@@ -134,7 +142,7 @@ def __main(args):
 	print("Will read session utterance data from {}.".format(session_paths), file=sys.stderr)
 	uttfile_paths = tuple(walk_session_uttfile_paths(session_paths))
 	utt_reader = utterances.UtteranceTabularDataReader()
-	utts = pd.concat((__read_utts_file(inpath, utt_reader) for inpath in uttfile_paths))
+	utts = pd.concat((read_utts_file(inpath, utt_reader) for inpath in uttfile_paths))
 	# noinspection PyUnresolvedReferences
 	utts_dyads = frozenset(utts[UTTERANCE_DYAD_ID_COL_NAME].unique())
 	print("Read {} unique utterance(s) from {} file(s) for {} dyad(s), with {} column(s).".format(utts.shape[0],
@@ -148,10 +156,10 @@ def __main(args):
 				sorted(cv_results_dyads), sorted(utts_dyads)))
 	else:
 		# noinspection PyTypeChecker
-		round_token_seq_finder = DyadRoundTokenSequenceFinder(utts)
+		round_token_seq_finder = DyadRoundUtteranceFactory(utts)
 		# noinspection PyUnresolvedReferences
-		cv_results[CrossValidationResultsDataColumn.TOKEN_SEQS.value] = cv_results.apply(round_token_seq_finder, axis=1)
-		print(cv_results[CrossValidationResultsDataColumn.TOKEN_SEQS.value])
+		cv_results[CrossValidationResultsDataColumn.UTTERANCES.value] = cv_results.apply(round_token_seq_finder, axis=1)
+		print(cv_results[CrossValidationResultsDataColumn.UTTERANCES.value])
 
 
 if __name__ == "__main__":
