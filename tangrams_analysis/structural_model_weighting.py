@@ -15,8 +15,10 @@ import re
 import sys
 import typing
 from enum import Enum, unique
-from typing import Any, Iterable, Iterator, Tuple
+from numbers import Real
+from typing import Any, Iterable, Iterator, List, Mapping, Tuple
 
+import numpy as np
 import pandas as pd
 
 import utterances
@@ -47,6 +49,14 @@ class CrossValidationResultsDataColumn(Enum):
 	ROUND_ID = "ROUND"
 	UTTERANCES = "UTTERANCES"
 	ONLY_INSTRUCTOR = "ONLY_INSTRUCTOR"
+	SHAPE = "SHAPE"
+	SIZE = "SIZE"
+	# EDGE_COUNT = "EDGE_COUNT"
+	RED = "RED"
+	GREEN = "GREEN"
+	BLUE = "BLUE"
+	POSITION_X = "POSITION_X"
+	POSITION_Y = "POSITION_Y"
 
 
 class DyadRoundUtteranceFactory(object):
@@ -88,6 +98,70 @@ class DyadRoundUtteranceFactory(object):
 		assert round_utt_rows.shape[0] > 0
 		utts = round_utt_rows.apply(self.__create_utterance_from_df_row, axis=1)
 		return tuple(utt for utt in utts if utt.content)
+
+
+class InputDatapointSequenceFactory(object):
+
+	@staticmethod
+	def __create_weighted_token_seq(tokens: Iterable[str]) -> List[Tuple[str, int]]:
+		result = []
+		token_iter = iter(tokens)
+		current_token = next(token_iter)
+		current_token_count = 1
+		for next_token in token_iter:
+			if next_token == current_token:
+				current_token_count += 1
+			else:
+				result.append((current_token, current_token_count))
+				current_token = next_token
+				current_token_count = 1
+		# Put the tail element in the list
+		result.append((current_token, current_token_count))
+		return result
+
+	def __init__(self, word_feature_idxs: Mapping[str, int], dialogue_role_values: Mapping[str, Real]):
+		self.word_feature_idxs = word_feature_idxs
+		self.dialogue_role_values = dialogue_role_values
+		self.cardinality = len(self.word_feature_idxs) + 1
+		self.dialoge_role_feature_idx = len(self.word_feature_idxs)
+
+	def __call__(self, game_round_ranking_result: Mapping[str, Any]) -> np.array:
+		# shape = game_round_ranking_result[CrossValidationResultsDataColumn.SHAPE.value]
+		# size = game_round_ranking_result[CrossValidationResultsDataColumn.SIZE.value]
+		# red = game_round_ranking_result[CrossValidationResultsDataColumn.RED.value]
+		# green = game_round_ranking_result[CrossValidationResultsDataColumn.GREEN.value]
+		# blue = game_round_ranking_result[CrossValidationResultsDataColumn.BLUE.value]
+		# pos_x = game_round_ranking_result[CrossValidationResultsDataColumn.POSITION_X.value]
+		# pos_y = game_round_ranking_result[CrossValidationResultsDataColumn.POSITION_Y.value]
+		# mid_x = distance_from_central_value(pos_x)
+		# mid_y = distance_from_central_value(pos_y)
+		utts = game_round_ranking_result[CrossValidationResultsDataColumn.UTTERANCES.value]
+		rows = tuple(row for utt in utts for row in self.__create_word_rows(utt))
+		return np.array(rows)
+
+	def __create_word_rows(self, utt: utterances.Utterance) -> Iterator[np.array]:
+		dialogue_role = utt.speaker_id
+		weighted_tokens = self.__create_weighted_token_seq(utt.content)
+		return (self.__create_word_row(token, weight, dialogue_role) for (token, weight) in weighted_tokens)
+
+	def __create_word_row(self, word: str, weight: Real, dialogue_role: str) -> np.array:
+		result = np.zeros(self.cardinality)
+		word_feature_idx = self.word_feature_idxs[word]
+		result[word_feature_idx] = weight
+		diag_role_value = self.dialogue_role_values[dialogue_role]
+		result[self.dialoge_role_feature_idx] = diag_role_value
+		return result
+
+
+def distance_from_central_value(value: float) -> float:
+	"""
+	Calculates the distance from the center for a value in the range of 0.0 to 1.0.
+	:param value:  A value between 0.0 and 1.0 (inclusive).
+	:return: The distance from the center (i.e. 0.5).
+	"""
+	assert value >= 0.0
+	assert value <= 1.0
+	return 1.0 - abs(0.5 - value) * 2.0
 
 
 def read_results_file(inpath: str) -> pd.DataFrame:
@@ -159,7 +233,22 @@ def __main(args):
 		round_token_seq_finder = DyadRoundUtteranceFactory(utts)
 		# noinspection PyUnresolvedReferences
 		cv_results[CrossValidationResultsDataColumn.UTTERANCES.value] = cv_results.apply(round_token_seq_finder, axis=1)
-		print(cv_results[CrossValidationResultsDataColumn.UTTERANCES.value])
+		vocab = frozenset(
+			token for token_seq in utts[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value] for token in token_seq)
+		print("Using a vocabulary of size {}.".format(len(vocab)), file=sys.stderr)
+		dialogue_role_feature_values = dict((dialogue_role, float(idx)) for (idx, dialogue_role) in enumerate(
+			utts[utterances.UtteranceTabularDataColumn.DIALOGUE_ROLE.value].unique()))
+		print("Found {} dialogue role(s): {}".format(len(dialogue_role_feature_values),
+													 sorted(dialogue_role_feature_values.keys())), file=sys.stderr)
+		input_seq_factory = InputDatapointSequenceFactory(dict((word, idx) for (idx, word) in enumerate(vocab)),
+														  dialogue_role_feature_values)
+		for game_round_ranking_result in cv_results.itertuples(index=False):
+			# noinspection PyProtectedMember
+			input_seq = input_seq_factory(game_round_ranking_result._asdict())
+			print(input_seq)
+		# https://machinelearningmastery.com/time-series-prediction-lstm-recurrent-neural-networks-python-keras/
+		# fix random seed for reproducibility
+		np.random.seed(7)
 
 
 if __name__ == "__main__":
