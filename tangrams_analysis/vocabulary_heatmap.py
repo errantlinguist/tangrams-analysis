@@ -94,6 +94,7 @@ def __main(args):
 	print("Will read {} file(s).".format(len(inpaths)), file=sys.stderr)
 	utt_reader = utterances.UtteranceTabularDataReader()
 	utts = pd.concat((__read_utts_file(inpath, utt_reader) for inpath in inpaths))
+	# noinspection PyUnresolvedReferences
 	print("Read {} unique utterance(s) from {} file(s) with {} column(s).".format(utts.shape[0], len(inpaths),
 																				  utts.shape[1]), file=sys.stderr)
 	# noinspection PyTypeChecker

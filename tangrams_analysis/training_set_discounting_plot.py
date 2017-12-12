@@ -98,11 +98,16 @@ def __main(args):
 		"Read {} cross-validation round(s) from {} file(s) with {} column(s).".format(cv_results.shape[0], len(infiles),
 																					  cv_results.shape[1]),
 		file=sys.stderr)
+	# noinspection PyUnresolvedReferences
 	dyad_ids = tuple(sorted(cv_results["DYAD"].unique()))
+	# noinspection PyTypeChecker
 	anonymize_dyad_ids(cv_results, dyad_ids)
+	# noinspection PyTypeChecker,PyUnresolvedReferences
 	cv_results["TRAINING_SET_SIZE"] = create_training_set_size_series(cv_results, dyad_ids)
+	# noinspection PyUnresolvedReferences
 	cv_results["RR"] = cv_results["RANK"].transform(rr)
 
+	# noinspection PyUnresolvedReferences
 	discount_results = cv_results.groupby(["DYAD", "TRAINING_SET_SIZE"], as_index=False)
 	discount_mean_ranks = discount_results.agg({"RANK": "mean", "RR": "mean"})
 	print("Plotting.", file=sys.stderr)
