@@ -83,7 +83,7 @@ def __dyad_id(infile: str) -> str:
 
 def __read_utts_file(inpath: str, utt_reader: utterances.UtteranceTabularDataReader) -> pd.DataFrame:
 	dyad_id = __dyad_id(inpath)
-	print("Reading utt file at \"{}\" as dyad \"{}\"".format(inpath, dyad_id), file=sys.stderr)
+	print("Reading utt file at \"{}\" as dyad \"{}\".".format(inpath, dyad_id), file=sys.stderr)
 	result = utt_reader(inpath)
 	result[SessionVocabularyCountDataColumn.DYAD_ID.value] = dyad_id
 	return result
