@@ -80,7 +80,7 @@ class DyadRoundTokenSequenceFinder(object):
 		round_utt_rows = self.__find_utt_rows(dyad, game_round, only_instr, self.utts)
 		assert round_utt_rows.shape[0] > 0
 
-		return tuple(token_seq for token_seq in round_utt_rows[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value])
+		return tuple(token_seq for token_seq in round_utt_rows[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value] if token_seq)
 
 
 def read_results_file(inpath: str) -> pd.DataFrame:
@@ -152,7 +152,7 @@ def __main(args):
 		round_token_seq_finder = DyadRoundTokenSequenceFinder(utts)
 		# noinspection PyUnresolvedReferences
 		cv_results[CrossValidationResultsDataColumn.TOKEN_SEQS.value] = cv_results.apply(round_token_seq_finder, axis=1)
-		print(cv_results)
+		print(cv_results[CrossValidationResultsDataColumn.TOKEN_SEQS.value])
 
 
 if __name__ == "__main__":
