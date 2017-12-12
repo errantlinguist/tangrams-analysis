@@ -246,6 +246,8 @@ def __main(args):
 			# noinspection PyProtectedMember
 			input_seq = input_seq_factory(game_round_ranking_result._asdict())
 			print(input_seq)
+
+		# TODO: Create output features: one feature per word class, the value thereof being the referential salience, i.e. ((STDEV of probability of "true" for all referents in round being classified) * number of times classifier has been observed in training)
 		# https://machinelearningmastery.com/time-series-prediction-lstm-recurrent-neural-networks-python-keras/
 		# fix random seed for reproducibility
 		np.random.seed(7)
