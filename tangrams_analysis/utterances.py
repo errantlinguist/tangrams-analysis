@@ -155,6 +155,11 @@ def create_speaker_dict(utts: Iterable[Utterance]) -> DefaultDict[str, List[Utte
 	return result
 
 
+def create_utterance_from_df_row(row: pd.Series) -> Utterance:
+	return Utterance(row[UtteranceTabularDataColumn.SPEAKER_ID.value], row[UtteranceTabularDataColumn.START_TIME.value],
+					 row[UtteranceTabularDataColumn.END_TIME.value], row[UtteranceTabularDataColumn.TOKEN_SEQ.value])
+
+
 def dialogue_utt_str_repr(utts: Iterable[Utterance]) -> str:
 	repr_list = []
 	grouped_utts = group_utts_by_speaker_id(utts)
