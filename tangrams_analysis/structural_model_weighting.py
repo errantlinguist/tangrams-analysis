@@ -69,6 +69,9 @@ class DyadRoundTokenSequenceFinder(object):
 
 	def __init__(self, utts: pd.DataFrame):
 		self.utts = utts
+		self.utts.sort_values([UTTERANCE_DYAD_ID_COL_NAME, utterances.UtteranceTabularDataColumn.ROUND_ID.value,
+							   utterances.UtteranceTabularDataColumn.START_TIME.value,
+							   utterances.UtteranceTabularDataColumn.END_TIME.value], inplace=True)
 
 	def __call__(self, row: pd.Series) -> Tuple[Sequence[str], ...]:
 		dyad = row[CrossValidationResultsDataColumn.DYAD_ID.value]
@@ -76,8 +79,7 @@ class DyadRoundTokenSequenceFinder(object):
 		only_instr = row[CrossValidationResultsDataColumn.ONLY_INSTRUCTOR.value]
 		round_utt_rows = self.__find_utt_rows(dyad, game_round, only_instr, self.utts)
 		assert round_utt_rows.shape[0] > 0
-		round_utt_rows.sort_values([utterances.UtteranceTabularDataColumn.START_TIME.value,
-									utterances.UtteranceTabularDataColumn.END_TIME.value], inplace=True)
+
 		return tuple(token_seq for token_seq in round_utt_rows[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value])
 
 
