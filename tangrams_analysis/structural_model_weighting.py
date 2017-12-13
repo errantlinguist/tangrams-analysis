@@ -86,6 +86,23 @@ def __main(args):
 	training_df = cv_results.loc[~cv_results["DYAD"].isin(test_set_dyad_ids)]
 	print("{} rows in training set.".format(training_df.shape[0]), file=sys.stderr)
 
+	# truncate and pad input sequences
+	max_review_length = 500
+	#X_train = sequence.pad_sequences(X_train, maxlen=max_review_length)
+	#X_test = sequence.pad_sequences(X_test, maxlen=max_review_length)
+	embedding_vector_length = 32
+	model = Sequential()
+	word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
+	model.add(word_embeddings)
+	#model.add(Embedding(top_words, embedding_vector_length, input_length=max_review_length))
+	output_dim = 1
+	model.add(LSTM(output_dim))
+	model.add(Dense(1, activation='sigmoid'))
+	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+	print(model.summary())
+
+	#https://machinelearningmastery.com/memory-in-a-long-short-term-memory-network/
+
 	#input_datapoint_features = ("WORD", "IS_INSTRUCTOR", "IS_OOV", "SHAPE", "RED", "GREEN", "BLUE", "POSITION_X", "POSITION_Y", "MID_X", "MID_Y")
 	input_datapoint_features = ("WORD", "IS_INSTRUCTOR", "IS_OOV")
 	output_datapoint_features = ("PROBABILITY",)
