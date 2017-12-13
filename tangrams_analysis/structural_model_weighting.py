@@ -26,16 +26,15 @@ from keras.layers.embeddings import Embedding
 
 RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 
+# NOTE: "category" dtype doesn't work with pandas-0.21.0 but does with pandas-0.21.1
 __RESULTS_FILE_DTYPES = {"DYAD": "category", "WORD": "category", "IS_TARGET": bool, "IS_OOV": bool,
-						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
-
+				 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
 
 def read_results_file(inpath: str, encoding: str) -> pd.DataFrame:
 	print("Reading \"{}\".".format(inpath), file=sys.stderr)
 	result = pd.read_csv(inpath, dialect=RESULTS_FILE_CSV_DIALECT, sep=RESULTS_FILE_CSV_DIALECT.delimiter,
 						 float_precision="round_trip",
-						 encoding=encoding, memory_map=True,
-						 dtype=__RESULTS_FILE_DTYPES)
+						 encoding=encoding, memory_map=True, dtype=__RESULTS_FILE_DTYPES)
 	return result
 
 
@@ -54,6 +53,8 @@ def create_input_output_dfs(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFram
 	input_df = df.loc[:, ["DYAD", "ROUND", "TOKEN_SEQ_ORDINALITY", "WORD", "IS_INSTRUCTOR", "IS_OOV"]]
 	output_df = df.loc[:, ["DYAD", "ROUND", "TOKEN_SEQ_ORDINALITY", "PROBABILITY"]]
 	return input_df, output_df
+
+
 
 def __main(args):
 	random_seed = args.random_seed
@@ -99,7 +100,14 @@ def __main(args):
 	model.add(LSTM(output_dim))
 	model.add(Dense(1, activation='sigmoid'))
 	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-	print(model.summary())
+	#print(model.summary())
+
+	# https://machinelearningmastery.com/prepare-text-data-deep-learning-keras/
+	#from keras.preprocessing.text import Tokenizer
+	# create the tokenizer
+	#t = Tokenizer()
+	# fit the tokenizer on the documents
+	#t.fit_on_texts(docs)
 
 	#https://machinelearningmastery.com/memory-in-a-long-short-term-memory-network/
 
