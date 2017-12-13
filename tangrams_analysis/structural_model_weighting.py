@@ -153,15 +153,18 @@ class InputDatapointSequenceFactory(object):
 		return result
 
 
-def distance_from_central_value(value: float) -> float:
+def distance_from_extrema(value: float) -> float:
 	"""
-	Calculates the distance from the center for a value in the range of 0.0 to 1.0.
+	Calculates the distance from the extrema for a value in the range of 0.0 to 1.0.
 	:param value:  A value between 0.0 and 1.0 (inclusive).
-	:return: The distance from the center (i.e. 0.5).
+	:return: The distance from the extrema (i.e. 0.5).
 	"""
 	assert value >= 0.0
 	assert value <= 1.0
-	return 1.0 - abs(0.5 - value) * 2.0
+	result = 1.0 - abs(0.5 - value) * 2.0
+	assert result >= 0.0
+	assert result <= 1.0
+	return result
 
 
 def read_results_file(inpath: str) -> pd.DataFrame:
