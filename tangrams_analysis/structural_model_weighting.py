@@ -55,6 +55,16 @@ def create_input_output_dfs(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFram
 	return input_df, output_df
 
 
+def create_token_sequences(df : pd.DataFrame):
+	"""
+	Creates a sequence of sequences of tokens, each representing an utterance, each of which thus causes an "interruption" in the chain
+	so that e.g. the first token of one utterance is not learned as dependent on the last token of the utterance preceding it.
+	:param df: The DataFrame to process.
+	:return:
+	"""
+	# TODO: Finish
+	pass
+
 
 def __main(args):
 	random_seed = args.random_seed
@@ -86,6 +96,9 @@ def __main(args):
 	print("{} rows in test set.".format(testing_df.shape[0]), file=sys.stderr)
 	training_df = cv_results.loc[~cv_results["DYAD"].isin(test_set_dyad_ids)]
 	print("{} rows in training set.".format(training_df.shape[0]), file=sys.stderr)
+
+	# Each "document" is one recording session (dyad)
+	training_df.groupby("DYAD")
 
 	# truncate and pad input sequences
 	max_review_length = 500
