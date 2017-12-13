@@ -10,6 +10,7 @@ __license__ = "Apache License, Version 2.0"
 
 import argparse
 import csv
+import json
 import os.path
 import re
 import sys
@@ -31,13 +32,18 @@ RESULTS_FILE_ENCODING = "utf-8"
 RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 
 
+def __parse_json(input_str: str) -> Any:
+	return json.loads(input_str, RESULTS_FILE_ENCODING)
+
+
 def __parse_sequence(input_str: str) -> typing.Tuple[str, ...]:
 	values = MULTIVALUE_DELIM_PATTERN.split(input_str)
 	return tuple(sys.intern(value) for value in values)
 
 
 __RESULTS_FILE_CONVERTERS = {"REFERRING_TOKENS": __parse_sequence,
-							 "OOV_TOKENS": __parse_sequence}
+							 "OOV_TOKENS": __parse_sequence, "TARGET_WORD_CLASSIFIER_SCORES": __parse_json,
+							 "NONTARGET_WORD_CLASSIFIER_SCORES": __parse_json, "WORD_COUNTS": __parse_json}
 __RESULTS_FILE_DTYPES = {"DYAD": "category", "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
 
 UTTERANCE_DYAD_ID_COL_NAME = "DYAD"
@@ -236,6 +242,7 @@ def __main(args):
 		round_token_seq_finder = DyadRoundUtteranceFactory(utts)
 		# noinspection PyUnresolvedReferences
 		cv_results[CrossValidationResultsDataColumn.UTTERANCES.value] = cv_results.apply(round_token_seq_finder, axis=1)
+		# noinspection PyUnresolvedReferences
 		vocab = frozenset(
 			token for token_seq in utts[utterances.UtteranceTabularDataColumn.TOKEN_SEQ.value] for token in token_seq)
 		print("Using a vocabulary of size {}.".format(len(vocab)), file=sys.stderr)
