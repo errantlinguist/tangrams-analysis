@@ -23,6 +23,7 @@ from keras.models import Sequential
 from keras.layers import Dense
 from keras.layers import LSTM
 from keras.layers.embeddings import Embedding
+import keras.preprocessing.sequence
 
 RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 
@@ -65,7 +66,7 @@ def create_token_seq_start_datapoint(sequence: pd.DataFrame) -> pd.Series:
 	print(result)
 	return result
 
-def create_token_sequences(df : pd.DataFrame) -> np.array:
+def create_token_sequences(df : pd.DataFrame) -> Tuple[np.array, np.array]:
 	"""
 	Creates a sequence of sequences of tokens, each representing an utterance, each of which thus causes an "interruption" in the chain
 	so that e.g. the first token of one utterance is not learned as dependent on the last token of the utterance preceding it.
@@ -75,7 +76,11 @@ def create_token_sequences(df : pd.DataFrame) -> np.array:
 	# https://stackoverflow.com/a/47815400/1391325
 	df.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
 	sequences = df.groupby(("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"))
-	return sequences['WORD', 'PROBABILITY'].apply(lambda group : group.values.tolist()).values
+	#return sequences['WORD', 'PROBABILITY'].apply(lambda group : group.values.tolist()).values
+	words = sequences['WORD'].apply(lambda group : group.values).values
+	scores = sequences["PROBABILITY"].apply(lambda group : group.values).values
+	assert len(words) == len(scores)
+	return words, scores
 
 
 def __main(args):
@@ -99,13 +104,20 @@ def __main(args):
 	vocab = frozenset(cv_results["WORD"].unique())
 	print("Using a vocabulary of size {}.".format(len(vocab)), file=sys.stderr)
 
-	sequences = create_token_sequences(cv_results)
-	max_seq_len= max(len(seq) for seq in sequences)
-	print("Found {} token sequences, with a maximum sequence length of {}.".format(len(sequences), max_seq_len), file=sys.stderr)
+	print("Reading token sequences.", file=sys.stderr)
+	words, scores = create_token_sequences(cv_results)
+	print(words)
+	max_seq_len = max(len(seq) for seq in words)
+	#max_seq_len= max(len(seq) for seq in sequences)
+	print("Found {} token sequences, with a maximum sequence length of {}.".format(len(words), max_seq_len), file=sys.stderr)
+	print("Padding sequences to a maximum sequence length of {}.".format(max_seq_len),
+		  file=sys.stderr)
+	#padded_seqs = keras.preprocessing.sequence.pad_sequences(words)
+	#print("Padded sequence count: {}".format(len(padded_seqs)))
 
 	#longest_seq = max(sequences, key=len)
-	for seq in sorted(sequences, key=len, reverse=True):
-		print(seq)
+	#for seq in sorted(sequences, key=len, reverse=True):
+	#	print(seq)
 
 	#seq_lengths = tuple(len(seq) for seq in sequences)
 	#longest_seq_idx = np.amax(seq_lengths)
