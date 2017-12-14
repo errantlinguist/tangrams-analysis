@@ -55,19 +55,27 @@ def create_input_output_dfs(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFram
 	return input_df, output_df
 
 
-def create_token_sequences(df : pd.DataFrame):
+def create_token_seq_start_datapoint(sequence: pd.DataFrame) -> pd.Series:
+	# Sanity check
+	assert len(sequence["POSITION_X"].unique()) == 1
+	first_token = sequence.loc[sequence["TOKEN_SEQ_ORDINALITY"].idxmin()]
+	result = pd.Series(first_token, copy=True)
+	result["TOKEN_SEQ_ORDINALITY"] = result["TOKEN_SEQ_ORDINALITY"] - 1
+	assert result["TOKEN_SEQ_ORDINALITY"] != first_token["TOKEN_SEQ_ORDINALITY"]
+	print(result)
+	return result
+
+def create_token_sequences(df : pd.DataFrame) -> np.array:
 	"""
 	Creates a sequence of sequences of tokens, each representing an utterance, each of which thus causes an "interruption" in the chain
 	so that e.g. the first token of one utterance is not learned as dependent on the last token of the utterance preceding it.
 	:param df: The DataFrame to process.
 	:return:
 	"""
-	# TODO: Finish
-	# Each "document" is one recording session (dyad)
-	dyad_round_utts = df.groupby(("DYAD", "ROUND", "UTT_START_TIME"))
-	for group in dyad_round_utts:
-		print(group)
-
+	# https://stackoverflow.com/a/47815400/1391325
+	df.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
+	sequences = df.groupby(("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"))
+	return sequences['WORD', 'PROBABILITY'].apply(lambda group : group.values.tolist()).values
 
 
 def __main(args):
@@ -91,15 +99,27 @@ def __main(args):
 	vocab = frozenset(cv_results["WORD"].unique())
 	print("Using a vocabulary of size {}.".format(len(vocab)), file=sys.stderr)
 
-	create_token_sequences(cv_results)
+	sequences = create_token_sequences(cv_results)
+	max_seq_len= max(len(seq) for seq in sequences)
+	print("Found {} token sequences, with a maximum sequence length of {}.".format(len(sequences), max_seq_len), file=sys.stderr)
 
-	test_set_dyad_ids = frozenset(random.sample(dyad_ids, 3))
-	print("Dyads used for testing: {}".format(sorted(test_set_dyad_ids)), file=sys.stderr)
+	#longest_seq = max(sequences, key=len)
+	for seq in sorted(sequences, key=len, reverse=True):
+		print(seq)
 
-	testing_df = cv_results.loc[cv_results["DYAD"].isin(test_set_dyad_ids)]
-	print("{} rows in test set.".format(testing_df.shape[0]), file=sys.stderr)
-	training_df = cv_results.loc[~cv_results["DYAD"].isin(test_set_dyad_ids)]
-	print("{} rows in training set.".format(training_df.shape[0]), file=sys.stderr)
+	#seq_lengths = tuple(len(seq) for seq in sequences)
+	#longest_seq_idx = np.amax(seq_lengths)
+	#longest_seq = sequences[longest_seq_idx]
+	#print(longest_seq)
+	#for seq in sequences:
+	#	print(len(seq))
+
+	#test_set_dyad_ids = frozenset(random.sample(dyad_ids, 3))
+	#print("Dyads used for testing: {}".format(sorted(test_set_dyad_ids)), file=sys.stderr)
+	#testing_df = cv_results.loc[cv_results["DYAD"].isin(test_set_dyad_ids)]
+	#print("{} rows in test set.".format(testing_df.shape[0]), file=sys.stderr)
+	#training_df = cv_results.loc[~cv_results["DYAD"].isin(test_set_dyad_ids)]
+	#print("{} rows in training set.".format(training_df.shape[0]), file=sys.stderr)
 
 	# truncate and pad input sequences
 	max_review_length = 500
