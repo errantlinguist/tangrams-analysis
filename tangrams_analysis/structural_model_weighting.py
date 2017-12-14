@@ -31,7 +31,7 @@ __RESULTS_FILE_DTYPES = {"DYAD": "category", "WORD": "category", "IS_TARGET": bo
 				 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
 
 def read_results_file(inpath: str, encoding: str) -> pd.DataFrame:
-	print("Reading \"{}\".".format(inpath), file=sys.stderr)
+	print("Reading \"{}\" using encoding \"{}\".".format(inpath, encoding), file=sys.stderr)
 	result = pd.read_csv(inpath, dialect=RESULTS_FILE_CSV_DIALECT, sep=RESULTS_FILE_CSV_DIALECT.delimiter,
 						 float_precision="round_trip",
 						 encoding=encoding, memory_map=True, dtype=__RESULTS_FILE_DTYPES)
@@ -63,7 +63,11 @@ def create_token_sequences(df : pd.DataFrame):
 	:return:
 	"""
 	# TODO: Finish
-	pass
+	# Each "document" is one recording session (dyad)
+	dyad_round_utts = df.groupby(("DYAD", "ROUND", "UTT_START_TIME"))
+	for group in dyad_round_utts:
+		print(group)
+
 
 
 def __main(args):
@@ -87,7 +91,7 @@ def __main(args):
 	vocab = frozenset(cv_results["WORD"].unique())
 	print("Using a vocabulary of size {}.".format(len(vocab)), file=sys.stderr)
 
-
+	create_token_sequences(cv_results)
 
 	test_set_dyad_ids = frozenset(random.sample(dyad_ids, 3))
 	print("Dyads used for testing: {}".format(sorted(test_set_dyad_ids)), file=sys.stderr)
@@ -96,9 +100,6 @@ def __main(args):
 	print("{} rows in test set.".format(testing_df.shape[0]), file=sys.stderr)
 	training_df = cv_results.loc[~cv_results["DYAD"].isin(test_set_dyad_ids)]
 	print("{} rows in training set.".format(training_df.shape[0]), file=sys.stderr)
-
-	# Each "document" is one recording session (dyad)
-	training_df.groupby("DYAD")
 
 	# truncate and pad input sequences
 	max_review_length = 500
