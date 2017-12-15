@@ -53,7 +53,6 @@ class TokenSequenceFactory(object):
 
 		word_seqs = []
 		score_seqs = []
-		max_len_divisor = float(self.__max_len)
 		split_seq_scores = sequences.apply(self.__split_row_values)
 		for word_seq, score_seq in split_seq_scores:
 			word_seqs.extend(word_seq)
@@ -187,14 +186,13 @@ def __main(args):
 	label_encoder.fit(all_words)
 	cv_results["WORD_LABEL"] = label_encoder.transform(cv_results["WORD"])
 
-	max_seq_len = 4
+	desired_seq_len = 4
 	print("Splitting token sequences.", file=sys.stderr)
-	token_seq_factory = TokenSequenceFactory(max_seq_len)
+	token_seq_factory = TokenSequenceFactory(desired_seq_len)
 	word_seqs, score_seqs = token_seq_factory(cv_results)
 	print("Split data into {} token sequences with a maximum sequence length of {}.".format(len(word_seqs),
-																							max_seq_len),
+																							desired_seq_len),
 		  file=sys.stderr)
-
 	onehot_encoder = OneHotEncoder(sparse=False)
 	padding_integer_label = label_encoder.transform(["__PADDING__"])[0]
 
