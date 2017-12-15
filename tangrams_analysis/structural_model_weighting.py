@@ -130,6 +130,26 @@ def is_collection_equivalent(c1, c2) -> bool:
 	return c1_len == c2_len and all(elem in c2 for elem in c1)
 
 
+def pad_sequence(word_score_seq: Tuple[np.array, np.array], min_length: int) -> Tuple[np.array, np.array]:
+	word_seq, score_seq = word_score_seq
+	word_count = len(word_seq)
+	assert word_count == len(score_seq)
+	length_diff = min_length - word_count
+	if length_diff > 0:
+		# NOTE: creating an intermediate tuple is necessary
+		padding_words = np.full(length_diff, "__PADDING__")
+		padded_word_seq = np.concatenate((padding_words, word_seq), axis=0)
+		assert len(padded_word_seq) == min_length
+		padding_scores = np.full(length_diff, 0.0)
+		padded_score_seq = np.concatenate((padding_scores, score_seq), axis=0)
+		assert len(padded_score_seq) == min_length
+		result = padded_word_seq, padded_score_seq
+	else:
+		result = word_seq, score_seq
+
+	return result
+
+
 def read_results_file(inpath: str, encoding: str) -> pd.DataFrame:
 	print("Reading \"{}\" using encoding \"{}\".".format(inpath, encoding), file=sys.stderr)
 	result = pd.read_csv(inpath, dialect=RESULTS_FILE_CSV_DIALECT, sep=RESULTS_FILE_CSV_DIALECT.delimiter,
