@@ -61,7 +61,7 @@ class TokenSequenceFactory(object):
 		return word_seqs, score_seqs
 
 	def __split_row_values(self, df: pd.DataFrame) -> Tuple[np.array, np.array]:
-		seq_words = df[["WORD"]].values
+		seq_words = df["WORD"].values
 		seq_scores = df["PROBABILITY"].values
 
 		partition_count = math.ceil(len(seq_words) / self.__max_len_divisor)
