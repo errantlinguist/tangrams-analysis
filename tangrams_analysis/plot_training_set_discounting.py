@@ -3,7 +3,7 @@
 """
 Plots the results of using different training set discount values.
 
-Use with e.g. "find ~/Documents/Projects/Tangrams/output/tangrams-morediscounting -iname "Training-discount*\bothspkr.tsv" -exec ./training_set_discounting_plot.py {} +"
+Use with e.g. "find ~/Documents/Projects/Tangrams/output/tangrams-morediscounting -iname "Training-discount*\bothspkr.tsv" -exec ./plot_training_set_discounting.py {} +"
 """
 
 __author__ = "Todd Shore <errantlinguist+github@gmail.com>"
