@@ -179,13 +179,6 @@ def __main(args):
 	assert cv_results.shape[0] == orig_row_count
 	cv_results = find_target_ref_rows(cv_results)
 
-	all_words = tuple(itertools.chain(("__PADDING__",), cv_results["WORD"].values))
-	print("Converting {} vocabulary entries to integer labels.".format(len(all_words)), file=sys.stderr)
-	# integer encode <https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/>
-	label_encoder = LabelEncoder()
-	label_encoder.fit(all_words)
-	cv_results["WORD_LABEL"] = label_encoder.transform(cv_results["WORD"])
-
 	desired_seq_len = 4
 	print("Splitting token sequences.", file=sys.stderr)
 	token_seq_factory = TokenSequenceFactory(desired_seq_len)
@@ -193,6 +186,13 @@ def __main(args):
 	print("Split data into {} token sequences with a maximum sequence length of {}.".format(len(word_seqs),
 																							desired_seq_len),
 		  file=sys.stderr)
+
+	all_words = tuple(itertools.chain(("__PADDING__",), cv_results["WORD"].values))
+	print("Converting {} vocabulary entries to integer labels.".format(len(all_words)), file=sys.stderr)
+	# integer encode <https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/>
+	label_encoder = LabelEncoder()
+	label_encoder.fit(all_words)
+	cv_results["WORD_LABEL"] = label_encoder.transform(cv_results["WORD"])
 	onehot_encoder = OneHotEncoder(sparse=False)
 	padding_integer_label = label_encoder.transform(["__PADDING__"])[0]
 
