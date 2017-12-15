@@ -32,13 +32,11 @@ __RESULTS_FILE_DTYPES = {"DYAD": "category", "WORD": "category", "IS_TARGET": bo
 						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
 
 
-class OneHotTokenEncodedTokenSequenceFactory(object):
+class TokenSequenceFactory(object):
 
-	def __init__(self, onehot_encoder: OneHotEncoder, max_len: int, padding_integer_label: int):
-		self.onehot_encoder = onehot_encoder
+	def __init__(self, max_len: int):
 		self.__max_len = max_len
 		self.__max_len_divisor = float(max_len)
-		self.padding_integer_label = padding_integer_label
 
 	def __call__(self, df: pd.DataFrame) -> Tuple[List[np.array], List[np.array]]:
 		"""
@@ -47,48 +45,30 @@ class OneHotTokenEncodedTokenSequenceFactory(object):
 		:param df: The DataFrame to process.
 		:return: Paired lists of 2D numpy arrays, each representing a sequence of datapoints which represents an utterance and the corresponding scores to predict.
 		"""
-		# binary encode <https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/>
-		# First fit the one-hot encoder on all data before processing each utterance group individually
-		integer_labels = df["WORD_LABEL"].values
-		reshaped_integer_labels = integer_labels.reshape(len(integer_labels), 1)
-		self.onehot_encoder.fit(reshaped_integer_labels)
-		# If the integer is not found after fitting, this method will throw a ValueError exception
-		onehot_padding_integer_label_array = self.__create_onehot_label_array(self.padding_integer_label)
-		df["ONEHOT_WORD_LABEL"] = df["WORD_LABEL"].transform(self.__create_onehot_label_array)
-		print(df["ONEHOT_WORD_LABEL"])
-
 		# https://stackoverflow.com/a/47815400/1391325
 		df.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
 		sequences = df.groupby(("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
 							   as_index=False)
+		# sequences.apply(lambda seq : self.create_word_forms(seq["ONEHOT_WORD_LABEL"].values))
 
-		word_onehot_encoded_labels = []
-		word_scores = []
+		word_seqs = []
+		score_seqs = []
 		max_len_divisor = float(self.__max_len)
 		split_seq_scores = sequences.apply(self.__split_row_values)
-		for onehot_encoded_labels, scores in split_seq_scores:
-			word_onehot_encoded_labels.extend(onehot_encoded_labels)
-			word_scores.extend(scores)
-		assert max(len(seq) for seq in word_onehot_encoded_labels) <= self.__max_len
-		return word_onehot_encoded_labels, word_scores
-
-	def __create_onehot_label_array(self, integer_label: int) -> np.array:
-		return self.onehot_encoder.transform(integer_label)
-
-	def __create_onehot_label_arrays(self, values: np.array) -> np.array:
-		reshaped_integer_labels = values.reshape(len(values), 1)
-		return self.onehot_encoder.transform(reshaped_integer_labels)
+		for word_seq, score_seq in split_seq_scores:
+			word_seqs.extend(word_seq)
+			score_seqs.extend(score_seq)
+		assert max(len(seq) for seq in word_seqs) <= self.__max_len
+		return word_seqs, score_seqs
 
 	def __split_row_values(self, df: pd.DataFrame) -> Tuple[np.array, np.array]:
-		onehot_encoded_label_arrays = df["ONEHOT_WORD_LABEL"].values
-		score_values = df["PROBABILITY"].values
-		row_count = len(onehot_encoded_label_arrays)
-		assert row_count == len(score_values)
+		seq_words = df[["WORD"]].values
+		seq_scores = df["PROBABILITY"].values
 
-		partition_count = math.ceil(row_count / self.__max_len_divisor)
-		split_onehot_encoded_labels = np.array_split(onehot_encoded_label_arrays, partition_count)
-		split_score_values = np.array_split(score_values, partition_count)
-		return split_onehot_encoded_labels, split_score_values
+		partition_count = math.ceil(len(seq_words) / self.__max_len_divisor)
+		split_seq_words = np.array_split(seq_words, partition_count)
+		split_seq_scores = np.array_split(seq_scores, partition_count)
+		return split_seq_words, split_seq_scores
 
 
 def are_all_entities_represented(df: pd.DataFrame, entity_ids) -> bool:
@@ -209,13 +189,14 @@ def __main(args):
 
 	max_seq_len = 4
 	print("Splitting token sequences.", file=sys.stderr)
+	token_seq_factory = TokenSequenceFactory(max_seq_len)
+	word_seqs, score_seqs = token_seq_factory(cv_results)
+	print("Split data into {} token sequences with a maximum sequence length of {}.".format(len(word_seqs),
+																							max_seq_len),
+		  file=sys.stderr)
+
 	onehot_encoder = OneHotEncoder(sparse=False)
-	token_seq_factory = OneHotTokenEncodedTokenSequenceFactory(onehot_encoder, max_seq_len)
-	word_onehot_encoded_labels, word_scores = token_seq_factory(cv_results)
-	print("Split data into {} token sequences with a maximum sequence length of {}.".format(
-		len(word_onehot_encoded_labels),
-		max_seq_len),
-		file=sys.stderr)
+	padding_integer_label = label_encoder.transform(["__PADDING__"])[0]
 
 	# TODO: Stopped here
 
