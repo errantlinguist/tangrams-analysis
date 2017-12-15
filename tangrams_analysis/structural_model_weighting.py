@@ -47,11 +47,6 @@ class OneHotTokenEncodedTokenSequenceFactory(object):
 		:param df: The DataFrame to process.
 		:return: Paired lists of 2D numpy arrays, each representing a sequence of datapoints which represents an utterance and the corresponding scores to predict.
 		"""
-		# https://stackoverflow.com/a/47815400/1391325
-		df.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
-		sequences = df.groupby(("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
-							   as_index=False)
-
 		# binary encode <https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/>
 		# First fit the one-hot encoder on all data before processing each utterance group individually
 		integer_labels = df["WORD_LABEL"].values
@@ -60,6 +55,12 @@ class OneHotTokenEncodedTokenSequenceFactory(object):
 		# If the integer is not found after fitting, this method will throw a ValueError exception
 		onehot_padding_integer_label_array = self.__create_onehot_label_array(self.padding_integer_label)
 		df["ONEHOT_WORD_LABEL"] = df["WORD_LABEL"].transform(self.__create_onehot_label_array)
+		print(df["ONEHOT_WORD_LABEL"])
+
+		# https://stackoverflow.com/a/47815400/1391325
+		df.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
+		sequences = df.groupby(("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
+							   as_index=False)
 
 		word_onehot_encoded_labels = []
 		word_scores = []
@@ -70,24 +71,6 @@ class OneHotTokenEncodedTokenSequenceFactory(object):
 			word_scores.extend(scores)
 		assert max(len(seq) for seq in word_onehot_encoded_labels) <= self.__max_len
 		return word_onehot_encoded_labels, word_scores
-
-	def __create_onehot_label_array(self, integer_label: int) -> np.array:
-		return self.onehot_encoder.transform(integer_label)
-
-	def __create_onehot_label_arrays(self, values: np.array) -> np.array:
-		reshaped_integer_labels = values.reshape(len(values), 1)
-		return self.onehot_encoder.transform(reshaped_integer_labels)
-
-	def __split_row_values(self, df: pd.DataFrame) -> Tuple[np.array, np.array]:
-		onehot_encoded_label_arrays = df["ONEHOT_WORD_LABEL"].values
-		score_values = df["PROBABILITY"].values
-		row_count = len(onehot_encoded_label_arrays)
-		assert row_count == len(score_values)
-
-		partition_count = math.ceil(row_count / self.__max_len_divisor)
-		split_onehot_encoded_labels = np.array_split(onehot_encoded_label_arrays, partition_count)
-		split_score_values = np.array_split(score_values, partition_count)
-		return split_onehot_encoded_labels, split_score_values
 
 
 def are_all_entities_represented(df: pd.DataFrame, entity_ids) -> bool:
