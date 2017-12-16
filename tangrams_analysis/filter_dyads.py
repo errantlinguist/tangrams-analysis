@@ -49,7 +49,7 @@ def __main(args):
 	word_scores = pd.concat((read_results_file(infile, encoding) for infile in infiles))
 	dyad_id_pattern = args.pattern
 	filtered_scores = word_scores[word_scores["DYAD"].str.match(dyad_id_pattern)]
-	print("Writing data for dyad(s): {}".format(sorted(filtered_scores["DYAD"].unique())))
+	print("Writing data for dyad(s): {}".format(sorted(filtered_scores["DYAD"].unique())), file=sys.stderr)
 	filtered_scores.to_csv(sys.stdout, sep=RESULTS_FILE_CSV_DIALECT.delimiter, encoding=encoding, index=False)
 	print("Finished writing {} row(s).".format(filtered_scores.shape[0]), file=sys.stderr)
 
