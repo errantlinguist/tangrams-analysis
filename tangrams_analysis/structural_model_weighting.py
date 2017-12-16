@@ -188,10 +188,9 @@ def __main(args):
 	print("Will read {} cross-validation results file(s) using encoding \"{}\".".format(len(infiles), encoding),
 		  file=sys.stderr)
 	cv_results = pd.concat((read_results_file(infile, encoding) for infile in infiles))
-	# noinspection PyUnresolvedReferences
-	dyad_ids = tuple(sorted(frozenset(cv_results["DYAD"].unique())))
 	orig_row_count = cv_results.shape[0]
-	print("Read {} cross-validation results for {} dyad(s).".format(orig_row_count, len(dyad_ids)),
+	print("Read {} cross-validation results for {} dyad(s).".format(cv_results.shape[0],
+																	len(cv_results["DYAD"].unique())),
 		  file=sys.stderr)
 	entity_ids = frozenset(cv_results["ENTITY"].unique())
 	print("Found {} unique entity IDs.".format(len(entity_ids)), file=sys.stderr)
