@@ -114,14 +114,12 @@ def create_token_sequences(df: pd.DataFrame, max_len: int) -> List[np.array]:
 
 
 def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
-	result = df.loc[df["IS_TARGET"] == True]
-	result_row_count = result.shape[0]
-	complement_row_count = df.loc[~df.index.isin(result.index)].shape[0]
-	assert result_row_count + complement_row_count == df.shape[0]
-	print("Found {} nontarget rows and {} target rows. Ratio: {}".format(result_row_count, complement_row_count,
-																		 complement_row_count / float(
-																			 result_row_count)), file=sys.stderr)
-	return result
+    result = df.loc[df["IS_TARGET"] == True]
+    result_row_count = result.shape[0]
+    complement_row_count = df.loc[~df.index.isin(result.index)].shape[0]
+    assert result_row_count + complement_row_count == df.shape[0]
+    print("Found {} nontarget rows and {} target rows. Ratio: {}".format(complement_row_count, result_row_count, complement_row_count / float(result_row_count)), file=sys.stderr)
+    return result
 
 
 def is_collection_equivalent(c1, c2) -> bool:
