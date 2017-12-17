@@ -70,6 +70,20 @@ def read_results_file(inpath: str, encoding: str) -> pd.DataFrame:
 						 encoding=encoding, memory_map=True, dtype=__RESULTS_FILE_DTYPES)
 	return result
 
+def split_training_testing(df: pd.DataFrame, test_set_size : int) -> Tuple[pd.DataFrame, pd.DataFrame]:
+	dyad_ids = df["DYAD"].unique()
+	training_set_size = len(dyad_ids) - test_set_size
+	if training_set_size < 1:
+		raise ValueError("Desired test set size is {} but only {} dyads found.".format(test_set_size, len(dyad_ids)))
+	else:
+		training_set_dyads = frozenset(np.random.choice(dyad_ids, training_set_size))
+		print("Training set dyads: {}".format(sorted(training_set_dyads)), file=sys.stderr)
+		training_set_idxs = df["DYAD"].isin(training_set_dyads)
+		training_set = df.loc[training_set_idxs]
+		test_set = df.loc[~~training_set_idxs]
+		assert not frozenset(training_set["DYAD"].unique()).intersection(frozenset(test_set["DYAD"].unique()))
+		return training_set, test_set
+
 
 def __create_argparser() -> argparse.ArgumentParser:
 	result = argparse.ArgumentParser(
@@ -107,7 +121,8 @@ def __main(args):
 	print("Creating vocab dictionary for one-hot label encoding.", file=sys.stderr)
 	vocab_idxs = dict((word, idx) for (idx, word) in enumerate(vocab))
 
-	desired_seq_len = 4
+	training_df, test_df = split_training_testing(cv_results, 1)
+
 	print("Splitting token sequences.", file=sys.stderr)
 	# https://stackoverflow.com/a/47815400/1391325
 	cv_results.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
