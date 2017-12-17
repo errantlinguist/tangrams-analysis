@@ -114,28 +114,22 @@ def __main(args):
 							   as_index=False)
 	seq_feature_factory = SequenceFeatureVectorFactory(vocab_idxs)
 	matrix = np.array(tuple(tuple(seq_feature_factory(seq)) for _, seq in sequence_groups))
-	print("Created an input matrix of shape {}.".format(matrix.shape), file=sys.stderr)
+	print("Created a data matrix of shape {}.".format(matrix.shape), file=sys.stderr)
 
-	#seq_matrix = sequence_groups.apply(seq_matrix_factory)
-	#print(seq_matrix)
-	#assert len(frozenset(len(seq) for seq in seq_matrix)) == 1
-	#print("Matrix shape: {}".format(seq_matrix.shape), file=sys.stderr)
-	# TODO: Stopped here
+	x = matrix[:,:,:-1]
+	#print(x)
+	y = matrix[:,:,-1]
+	#print(y)
 
-	# truncate and pad input sequences
-	#max_review_length = 500
-	# X_train = sequence.pad_sequences(X_train, maxlen=max_review_length)
-	# X_test = sequence.pad_sequences(X_test, maxlen=max_review_length)
-	#embedding_vector_length = 32
-	#model = Sequential()
+	model = Sequential()
 	#word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
 	#model.add(word_embeddings)
 	# model.add(Embedding(top_words, embedding_vector_length, input_length=max_review_length))
-	#output_dim = 1
-	#model.add(LSTM(output_dim))
-	#model.add(Dense(1, activation='sigmoid'))
-	#model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-	# print(model.summary())
+	output_dim = 1
+	model.add(LSTM(output_dim))
+	model.add(Dense(1, activation='sigmoid'))
+	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+	print(model.summary())
 
 	# https://machinelearningmastery.com/prepare-text-data-deep-learning-keras/
 	# from keras.preprocessing.text import Tokenizer
