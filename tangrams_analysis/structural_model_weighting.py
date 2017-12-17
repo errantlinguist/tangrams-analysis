@@ -30,6 +30,27 @@ RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 __RESULTS_FILE_DTYPES = {"DYAD": "category", "WORD": "category", "IS_TARGET": bool, "IS_OOV": bool,
 						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
 
+class SequenceFeatureVectorFactory(object):
+
+	def __init__(self,vocab_idxs : Mapping[str, int]):
+		self.__vocab_idxs = vocab_idxs
+		self.__feature_count = len(self.__vocab_idxs) + 3
+
+	def create_datapoint_feature_array(self, row: pd.Series) -> List[float]:
+		word_features = [0.0] * len(self.__vocab_idxs)
+		# The features representing each individual vocabulary word are at the beginning of the feature vector
+		word_features[self.__vocab_idxs[row["WORD"]]] = 1.0
+		is_instructor = 1.0 if row["IS_INSTRUCTOR"] else 0.0
+		is_oov = 1.0 if row["IS_OOV"] else 0.0
+		#is_target = 1.0 if row["IS_TARGET"] else 0.0
+		score = row["PROBABILITY"]
+		other_features = list((is_instructor, is_oov, score))
+		return word_features + other_features
+
+
+	def __call__(self, df : pd.DataFrame) -> Iterator[List[float]]:
+		return (self.create_datapoint_feature_array(row._asdict()) for row in df.itertuples(index=False))
+
 
 def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
 	result = df.loc[df["IS_TARGET"] == True]
@@ -61,26 +82,6 @@ def __create_argparser() -> argparse.ArgumentParser:
 						help="The random seed to use.")
 	return result
 
-class SequenceFeatureVectorFactory(object):
-
-	def __init__(self,vocab_idxs : Mapping[str, int]):
-		self.__vocab_idxs = vocab_idxs
-		self.__feature_count = len(self.__vocab_idxs) + 3
-
-	def create_datapoint_feature_array(self, row: pd.Series) -> List[float]:
-		word_features = [0.0] * len(self.__vocab_idxs)
-		# The features representing each individual vocabulary word are at the beginning of the feature vector
-		word_features[self.__vocab_idxs[row["WORD"]]] = 1.0
-		is_instructor = 1.0 if row["IS_INSTRUCTOR"] else 0.0
-		is_oov = 1.0 if row["IS_OOV"] else 0.0
-		#is_target = 1.0 if row["IS_TARGET"] else 0.0
-		score = row["PROBABILITY"]
-		other_features = list((is_instructor, is_oov, score))
-		return word_features + other_features
-
-
-	def __call__(self, df : pd.DataFrame) -> Iterator[List[float]]:
-		return (self.create_datapoint_feature_array(row._asdict()) for row in df.itertuples(index=False))
 
 def __main(args):
 	random_seed = args.random_seed
