@@ -11,10 +11,9 @@ __license__ = "Apache License, Version 2.0"
 import argparse
 import csv
 import itertools
-import math
 import random
 import sys
-from typing import List, Tuple
+from typing import Iterator, List, Mapping, Tuple
 
 import numpy as np
 import pandas as pd
@@ -32,119 +31,14 @@ __RESULTS_FILE_DTYPES = {"DYAD": "category", "WORD": "category", "IS_TARGET": bo
 						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
 
 
-class TokenSequenceFactory(object):
-
-	def __init__(self, max_len: int):
-		self.__max_len = max_len
-		self.__max_len_divisor = float(max_len)
-
-	def __call__(self, df: pd.DataFrame) -> Tuple[List[np.array], List[np.array]]:
-		"""
-		Creates a sequence of sequences of tokens, each representing an utterance, each of which thus causes an "interruption" in the chain
-		so that e.g. the first token of one utterance is not learned as dependent on the last token of the utterance preceding it.
-		:param df: The DataFrame to process.
-		:return: Paired lists of 2D numpy arrays, each representing a sequence of datapoints which represents an utterance and the corresponding scores to predict.
-		"""
-		# https://stackoverflow.com/a/47815400/1391325
-		df.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
-		sequences = df.groupby(("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
-							   as_index=False)
-		# sequences.apply(lambda seq : self.create_word_forms(seq["ONEHOT_WORD_LABEL"].values))
-
-		word_seqs = []
-		score_seqs = []
-		split_seq_scores = sequences.apply(self.__split_row_values)
-		for word_seq, score_seq in split_seq_scores:
-			word_seqs.extend(word_seq)
-			score_seqs.extend(score_seq)
-		assert max(len(seq) for seq in word_seqs) <= self.__max_len
-		return word_seqs, score_seqs
-
-	def __split_row_values(self, df: pd.DataFrame) -> Tuple[np.array, np.array]:
-		seq_words = df["WORD"].values
-		seq_scores = df["PROBABILITY"].values
-
-		partition_count = math.ceil(len(seq_words) / self.__max_len_divisor)
-		split_seq_words = np.array_split(seq_words, partition_count)
-		split_seq_scores = np.array_split(seq_scores, partition_count)
-		return split_seq_words, split_seq_scores
-
-
-def are_all_entities_represented(df: pd.DataFrame, entity_ids) -> bool:
-	"""
-	Checks if all entities are represented for each individual token in each utterance in the dataframe.
-
-	:param df: The dataframe to check.
-	:param entity_ids: A collection of all unique entity IDs.
-	:return: true iff for each token in each utterance there is one row for each entity ID.
-	"""
-	utt_toks = df.groupby(
-		("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "WORD", "TOKEN_SEQ_ORDINALITY"),
-		as_index=False)
-	print("Found {} utterance tokens for all cross-validations.".format(len(utt_toks)), file=sys.stderr)
-	# Check if there is a row for each entity (possible referent) for each token
-	return all(utt_toks.apply(lambda group: is_collection_equivalent(group["ENTITY"], entity_ids)))
-
-
-def create_input_output_dfs(df: pd.DataFrame) -> Tuple[pd.DataFrame, pd.DataFrame]:
-	input_df = df.loc[:, ["DYAD", "ROUND", "TOKEN_SEQ_ORDINALITY", "WORD", "IS_INSTRUCTOR", "IS_OOV"]]
-	output_df = df.loc[:, ["DYAD", "ROUND", "TOKEN_SEQ_ORDINALITY", "PROBABILITY"]]
-	return input_df, output_df
-
-
-def create_token_sequences(df: pd.DataFrame, max_len: int) -> List[np.array]:
-	"""
-	Creates a sequence of sequences of tokens, each representing an utterance, each of which thus causes an "interruption" in the chain
-	so that e.g. the first token of one utterance is not learned as dependent on the last token of the utterance preceding it.
-	:param df: The DataFrame to process.
-	:param max_len: The maximum sequence length.
-	:return: A list of 2D numpy arrays, each representing a sequence of datapoints which represents an utterance.
-	"""
-	# https://stackoverflow.com/a/47815400/1391325
-	df.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
-	sequences = df.groupby(("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
-						   as_index=False)
-	result = []
-	max_len_divisor = float(max_len)
-	split_seqs = sequences.apply(lambda group: split_row_values(group[["WORD_LABEL", "PROBABILITY"]], max_len_divisor))
-	for seqs in split_seqs:
-		result.extend(seqs)
-	assert max(len(seq) for seq in result) <= max_len
-	return result
-
-
 def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
-    result = df.loc[df["IS_TARGET"] == True]
-    result_row_count = result.shape[0]
-    complement_row_count = df.loc[~df.index.isin(result.index)].shape[0]
-    assert result_row_count + complement_row_count == df.shape[0]
-    print("Found {} nontarget rows and {} target rows. Ratio: {}".format(complement_row_count, result_row_count, complement_row_count / float(result_row_count)), file=sys.stderr)
-    return result
-
-
-def is_collection_equivalent(c1, c2) -> bool:
-	c1_len = len(c1)
-	c2_len = len(c2)
-	return c1_len == c2_len and all(elem in c2 for elem in c1)
-
-
-def pad_sequence(word_score_seq: Tuple[np.array, np.array], min_length: int) -> Tuple[np.array, np.array]:
-	word_seq, score_seq = word_score_seq
-	word_count = len(word_seq)
-	assert word_count == len(score_seq)
-	length_diff = min_length - word_count
-	if length_diff > 0:
-		# NOTE: creating an intermediate tuple is necessary
-		padding_words = np.full(length_diff, "__PADDING__")
-		padded_word_seq = np.concatenate((padding_words, word_seq), axis=0)
-		assert len(padded_word_seq) == min_length
-		padding_scores = np.full(length_diff, 0.0)
-		padded_score_seq = np.concatenate((padding_scores, score_seq), axis=0)
-		assert len(padded_score_seq) == min_length
-		result = padded_word_seq, padded_score_seq
-	else:
-		result = word_seq, score_seq
-
+	result = df.loc[df["IS_TARGET"] == True]
+	result_row_count = result.shape[0]
+	complement_row_count = df.loc[~df.index.isin(result.index)].shape[0]
+	assert result_row_count + complement_row_count == df.shape[0]
+	print("Found {} nontarget rows and {} target rows. Ratio: {}".format(complement_row_count, result_row_count,
+																		 complement_row_count / float(
+																			 result_row_count)), file=sys.stderr)
 	return result
 
 
@@ -154,11 +48,6 @@ def read_results_file(inpath: str, encoding: str) -> pd.DataFrame:
 						 float_precision="round_trip",
 						 encoding=encoding, memory_map=True, dtype=__RESULTS_FILE_DTYPES)
 	return result
-
-
-def split_row_values(df: pd.DataFrame, max_len: float) -> pd.DataFrame:
-	partition_count = math.ceil(df.shape[0] / max_len)
-	return np.array_split(df.values, partition_count)
 
 
 def __create_argparser() -> argparse.ArgumentParser:
@@ -172,6 +61,26 @@ def __create_argparser() -> argparse.ArgumentParser:
 						help="The random seed to use.")
 	return result
 
+class SequenceFeatureVectorFactory(object):
+
+	def __init__(self,vocab_idxs : Mapping[str, int]):
+		self.__vocab_idxs = vocab_idxs
+		self.__feature_count = len(self.__vocab_idxs) + 3
+
+	def create_datapoint_feature_array(self, row: pd.Series) -> List[float]:
+		word_features = [0.0] * len(self.__vocab_idxs)
+		# The features representing each individual vocabulary word are at the beginning of the feature vector
+		word_features[self.__vocab_idxs[row["WORD"]]] = 1.0
+		is_instructor = 1.0 if row["IS_INSTRUCTOR"] else 0.0
+		is_oov = 1.0 if row["IS_OOV"] else 0.0
+		#is_target = 1.0 if row["IS_TARGET"] else 0.0
+		score = row["PROBABILITY"]
+		other_features = list((is_instructor, is_oov, score))
+		return word_features + other_features
+
+
+	def __call__(self, df : pd.DataFrame) -> Iterator[List[float]]:
+		return (self.create_datapoint_feature_array(row._asdict()) for row in df.itertuples(index=False))
 
 def __main(args):
 	random_seed = args.random_seed
@@ -186,48 +95,46 @@ def __main(args):
 	print("Will read {} cross-validation results file(s) using encoding \"{}\".".format(len(infiles), encoding),
 		  file=sys.stderr)
 	cv_results = pd.concat((read_results_file(infile, encoding) for infile in infiles))
-	orig_row_count = cv_results.shape[0]
 	print("Read {} cross-validation results for {} dyad(s).".format(cv_results.shape[0],
 																	len(cv_results["DYAD"].unique())),
 		  file=sys.stderr)
-	entity_ids = frozenset(cv_results["ENTITY"].unique())
-	print("Found {} unique entity IDs.".format(len(entity_ids)), file=sys.stderr)
-	assert are_all_entities_represented(cv_results, entity_ids)
-	assert cv_results.shape[0] == orig_row_count
+
 	cv_results = find_target_ref_rows(cv_results)
+	vocab = tuple(sorted(cv_results["WORD"].unique()))
+	print("Fitting one-hot encoder for vocabulary of size {}.".format(len(vocab)), file=sys.stderr)
+	# https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/
+	print("Creating vocab dictionary for one-hot label encoding.", file=sys.stderr)
+	vocab_idxs = dict((word, idx) for (idx, word) in enumerate(vocab))
 
 	desired_seq_len = 4
 	print("Splitting token sequences.", file=sys.stderr)
-	token_seq_factory = TokenSequenceFactory(desired_seq_len)
-	word_seqs, score_seqs = token_seq_factory(cv_results)
-	print("Split data into {} token sequences with a maximum sequence length of {}.".format(len(word_seqs),
-																							desired_seq_len),
-		  file=sys.stderr)
+	# https://stackoverflow.com/a/47815400/1391325
+	cv_results.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
+	sequence_groups = cv_results.groupby(("CROSS_VALIDATION_ITER", "DYAD", "SPLIT_SEQ_NO", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
+							   as_index=False)
+	seq_feature_factory = SequenceFeatureVectorFactory(vocab_idxs)
+	matrix = np.array(tuple(tuple(seq_feature_factory(seq)) for _, seq in sequence_groups))
+	print("Created an input matrix of shape {}.".format(matrix.shape), file=sys.stderr)
 
-	all_words = tuple(itertools.chain(("__PADDING__",), cv_results["WORD"].values))
-	print("Converting {} vocabulary entries to integer labels.".format(len(all_words)), file=sys.stderr)
-	# integer encode <https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/>
-	label_encoder = LabelEncoder()
-	label_encoder.fit(all_words)
-	cv_results["WORD_LABEL"] = label_encoder.transform(cv_results["WORD"])
-	onehot_encoder = OneHotEncoder(sparse=False)
-	padding_integer_label = label_encoder.transform(["__PADDING__"])[0]
-
+	#seq_matrix = sequence_groups.apply(seq_matrix_factory)
+	#print(seq_matrix)
+	#assert len(frozenset(len(seq) for seq in seq_matrix)) == 1
+	#print("Matrix shape: {}".format(seq_matrix.shape), file=sys.stderr)
 	# TODO: Stopped here
 
 	# truncate and pad input sequences
-	max_review_length = 500
+	#max_review_length = 500
 	# X_train = sequence.pad_sequences(X_train, maxlen=max_review_length)
 	# X_test = sequence.pad_sequences(X_test, maxlen=max_review_length)
-	embedding_vector_length = 32
-	model = Sequential()
-	word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
-	model.add(word_embeddings)
+	#embedding_vector_length = 32
+	#model = Sequential()
+	#word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
+	#model.add(word_embeddings)
 	# model.add(Embedding(top_words, embedding_vector_length, input_length=max_review_length))
-	output_dim = 1
-	model.add(LSTM(output_dim))
-	model.add(Dense(1, activation='sigmoid'))
-	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+	#output_dim = 1
+	#model.add(LSTM(output_dim))
+	#model.add(Dense(1, activation='sigmoid'))
+	#model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 	# print(model.summary())
 
 	# https://machinelearningmastery.com/prepare-text-data-deep-learning-keras/
@@ -238,10 +145,6 @@ def __main(args):
 	# t.fit_on_texts(docs)
 
 	# https://machinelearningmastery.com/memory-in-a-long-short-term-memory-network/
-
-	# input_datapoint_features = ("WORD", "IS_INSTRUCTOR", "IS_OOV", "SHAPE", "RED", "GREEN", "BLUE", "POSITION_X", "POSITION_Y", "MID_X", "MID_Y")
-	input_datapoint_features = ("WORD", "IS_INSTRUCTOR", "IS_OOV")
-	output_datapoint_features = ("PROBABILITY",)
 
 
 # TODO: Create output features: one feature per word class, the value thereof being the referential salience, i.e. ((STDEV of probability of "true" for all referents in round being classified) * number of times classifier has been observed in training)
