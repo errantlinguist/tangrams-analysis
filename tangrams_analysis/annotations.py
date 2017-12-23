@@ -206,7 +206,7 @@ def is_blank_or_none(string: str) -> bool:
 	return string is None or len(string) < 1 or string.isspace()
 
 
-def natural_keys(text) -> Tuple[int, ...]:
+def natural_keys(text) -> Tuple[Optional[int, str], ...]:
 	"""
 	alist.sort(key=natural_keys) sorts in human order
 	
@@ -221,7 +221,7 @@ def sanitize_dom_id(string: str) -> str:
 	return escape(result)
 
 
-def __atoi(text: str) -> int:
+def __atoi(text: str) -> Optional[int, str]:
 	"""
 	:see: http://stackoverflow.com/a/5967539/1391325
 	"""
