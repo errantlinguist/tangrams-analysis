@@ -8,7 +8,7 @@ __license__ = "Apache License, Version 2.0"
 
 import re
 from collections import defaultdict
-from typing import Callable, Tuple, TypeVar
+from typing import Tuple
 from xml.sax.saxutils import escape
 
 import lxml.builder
@@ -26,11 +26,9 @@ ELEMENT_MAKER = lxml.builder.ElementMaker(
 __DIGITS_PATTERN = re.compile('(\d+)')
 __WHITESPACE_PATTERN = re.compile('\s+')
 
-QNameFactory = TypeVar("QNameFactory", bound=Callable[[str], str], contravariant=True)
-
 
 class AnnotationData(object):
-	def __init__(self, qname_factory: QNameFactory, element_maker: lxml.builder.ElementMaker, encoding: str):
+	def __init__(self, qname_factory, element_maker: lxml.builder.ElementMaker, encoding: str):
 		self.__qname_factory = qname_factory
 		self.element_maker = element_maker
 		self.encoding = encoding
@@ -72,7 +70,7 @@ class AnnotationData(object):
 
 
 class AnnotationParser(object):
-	def __init__(self, qname_factory: QNameFactory, nsmap=None, id_prefix: str = ""):
+	def __init__(self, qname_factory, nsmap=None, id_prefix: str = ""):
 		self.__qname_factory = qname_factory
 		self.element_maker = ELEMENT_MAKER if nsmap is None else lxml.builder.ElementMaker(nsmap)
 		self.id_prefix = id_prefix
@@ -136,7 +134,7 @@ class QNameStringFactory(object):
 
 
 class SegmentData(object):
-	def __init__(self, qname_factory: QNameFactory):
+	def __init__(self, qname_factory):
 		self.__qname_factory = qname_factory
 		self.segments_by_id = {}
 		self.track_segments = defaultdict(list)
