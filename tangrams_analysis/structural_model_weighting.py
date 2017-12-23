@@ -49,6 +49,7 @@ class SequenceFeatureVectorFactory(object):
 
 
 	def __call__(self, df : pd.DataFrame) -> Iterator[List[float]]:
+		# noinspection PyProtectedMember
 		return (self.create_datapoint_feature_array(row._asdict()) for row in df.itertuples(index=False))
 
 
