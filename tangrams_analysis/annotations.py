@@ -8,7 +8,7 @@ __license__ = "Apache License, Version 2.0"
 
 import re
 from collections import defaultdict
-from typing import Callable, TypeVar
+from typing import Callable, Tuple, TypeVar
 from xml.sax.saxutils import escape
 
 import lxml.builder
@@ -30,7 +30,7 @@ QNameFactory = TypeVar("QNameFactory", bound=Callable[[str], str], contravariant
 
 
 class AnnotationData(object):
-	def __init__(self, qname_factory : QNameFactory, element_maker: lxml.builder.ElementMaker, encoding: str):
+	def __init__(self, qname_factory: QNameFactory, element_maker: lxml.builder.ElementMaker, encoding: str):
 		self.__qname_factory = qname_factory
 		self.element_maker = element_maker
 		self.encoding = encoding
@@ -72,7 +72,7 @@ class AnnotationData(object):
 
 
 class AnnotationParser(object):
-	def __init__(self, qname_factory : QNameFactory, nsmap=None, id_prefix: str = ""):
+	def __init__(self, qname_factory: QNameFactory, nsmap=None, id_prefix: str = ""):
 		self.__qname_factory = qname_factory
 		self.element_maker = ELEMENT_MAKER if nsmap is None else lxml.builder.ElementMaker(nsmap)
 		self.id_prefix = id_prefix
@@ -136,7 +136,7 @@ class QNameStringFactory(object):
 
 
 class SegmentData(object):
-	def __init__(self, qname_factory : QNameFactory):
+	def __init__(self, qname_factory: QNameFactory):
 		self.__qname_factory = qname_factory
 		self.segments_by_id = {}
 		self.track_segments = defaultdict(list)
@@ -204,26 +204,26 @@ class TrackDatum(object):
 					pass
 
 
-def is_blank_or_none(string: str):
+def is_blank_or_none(string: str) -> bool:
 	return string is None or len(string) < 1 or string.isspace()
 
 
-def natural_keys(text):
+def natural_keys(text) -> Tuple[int, ...]:
 	"""
 	alist.sort(key=natural_keys) sorts in human order
 	
 	:see: http://nedbatchelder.com/blog/200712/human_sorting.html
 	:see: http://stackoverflow.com/a/5967539/1391325
 	"""
-	return [__atoi(c) for c in __DIGITS_PATTERN.split(text)]
+	return tuple(__atoi(c) for c in __DIGITS_PATTERN.split(text))
 
 
-def sanitize_dom_id(string: str):
+def sanitize_dom_id(string: str) -> str:
 	result = __WHITESPACE_PATTERN.sub('-', string)
 	return escape(result)
 
 
-def __atoi(text: str):
+def __atoi(text: str) -> int:
 	"""
 	:see: http://stackoverflow.com/a/5967539/1391325
 	"""
