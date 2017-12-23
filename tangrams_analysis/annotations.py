@@ -8,6 +8,7 @@ __license__ = "Apache License, Version 2.0"
 
 import re
 from collections import defaultdict
+from typing import Type
 from xml.sax.saxutils import escape
 
 import lxml.builder
@@ -27,7 +28,7 @@ __WHITESPACE_PATTERN = re.compile('\s+')
 
 
 class AnnotationData(object):
-	def __init__(self, qname_factory, element_maker: lxml.builder.ElementMaker, encoding: str):
+	def __init__(self, qname_factory, element_maker: Type[lxml.builder.ElementMaker], encoding: str):
 		self.__qname_factory = qname_factory
 		self.element_maker = element_maker
 		self.encoding = encoding
