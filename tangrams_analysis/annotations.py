@@ -8,7 +8,7 @@ __license__ = "Apache License, Version 2.0"
 
 import re
 from collections import defaultdict
-from typing import Tuple
+from typing import Mapping, Optional, Tuple
 from xml.sax.saxutils import escape
 
 import lxml.builder
@@ -70,7 +70,7 @@ class AnnotationData(object):
 
 
 class AnnotationParser(object):
-	def __init__(self, qname_factory, nsmap=None, id_prefix: str = ""):
+	def __init__(self, qname_factory, nsmap: Optional[Mapping[Optional[str], str]] = None, id_prefix: str = ""):
 		self.__qname_factory = qname_factory
 		self.element_maker = ELEMENT_MAKER if nsmap is None else lxml.builder.ElementMaker(nsmap)
 		self.id_prefix = id_prefix
