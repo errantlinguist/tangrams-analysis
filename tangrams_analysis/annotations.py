@@ -206,7 +206,7 @@ def is_blank_or_none(string: str) -> bool:
 	return string is None or len(string) < 1 or string.isspace()
 
 
-def natural_keys(text) -> Tuple[Union[int, str], ...]:
+def natural_keys(text: str) -> Tuple[Union[int, str], ...]:
 	"""
 	alist.sort(key=natural_keys) sorts in human order
 	
