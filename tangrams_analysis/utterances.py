@@ -172,7 +172,7 @@ def dialogue_utt_str_repr(utts: Iterable[Utterance]) -> str:
 	return ' '.join(repr_list)
 
 
-def group_utts_by_speaker_id(utts: Iterable[Utterance]) -> List[Tuple[List[Utterance]]]:
+def group_utts_by_speaker_id(utts: Iterable[Utterance]) -> List[Tuple[List[Utterance], ...]]:
 	result = []
 
 	current_speaker_id = None

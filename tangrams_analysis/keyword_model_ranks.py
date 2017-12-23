@@ -49,7 +49,7 @@ class KeywordScorer(object):
 	# TODO: Finish
 	# return self.__score_keywords(tokens, dyad_id)
 
-	def __calculate_score(self, ngram: Tuple[str], dyad_id: str) -> Number:
+	def __calculate_score(self, ngram: Tuple[str, ...], dyad_id: str) -> Number:
 		dyad_keyword_scores = self.session_keyword_scores.loc[
 			((self.session_keyword_scores["SESSION"] == dyad_id) & (self.session_keyword_scores["NGRAM"] == ngram))]
 		assert dyad_keyword_scores.shape[0] < 2
@@ -60,12 +60,12 @@ class KeywordScorer(object):
 			result = dyad_keyword_scores.iloc[0]
 		return result
 
-	def __fetch_scores(self, tokens: Tuple[str], dyad_id: str) -> Iterator[Number]:
+	def __fetch_scores(self, tokens: Tuple[str, ...], dyad_id: str) -> Iterator[Number]:
 		ngrams_by_length = (nltk_ngrams(tokens, n) for n in range(1, len(tokens)))
 		ngrams = (ngram for length_list in ngrams_by_length for ngram in length_list)
 		return (self.__fetch_score(ngram, dyad_id) for ngram in ngrams)
 
-	def __fetch_score(self, ngram: Tuple[str], dyad_id: str) -> Number:
+	def __fetch_score(self, ngram: Tuple[str, ...], dyad_id: str) -> Number:
 		key = (ngram, dyad_id)
 		try:
 			result = self.score_cache[key]
