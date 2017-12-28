@@ -34,8 +34,8 @@ def read_events(session_data: sd.SessionData) -> EventData:
 		(sys.intern(source_id), sys.intern(participant_id)) for (participant_id, source_id) in
 		participant_source_ids.items())
 
-	events_metadata = session_data.read_events_metadata()
-	initial_instructor_id = sys.intern(events_metadata[sd.EventMetadataRow.INITIAL_INSTRUCTOR_ID.value])
+	session_metadata = session_data.read_session_metadata()
+	initial_instructor_id = sys.intern(session_metadata[sd.EventMetadataRow.INITIAL_INSTRUCTOR_ID.value])
 
 	event_df = session_data.read_events()
 	return EventData(event_df, interned_source_participant_ids, initial_instructor_id)

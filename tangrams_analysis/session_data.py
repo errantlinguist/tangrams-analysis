@@ -6,7 +6,7 @@ from typing import Dict, Iterator, Iterable, Tuple
 import pandas as pd
 
 ENCODING = 'utf-8'
-EVENTS_METADATA_CSV_DIALECT = csv.excel_tab
+SESSION_METADATA_CSV_DIALECT = csv.excel_tab
 
 _EVENT_FILE_DTYPES = {"NAME": "category", "SHAPE": "category", "SUBMITTER": "category"}
 
@@ -28,7 +28,7 @@ class ParticipantMetadataRow(Enum):
 @unique
 class SessionDatum(Enum):
 	EVENTS = "events.tsv"
-	EVENTS_METADATA = "events-metadata.tsv"
+	SESSION_METADATA = "session-metadata.tsv"
 	PARTICIPANT_METADATA = "participant-metadata.tsv"
 	UTTERANCES = "utts.xml"
 
@@ -43,7 +43,7 @@ __SESSION_DATA_FILENAMES = frozenset(datum.canonical_filename for datum in Sessi
 class SessionData(object):
 	def __init__(self, session_file_prefix: str):
 		self.events = os.path.join(session_file_prefix, SessionDatum.EVENTS.canonical_filename)
-		self.events_metadata = os.path.join(session_file_prefix, SessionDatum.EVENTS_METADATA.canonical_filename)
+		self.session_metadata = os.path.join(session_file_prefix, SessionDatum.SESSION_METADATA.canonical_filename)
 		self.participant_metadata = os.path.join(session_file_prefix,
 												 SessionDatum.PARTICIPANT_METADATA.canonical_filename)
 		self.utts = os.path.join(session_file_prefix, SessionDatum.UTTERANCES.canonical_filename)
@@ -66,9 +66,9 @@ class SessionData(object):
 						   float_precision="round_trip",
 						   encoding=ENCODING, memory_map=True, dtype=_EVENT_FILE_DTYPES)
 
-	def read_events_metadata(self) -> Dict[str, str]:
-		with open(self.events_metadata, 'r', encoding=ENCODING) as infile:
-			rows = csv.reader(infile, dialect=EVENTS_METADATA_CSV_DIALECT)
+	def read_session_metadata(self) -> Dict[str, str]:
+		with open(self.session_metadata, 'r', encoding=ENCODING) as infile:
+			rows = csv.reader(infile, dialect=SESSION_METADATA_CSV_DIALECT)
 			return dict(rows)
 
 	def read_participant_metadata(self) -> Dict[str, Dict[str, str]]:
@@ -89,7 +89,7 @@ class SessionData(object):
 
 	@property
 	def __key(self):
-		return self.events, self.events_metadata, self.utts
+		return self.events, self.session_metadata, self.utts
 
 
 def is_session_dir(filenames: Iterable[str]) -> bool:
