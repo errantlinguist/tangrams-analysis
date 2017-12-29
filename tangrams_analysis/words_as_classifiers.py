@@ -43,7 +43,7 @@ class CrossValidator(object):
 		training_df = cross_validation_df.training
 		dependent_var_cols = tuple(
 			col for col in training_df.columns if DEPENDENT_VARIABLE_COL_NAME_PATTERN.match(col))
-		training_insts_per_observation = Decimal(len(training_df[game_utterances.EventColumn.ENTITY_ID.value].unique()))
+		training_insts_per_observation = Decimal(training_df[game_utterances.EventColumn.ENTITY_ID.value].nunique())
 		word_model_trainer = WordModelTrainer(dependent_var_cols, INDEPENDENT_VARIABLE_COL_NAME,
 											  lambda token_type_training_insts: smooth(token_type_training_insts,
 																					   self.smoothing_freq_cutoff,

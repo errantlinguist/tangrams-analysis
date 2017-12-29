@@ -112,7 +112,7 @@ def __main(args):
 		  file=sys.stderr)
 	cv_results = pd.concat((read_results_file(infile, encoding) for infile in infiles))
 	print("Read {} cross-validation results for {} dyad(s).".format(cv_results.shape[0],
-																	len(cv_results["DYAD"].unique())),
+																	cv_results["DYAD"].nunique()),
 		  file=sys.stderr)
 
 	cv_results = find_target_ref_rows(cv_results)
