@@ -106,6 +106,5 @@ class SessionGameRoundUtteranceSequenceFactory(object):
 												1,
 												inplace=True)
 		# Assert that all entities are represented in each round's set of events
-		assert len(round_first_turn_submission_events) % len(
-			round_first_turn_submission_events[EventColumn.ENTITY_ID.value].unique()) == 0
+		assert len(round_first_turn_submission_events) % round_first_turn_submission_events[EventColumn.ENTITY_ID.value].nunique() == 0
 		return round_first_turn_submission_events
