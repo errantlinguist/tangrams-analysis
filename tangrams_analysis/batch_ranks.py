@@ -27,7 +27,8 @@ def __create_argparser() -> argparse.ArgumentParser:
 def __main(args):
 	inpaths = args.inpaths
 	print("Will read {} path(s).".format(len(inpaths)), file=sys.stderr)
-	writer = csv.writer(sys.stdout, dialect=csv.excel_tab)
+	# https://pythonconquerstheuniverse.wordpress.com/2011/05/08/newline-conversion-in-python-3/
+	writer = csv.writer(sys.stdout, dialect=csv.excel_tab, lineterminator="\n")
 	writer.writerow(("FILE", "MEAN_RANK"))
 	for inpath in sorted(inpaths):
 		print("Reading \"{}\".".format(inpath), file=sys.stderr)
