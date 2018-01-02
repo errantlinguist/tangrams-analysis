@@ -6,6 +6,7 @@ from typing import Dict, Iterator, Iterable, Tuple
 import pandas as pd
 
 ENCODING = 'utf-8'
+PARTICIPANT_METADATA_CSV_DIALECT = csv.excel_tab
 SESSION_METADATA_CSV_DIALECT = csv.excel_tab
 
 _EVENT_FILE_DTYPES = {"NAME": "category", "SHAPE": "category", "SUBMITTER": "category"}
@@ -74,7 +75,7 @@ class SessionData(object):
 	def read_participant_metadata(self) -> Dict[str, Dict[str, str]]:
 		result = {}
 		with open(self.participant_metadata, 'r', encoding=ENCODING) as infile:
-			rows = csv.reader(infile, dialect=csv.excel_tab)
+			rows = csv.reader(infile, dialect=PARTICIPANT_METADATA_CSV_DIALECT)
 			headed_rows = dict((row[0], row[1:]) for row in rows)
 		participant_ids = headed_rows[ParticipantMetadataRow.PARTICIPANT_ID.value]
 		participant_id_idxs = tuple((participant_id, idx) for (idx, participant_id) in enumerate(participant_ids))
