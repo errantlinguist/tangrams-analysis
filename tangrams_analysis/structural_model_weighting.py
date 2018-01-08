@@ -2,6 +2,8 @@
 
 """
 Learns a measure of referential salience of classifiers used based on the context of their corresponding words in dialogue.
+
+Uses tabular data, where each line represents the results of classification using one words-as-classifier model; See class "se.kth.speech.coin.tangrams.wac.logistic.WordProbabilityScoreTablularDataWriter" from the project "tangrams-wac" <https://github.com/errantlinguist/tangrams-wac>.
 """
 
 __author__ = "Todd Shore <errantlinguist+github@gmail.com>"
