@@ -1,3 +1,11 @@
+"""
+Functionalities for cross-validating words-as-classifiers reference resolution (not yet finished!).
+"""
+
+__author__ = "Todd Shore <errantlinguist+github@gmail.com>"
+__copyright__ = "Copyright 2017 Todd Shore"
+__license__ = "Apache License, Version 2.0"
+
 import csv
 import itertools
 from collections import namedtuple

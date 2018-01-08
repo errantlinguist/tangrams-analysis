@@ -1,5 +1,13 @@
 #!/usr/bin/env python3
 
+"""
+Functionalities for visualizing Tangrams game entities from log files (not yet finished!).
+"""
+
+__author__ = "Todd Shore <errantlinguist+github@gmail.com>"
+__copyright__ = "Copyright 2017 Todd Shore"
+__license__ = "Apache License, Version 2.0"
+
 import argparse
 import csv
 import sys

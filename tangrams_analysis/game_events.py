@@ -1,3 +1,11 @@
+"""
+Functionalities for read game log data and representing it in an object-oriented fashion.
+"""
+
+__author__ = "Todd Shore <errantlinguist+github@gmail.com>"
+__copyright__ = "Copyright 2017 Todd Shore"
+__license__ = "Apache License, Version 2.0"
+
 import sys
 from typing import Mapping
 
