@@ -83,9 +83,11 @@ def split_training_testing(df: pd.DataFrame, test_set_size : int) -> Tuple[pd.Da
 		print("Training set dyads: {}".format(sorted(training_set_dyads)), file=sys.stderr)
 		training_set_idxs = df["DYAD"].isin(training_set_dyads)
 		training_set = df.loc[training_set_idxs]
-		test_set = df.loc[~~training_set_idxs]
-		print("Test set dyads: {}".format(sorted(test_set)), file=sys.stderr)
-		assert not frozenset(training_set["DYAD"].unique()).intersection(frozenset(test_set["DYAD"].unique()))
+		test_set = df.loc[~training_set_idxs]
+		test_set_dyads = frozenset(test_set["DYAD"].unique())
+		print("Test set dyads: {}".format(sorted(test_set_dyads)), file=sys.stderr)
+
+		assert not frozenset(training_set["DYAD"].unique()).intersection(frozenset(test_set_dyads))
 		return training_set, test_set
 
 
