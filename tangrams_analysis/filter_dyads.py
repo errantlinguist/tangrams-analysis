@@ -31,7 +31,7 @@ def read_results_file(inpath: str, encoding: str) -> pd.DataFrame:
 
 def __create_argparser() -> argparse.ArgumentParser:
 	result = argparse.ArgumentParser(
-		description="Learns a measure of referential salience of classifiers used based on the context of their corresponding words in dialogue.")
+		description="Writes only certain dyads from a word score file.")
 	result.add_argument("infiles", metavar="FILE", nargs='+',
 						help="The cross-validation results files to process.")
 	result.add_argument("-e", "--encoding", metavar="CODEC", default="utf-8",
