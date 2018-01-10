@@ -39,6 +39,11 @@ class SequenceFeatureVectorFactory(object):
 		self.__feature_count = len(self.__vocab_idxs) + 3
 
 	def create_datapoint_feature_array(self, row: pd.Series) -> List[float]:
+		"""
+
+		:param row: The pandas Series row to create a feature vector for.
+		:return: A list of feature values.
+		"""
 		word_features = [0.0] * len(self.__vocab_idxs)
 		# The features representing each individual vocabulary word are at the beginning of the feature vector
 		word_features[self.__vocab_idxs[row["WORD"]]] = 1.0
