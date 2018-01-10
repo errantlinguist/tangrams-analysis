@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Writes only certain dyads from a word score file..
+Writes only certain dyads from a word score file.
 """
 
 __author__ = "Todd Shore <errantlinguist+github@gmail.com>"
