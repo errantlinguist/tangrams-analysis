@@ -120,7 +120,7 @@ def __main(args):
 																	cv_results["DYAD"].nunique()),
 		  file=sys.stderr)
 
-	cv_results = find_target_ref_rows(cv_results)
+	cv_results = find_target_ref_rows(cv_results).copy(deep=False)
 	vocab = tuple(sorted(cv_results["WORD"].unique()))
 	print("Fitting one-hot encoder for vocabulary of size {}.".format(len(vocab)), file=sys.stderr)
 	# https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/
@@ -139,9 +139,9 @@ def __main(args):
 	print("Created a data matrix of shape {}.".format(matrix.shape), file=sys.stderr)
 
 	x = matrix[:,:,:-1]
-	#print(x)
+	print(x.shape)
 	y = matrix[:,:,-1]
-	#print(y)
+	print(y.shape)
 
 	model = Sequential()
 	#word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
