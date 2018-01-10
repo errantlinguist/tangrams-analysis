@@ -32,33 +32,37 @@ RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 __RESULTS_FILE_DTYPES = {"DYAD": "category", "WORD": "category", "IS_TARGET": bool, "IS_OOV": bool,
 						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
 
-class SequenceFeatureVectorFactory(object):
 
-	def __init__(self,vocab_idxs : Mapping[str, int]):
+class SequenceMatrixFactory(object):
+
+	def __init__(self, vocab_idxs: Mapping[str, int]):
 		self.__vocab_idxs = vocab_idxs
 		self.__feature_count = len(self.__vocab_idxs) + 3
 
 	def create_datapoint_feature_array(self, row: pd.Series) -> List[float]:
-		"""
-
-		:param row: The pandas Series row to create a feature vector for.
-		:return: A list of feature values.
-		"""
 		word_features = [0.0] * len(self.__vocab_idxs)
 		# The features representing each individual vocabulary word are at the beginning of the feature vector
 		word_features[self.__vocab_idxs[row["WORD"]]] = 1.0
 		is_instructor = 1.0 if row["IS_INSTRUCTOR"] else 0.0
 		is_oov = 1.0 if row["IS_OOV"] else 0.0
-		#is_target = 1.0 if row["IS_TARGET"] else 0.0
+		# is_target = 1.0 if row["IS_TARGET"] else 0.0
 		score = row["PROBABILITY"]
 		other_features = list((is_instructor, is_oov, score))
-		return word_features + other_features
+		result = word_features + other_features
+		# print("Created a vector of {} features.".format(len(result)), file=sys.stderr)
+		return result
 
+	def __call__(self, df: pd.DataFrame) -> np.array:
+		# https://stackoverflow.com/a/47815400/1391325
+		df.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
+		sequence_groups = df.groupby(
+			("CROSS_VALIDATION_ITER", "DYAD", "SPLIT_SEQ_NO", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
+			as_index=False)
+		return np.array(tuple(tuple(self.__create_feature_vectors(seq)) for _, seq in sequence_groups))
 
-	def __call__(self, df : pd.DataFrame) -> Iterator[List[float]]:
+	def __create_feature_vectors(self, df: pd.DataFrame) -> Iterator[List[float]]:
 		# noinspection PyProtectedMember
 		return (self.create_datapoint_feature_array(row._asdict()) for row in df.itertuples(index=False))
-
 
 def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
 	result = df.loc[df["IS_TARGET"] == True]
@@ -125,7 +129,9 @@ def __main(args):
 																	cv_results["DYAD"].nunique()),
 		  file=sys.stderr)
 
-	cv_results = find_target_ref_rows(cv_results).copy(deep=False)
+	cv_results = find_target_ref_rows(cv_results)
+
+	# Create vocab before splitting training and testing DFs so that the word feature set is stable
 	vocab = tuple(sorted(cv_results["WORD"].unique()))
 	print("Fitting one-hot encoder for vocabulary of size {}.".format(len(vocab)), file=sys.stderr)
 	# https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/
@@ -133,27 +139,32 @@ def __main(args):
 	vocab_idxs = dict((word, idx) for (idx, word) in enumerate(vocab))
 
 	training_df, test_df = split_training_testing(cv_results, 1)
+	training_df = training_df.copy(deep=False)
+	test_df = test_df.copy(deep=False)
 
 	print("Splitting token sequences.", file=sys.stderr)
-	# https://stackoverflow.com/a/47815400/1391325
-	cv_results.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
-	sequence_groups = cv_results.groupby(("CROSS_VALIDATION_ITER", "DYAD", "SPLIT_SEQ_NO", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
-							   as_index=False)
-	seq_feature_factory = SequenceFeatureVectorFactory(vocab_idxs)
-	matrix = np.array(tuple(tuple(seq_feature_factory(seq)) for _, seq in sequence_groups))
-	print("Created a data matrix of shape {}.".format(matrix.shape), file=sys.stderr)
+	seq_matrix_factory = SequenceMatrixFactory(vocab_idxs)
+	training_matrix = seq_matrix_factory(training_df)
+	print("Created a training data matrix of shape {}.".format(training_matrix.shape), file=sys.stderr)
+	test_matrix = seq_matrix_factory(test_df)
+	print("Created a test data matrix of shape {}.".format(test_matrix.shape), file=sys.stderr)
 
 	x = matrix[:,:,:-1]
 	print(x.shape)
+	assert len(x.shape) == 3
 	y = matrix[:,:,-1]
 	print(y.shape)
+	assert len(y.shape) == 2
 
 	model = Sequential()
 	#word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
 	#model.add(word_embeddings)
 	# model.add(Embedding(top_words, embedding_vector_length, input_length=max_review_length))
-	output_dim = 1
-	model.add(LSTM(output_dim))
+	# input shape is a pair of (timesteps, features) <https://stackoverflow.com/a/44583784/1391325>
+	#input_shape = x.shape[:2]
+	#lstm = LSTM(input_shape=input_shape, units=len(y.shape))
+	lstm = LSTM(batch_input_shape = x.shape, stateful = True, units=len(y.shape))
+	model.add(lstm)
 	model.add(Dense(1, activation='sigmoid'))
 	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 	print(model.summary())
