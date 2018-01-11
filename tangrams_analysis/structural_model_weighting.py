@@ -35,20 +35,37 @@ __RESULTS_FILE_DTYPES = {"DYAD": "category", "WORD": "category", "IS_TARGET": bo
 
 class SequenceMatrixFactory(object):
 
-	def __init__(self, vocab_idxs: Mapping[str, int]):
-		self.__vocab_idxs = vocab_idxs
-		self.__feature_count = len(self.__vocab_idxs) + 3
+	def __init__(self, label_encoder, onehot_encoder):
+		self.label_encoder = label_encoder
+		self.onehot_encoder = onehot_encoder
+
+	@property
+	def feature_count(self):
+		word_features = self.onehot_encoder.n_values_
+		return word_features + 3
 
 	def create_datapoint_feature_array(self, row: pd.Series) -> List[float]:
-		word_features = [0.0] * len(self.__vocab_idxs)
+		# word_features = [0.0] * len(self.__vocab_idxs)
 		# The features representing each individual vocabulary word are at the beginning of the feature vector
-		word_features[self.__vocab_idxs[row["WORD"]]] = 1.0
+		# word_features[self.__vocab_idxs[row["WORD"]]] = 1.0
+		# word_label = self.label_encoder.transform(row["WORD"])
+		word_label = row["WORD_LABEL"]
+		# print("Word label: {}".format(word_label), file=sys.stderr)
+		# "OneHotEncoder.transform(..)" returns a matrix even if only a single value is passed to it, so get just the first (and only) row
+		word_features = self.onehot_encoder.transform(word_label)[0]
+		# print("Word features: {}".format(word_features), file=sys.stderr)
+		# The word label for the one-hot encoding is that with the same index as the column that has a "1" value, i.e. the highest value in the vector of one-hot encoding values
+		# inverse_label = np.argmax(word_features)
+		# assert inverse_label == word_label
+		# inverse_word = self.label_encoder.inverse_transform([inverse_label])
+		# print("Inverse word label: {}".format(inverse_label), file=sys.stderr)
 		is_instructor = 1.0 if row["IS_INSTRUCTOR"] else 0.0
 		is_oov = 1.0 if row["IS_OOV"] else 0.0
 		# is_target = 1.0 if row["IS_TARGET"] else 0.0
 		score = row["PROBABILITY"]
-		other_features = list((is_instructor, is_oov, score))
-		result = word_features + other_features
+		other_features = np.array((is_instructor, is_oov, score))
+		# result = word_features + other_features
+		result = np.concatenate((word_features, other_features))
 		# print("Created a vector of {} features.".format(len(result)), file=sys.stderr)
 		return result
 
@@ -132,6 +149,28 @@ def __main(args):
 	cv_results = find_target_ref_rows(cv_results)
 
 	# Create vocab before splitting training and testing DFs so that the word feature set is stable
+	# vocab_words = tuple(sorted(cv_results["WORD"].unique()))
+	print("Fitting one-hot encoder for vocabulary of size {}.".format(len(cv_results["WORD"].unique())),
+		  file=sys.stderr)
+
+	# https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/
+	# integer encode
+	label_encoder = LabelEncoder()
+	vocab_labels = label_encoder.fit_transform(cv_results["WORD"])
+	cv_results["WORD_LABEL"] = vocab_labels
+	# print(vocab_labels)
+	# binary encode
+	onehot_encoder = OneHotEncoder(sparse=False)
+	vocab_labels = vocab_labels.reshape(len(vocab_labels), 1)
+	onehot_encoder.fit(vocab_labels)
+	#assert onehot_encoder.n_values_ == len(vocab_words)
+	# vocab_onehot_encoded = onehot_encoder.fit_transform(vocab_labels)
+	# print(vocab_onehot_encoded)
+	# invert first example
+	# inverted = label_encoder.inverse_transform([np.argmax(vocab_onehot_encoded[0, :])])
+	# print(inverted)
+
+	# Create vocab before splitting training and testing DFs so that the word feature set is stable
 	vocab = tuple(sorted(cv_results["WORD"].unique()))
 	print("Fitting one-hot encoder for vocabulary of size {}.".format(len(vocab)), file=sys.stderr)
 	# https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/
@@ -143,7 +182,7 @@ def __main(args):
 	test_df = test_df.copy(deep=False)
 
 	print("Splitting token sequences.", file=sys.stderr)
-	seq_matrix_factory = SequenceMatrixFactory(vocab_idxs)
+	seq_matrix_factory = SequenceMatrixFactory(label_encoder, onehot_encoder)
 	training_matrix = seq_matrix_factory(training_df)
 	print("Created a training data matrix of shape {}.".format(training_matrix.shape), file=sys.stderr)
 	test_matrix = seq_matrix_factory(test_df)
