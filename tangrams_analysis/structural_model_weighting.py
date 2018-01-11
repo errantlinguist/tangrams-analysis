@@ -40,11 +40,11 @@ class SequenceMatrixFactory(object):
 		self.onehot_encoder = onehot_encoder
 
 	@property
-	def feature_count(self):
-		word_features = self.onehot_encoder.n_values_
+	def feature_count(self) -> int:
+		word_features = self.onehot_encoder.n_values_[0]
 		return word_features + 3
 
-	def create_datapoint_feature_array(self, row: pd.Series) -> List[float]:
+	def __create_datapoint_feature_array(self, row: pd.Series) -> List[float]:
 		# word_features = [0.0] * len(self.__vocab_idxs)
 		# The features representing each individual vocabulary word are at the beginning of the feature vector
 		# word_features[self.__vocab_idxs[row["WORD"]]] = 1.0
@@ -79,7 +79,7 @@ class SequenceMatrixFactory(object):
 
 	def __create_feature_vectors(self, df: pd.DataFrame) -> Iterator[List[float]]:
 		# noinspection PyProtectedMember
-		return (self.create_datapoint_feature_array(row._asdict()) for row in df.itertuples(index=False))
+		return (self.__create_datapoint_feature_array(row._asdict()) for row in df.itertuples(index=False))
 
 def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
 	result = df.loc[df["IS_TARGET"] == True]
