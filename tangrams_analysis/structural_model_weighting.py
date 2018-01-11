@@ -188,23 +188,26 @@ def __main(args):
 	test_matrix = seq_matrix_factory(test_df)
 	print("Created a test data matrix of shape {}.".format(test_matrix.shape), file=sys.stderr)
 
-	x = matrix[:,:,:-1]
-	print(x.shape)
-	assert len(x.shape) == 3
-	y = matrix[:,:,-1]
-	print(y.shape)
-	assert len(y.shape) == 2
+	training_x = training_matrix[:, :, :-1]
+	print(training_x.shape)
+	assert len(training_x.shape) == 3
+	training_y = training_matrix[:, :, -1]
+	print(training_y.shape)
+	assert len(training_y.shape) == 2
 
 	model = Sequential()
-	#word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
-	#model.add(word_embeddings)
+	# word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
+	# model.add(word_embeddings)
 	# model.add(Embedding(top_words, embedding_vector_length, input_length=max_review_length))
 	# input shape is a pair of (timesteps, features) <https://stackoverflow.com/a/44583784/1391325>
-	#input_shape = x.shape[:2]
-	#lstm = LSTM(input_shape=input_shape, units=len(y.shape))
-	lstm = LSTM(batch_input_shape = x.shape, stateful = True, units=len(y.shape))
+	input_shape = training_x.shape[1:]
+	print("Input shape: {}".format(input_shape), file=sys.stderr)
+	units = training_y.shape[1]
+	print("Units: {}".format(units), file=sys.stderr)
+	lstm = LSTM(input_shape=input_shape, units=units)
+	# lstm = LSTM(batch_input_shape = training_x.shape, stateful = True, units=len(training_y.shape))
 	model.add(lstm)
-	model.add(Dense(1, activation='sigmoid'))
+	model.add(Dense(units, activation='sigmoid'))
 	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 	print(model.summary())
 
