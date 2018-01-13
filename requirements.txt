@@ -5,6 +5,4 @@ nltk
 numpy
 pandas
 python-dateutil
-Pillow
 scikit-learn
-seaborn
