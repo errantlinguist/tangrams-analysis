@@ -91,8 +91,7 @@ class DataGenerator(object):
 
 class SequenceMatrixFactory(object):
 
-	def __init__(self, label_encoder, onehot_encoder):
-		self.label_encoder = label_encoder
+	def __init__(self, onehot_encoder):
 		self.onehot_encoder = onehot_encoder
 
 	@property
@@ -238,7 +237,7 @@ def __main(args):
 	training_df, test_df = split_training_testing(cv_results, 1)
 
 	print("Splitting token sequences.", file=sys.stderr)
-	seq_matrix_factory = SequenceMatrixFactory(label_encoder, onehot_encoder)
+	seq_matrix_factory = SequenceMatrixFactory(onehot_encoder)
 	training_seqs = tuple(seq_matrix_factory(training_df))
 	max_training_seq_len = max(m.shape[0] for m in training_seqs)
 	print("Created a training dataset with a size of {} and a max sequence length of {}.".format(len(training_seqs),
