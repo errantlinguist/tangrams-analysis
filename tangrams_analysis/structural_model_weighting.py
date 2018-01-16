@@ -233,9 +233,9 @@ def __main(args):
 	print("Creating vocab dictionary for one-hot label encoding.", file=sys.stderr)
 	vocab_idxs = dict((word, idx) for (idx, word) in enumerate(vocab))
 
+	# https://stackoverflow.com/a/47815400/1391325
+	cv_results.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
 	training_df, test_df = split_training_testing(cv_results, 1)
-	training_df = training_df.copy(deep=False)
-	test_df = test_df.copy(deep=False)
 
 	print("Splitting token sequences.", file=sys.stderr)
 	seq_matrix_factory = SequenceMatrixFactory(label_encoder, onehot_encoder)
