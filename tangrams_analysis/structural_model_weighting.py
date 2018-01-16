@@ -32,7 +32,7 @@ __RESULTS_FILE_DTYPES = {"DYAD": "category", "ENTITY": "category", "IS_TARGET": 
 						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
 
 
-class SequenceMatrixFactory(object):
+class SequenceMatrixGenerator(object):
 
 	def __init__(self, onehot_encoder):
 		self.onehot_encoder = onehot_encoder
@@ -180,13 +180,13 @@ def __main(args):
 	training_df, test_df = split_training_testing(cv_results, 1)
 
 	print("Splitting token sequences.", file=sys.stderr)
-	seq_matrix_factory = SequenceMatrixFactory(onehot_encoder)
-	training_seqs = tuple(seq_matrix_factory(training_df))
+	seq_matrix_generator = SequenceMatrixGenerator(onehot_encoder)
+	training_seqs = tuple(seq_matrix_generator(training_df))
 	max_training_seq_len = max(m.shape[0] for m in training_seqs)
 	print("Created a training dataset with a size of {} and a max sequence length of {}.".format(len(training_seqs),
 																								 max_training_seq_len),
 		  file=sys.stderr)
-	test_seqs = tuple(seq_matrix_factory(test_df))
+	test_seqs = tuple(seq_matrix_generator(test_df))
 	max_test_seq_len = max(m.shape[0] for m in test_seqs)
 	print("Created a test dataset with a size of {} and a max sequence length of {}.".format(len(test_seqs),
 																							 max_test_seq_len),
