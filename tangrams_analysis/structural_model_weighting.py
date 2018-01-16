@@ -16,6 +16,7 @@ import random
 import sys
 from typing import Iterator, List, Tuple
 
+import keras
 import numpy as np
 import pandas as pd
 from keras.layers import Dense
@@ -27,15 +28,20 @@ from sklearn.preprocessing import OneHotEncoder
 RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 
 # NOTE: "category" dtype doesn't work with pandas-0.21.0 but does with pandas-0.21.1
-__RESULTS_FILE_DTYPES = {"DYAD": "category", "WORD": "category", "IS_TARGET": bool, "IS_OOV": bool,
-						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
+__RESULTS_FILE_DTYPES = {"DYAD": "category", "ENTITY" : "category", "IS_TARGET": bool, "IS_OOV": bool,
+				 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
 
 
-class SequenceMatrixFactory(object):
+class DataGenerator(object):
+	"""
+	Generates data for Keras
+	https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly.html
+	"""
 
-	def __init__(self, label_encoder, onehot_encoder):
+	def __init__(self, label_encoder, onehot_encoder, shuffle=True):
 		self.label_encoder = label_encoder
 		self.onehot_encoder = onehot_encoder
+		self.shuffle = shuffle
 
 	@property
 	def feature_count(self) -> int:
@@ -73,11 +79,61 @@ class SequenceMatrixFactory(object):
 		sequence_groups = df.groupby(
 			("CROSS_VALIDATION_ITER", "DYAD", "SPLIT_SEQ_NO", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
 			as_index=False, sort=False)
-		return np.array(tuple(tuple(self.__create_feature_vectors(seq)) for _, seq in sequence_groups))
+		# Infinite loop
+		while True:
+			for _, seq in sequence_groups:
+				yield tuple(self.__create_feature_vectors(seq))
 
 	def __create_feature_vectors(self, df: pd.DataFrame) -> Iterator[List[float]]:
 		# noinspection PyProtectedMember
 		return (self.__create_datapoint_feature_array(row._asdict()) for row in df.itertuples(index=False))
+
+
+class SequenceMatrixFactory(object):
+
+	def __init__(self, label_encoder, onehot_encoder):
+		self.label_encoder = label_encoder
+		self.onehot_encoder = onehot_encoder
+
+	@property
+	def feature_count(self) -> int:
+		word_features = self.onehot_encoder.n_values_[0]
+		return word_features + 2
+
+	def __create_datapoint_feature_array(self, row: pd.Series) -> List[float]:
+		# word_features = [0.0] * len(self.__vocab_idxs)
+		# The features representing each individual vocabulary word are at the beginning of the feature vector
+		# word_features[self.__vocab_idxs[row["WORD"]]] = 1.0
+		# word_label = self.label_encoder.transform(row["WORD"])
+		word_label = row["WORD_LABEL"]
+		# print("Word label: {}".format(word_label), file=sys.stderr)
+		# "OneHotEncoder.transform(..)" returns a matrix even if only a single value is passed to it, so get just the first (and only) row
+		word_features = self.onehot_encoder.transform(word_label)[0]
+		# print("Word features: {}".format(word_features), file=sys.stderr)
+		# The word label for the one-hot encoding is that with the same index as the column that has a "1" value, i.e. the highest value in the vector of one-hot encoding values
+		# inverse_label = np.argmax(word_features)
+		# assert inverse_label == word_label
+		# inverse_word = self.label_encoder.inverse_transform([inverse_label])
+		# print("Inverse word label: {}".format(inverse_label), file=sys.stderr)
+		is_instructor = 1.0 if row["IS_INSTRUCTOR"] else 0.0
+		# is_target = 1.0 if row["IS_TARGET"] else 0.0
+		score = row["PROBABILITY"]
+		other_features = np.array((is_instructor, score))
+		# result = word_features + other_features
+		result = np.concatenate((word_features, other_features))
+		# print("Created a vector of {} features.".format(len(result)), file=sys.stderr)
+		return result
+
+	def __call__(self, df: pd.DataFrame) -> Iterator[np.matrix]:
+		sequence_groups = df.groupby(
+			("CROSS_VALIDATION_ITER", "DYAD", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
+			as_index=False, sort=False)
+		return (self.__create_seq_feature_matrix(seq) for _, seq in sequence_groups)
+
+	def __create_seq_feature_matrix(self, df: pd.DataFrame) -> np.matrix:
+		# noinspection PyProtectedMember
+		return np.matrix(
+			tuple(self.__create_datapoint_feature_array(row._asdict()) for row in df.itertuples(index=False)))
 
 
 def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
@@ -183,16 +239,31 @@ def __main(args):
 
 	print("Splitting token sequences.", file=sys.stderr)
 	seq_matrix_factory = SequenceMatrixFactory(label_encoder, onehot_encoder)
-	training_matrix = seq_matrix_factory(training_df)
-	print("Created a training data matrix of shape {}.".format(training_matrix.shape), file=sys.stderr)
-	test_matrix = seq_matrix_factory(test_df)
-	print("Created a test data matrix of shape {}.".format(test_matrix.shape), file=sys.stderr)
+	training_seqs = tuple(seq_matrix_factory(training_df))
+	max_training_seq_len = max(m.shape[0] for m in training_seqs)
+	print("Created a training dataset with a size of {} and a max sequence length of {}.".format(len(training_seqs),
+																								 max_training_seq_len),
+		  file=sys.stderr)
+	test_seqs = tuple(seq_matrix_factory(test_df))
+	max_test_seq_len = max(m.shape[0] for m in test_seqs)
+	print("Created a test dataset with a size of {} and a max sequence length of {}.".format(len(test_seqs),
+																							 max_test_seq_len),
+		  file=sys.stderr)
+
+	maxlen = max(max_training_seq_len, max_test_seq_len)
+	print("Padding sequences to a length of {}.".format(maxlen), file=sys.stderr)
+	training_matrix = keras.preprocessing.sequence.pad_sequences(training_seqs, maxlen=maxlen, padding='pre',
+																 truncating='pre', value=0.)
+	print("Batch training matrix shape: {}".format(training_matrix.shape), file=sys.stderr)
+	test_matrix = keras.preprocessing.sequence.pad_sequences(test_seqs, maxlen=maxlen, padding='pre', truncating='pre',
+															 value=0.)
+	print("Batch test matrix shape: {}".format(test_matrix.shape), file=sys.stderr)
 
 	training_x = training_matrix[:, :, :-1]
-	print(training_x.shape)
+	print("Training X shape: {}".format(training_x.shape), file=sys.stderr)
 	assert len(training_x.shape) == 3
 	training_y = training_matrix[:, :, -1]
-	print(training_y.shape)
+	print("Training Y shape: {}".format(training_y.shape), file=sys.stderr)
 	assert len(training_y.shape) == 2
 
 	model = Sequential()
