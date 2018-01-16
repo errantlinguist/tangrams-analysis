@@ -72,7 +72,7 @@ class SequenceMatrixFactory(object):
 		df.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
 		sequence_groups = df.groupby(
 			("CROSS_VALIDATION_ITER", "DYAD", "SPLIT_SEQ_NO", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
-			as_index=False)
+			as_index=False, sort=False)
 		return np.array(tuple(tuple(self.__create_feature_vectors(seq)) for _, seq in sequence_groups))
 
 	def __create_feature_vectors(self, df: pd.DataFrame) -> Iterator[List[float]]:
