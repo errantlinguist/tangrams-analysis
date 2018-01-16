@@ -14,7 +14,7 @@ import argparse
 import csv
 import random
 import sys
-from typing import Iterator, List, Tuple
+from typing import Iterator, Tuple
 
 import keras
 import numpy as np
@@ -28,65 +28,8 @@ from sklearn.preprocessing import OneHotEncoder
 RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 
 # NOTE: "category" dtype doesn't work with pandas-0.21.0 but does with pandas-0.21.1
-__RESULTS_FILE_DTYPES = {"DYAD": "category", "ENTITY" : "category", "IS_TARGET": bool, "IS_OOV": bool,
-				 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
-
-
-class DataGenerator(object):
-	"""
-	Generates data for Keras
-	https://stanford.edu/~shervine/blog/keras-how-to-generate-data-on-the-fly.html
-	"""
-
-	def __init__(self, label_encoder, onehot_encoder, shuffle=True):
-		self.label_encoder = label_encoder
-		self.onehot_encoder = onehot_encoder
-		self.shuffle = shuffle
-
-	@property
-	def feature_count(self) -> int:
-		word_features = self.onehot_encoder.n_values_[0]
-		return word_features + 3
-
-	def __create_datapoint_feature_array(self, row: pd.Series) -> List[float]:
-		# word_features = [0.0] * len(self.__vocab_idxs)
-		# The features representing each individual vocabulary word are at the beginning of the feature vector
-		# word_features[self.__vocab_idxs[row["WORD"]]] = 1.0
-		# word_label = self.label_encoder.transform(row["WORD"])
-		word_label = row["WORD_LABEL"]
-		# print("Word label: {}".format(word_label), file=sys.stderr)
-		# "OneHotEncoder.transform(..)" returns a matrix even if only a single value is passed to it, so get just the first (and only) row
-		word_features = self.onehot_encoder.transform(word_label)[0]
-		# print("Word features: {}".format(word_features), file=sys.stderr)
-		# The word label for the one-hot encoding is that with the same index as the column that has a "1" value, i.e. the highest value in the vector of one-hot encoding values
-		# inverse_label = np.argmax(word_features)
-		# assert inverse_label == word_label
-		# inverse_word = self.label_encoder.inverse_transform([inverse_label])
-		# print("Inverse word label: {}".format(inverse_label), file=sys.stderr)
-		is_instructor = 1.0 if row["IS_INSTRUCTOR"] else 0.0
-		is_oov = 1.0 if row["IS_OOV"] else 0.0
-		# is_target = 1.0 if row["IS_TARGET"] else 0.0
-		score = row["PROBABILITY"]
-		other_features = np.array((is_instructor, is_oov, score))
-		# result = word_features + other_features
-		result = np.concatenate((word_features, other_features))
-		# print("Created a vector of {} features.".format(len(result)), file=sys.stderr)
-		return result
-
-	def __call__(self, df: pd.DataFrame) -> np.array:
-		# https://stackoverflow.com/a/47815400/1391325
-		df.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
-		sequence_groups = df.groupby(
-			("CROSS_VALIDATION_ITER", "DYAD", "SPLIT_SEQ_NO", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
-			as_index=False, sort=False)
-		# Infinite loop
-		while True:
-			for _, seq in sequence_groups:
-				yield tuple(self.__create_feature_vectors(seq))
-
-	def __create_feature_vectors(self, df: pd.DataFrame) -> Iterator[List[float]]:
-		# noinspection PyProtectedMember
-		return (self.__create_datapoint_feature_array(row._asdict()) for row in df.itertuples(index=False))
+__RESULTS_FILE_DTYPES = {"DYAD": "category", "ENTITY": "category", "IS_TARGET": bool, "IS_OOV": bool,
+						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
 
 
 class SequenceMatrixFactory(object):
