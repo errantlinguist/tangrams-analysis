@@ -78,6 +78,25 @@ class SequenceMatrixGenerator(object):
 		return (self.__create_seq_feature_matrix(seq) for _, seq in sequence_groups)
 
 
+def create_model(training_x: np.ndarray, training_y: np.ndarray) -> Sequential:
+	result = Sequential()
+	# word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
+	# model.add(word_embeddings)
+	# model.add(Embedding(top_words, embedding_vector_length, input_length=max_review_length))
+	# input shape is a pair of (timesteps, features) <https://stackoverflow.com/a/44583784/1391325>
+	input_shape = training_x.shape[1:]
+	print("Input shape: {}".format(input_shape), file=sys.stderr)
+	units = training_y.shape[1]
+	print("Units: {}".format(units), file=sys.stderr)
+	lstm = LSTM(input_shape=input_shape, units=units)
+	# lstm = LSTM(batch_input_shape = training_x.shape, stateful = True, units=len(training_y.shape))
+	result.add(lstm)
+	result.add(Dense(units, activation='sigmoid'))
+	result.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+	print(result.summary())
+	return result
+
+
 def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
 	result = df.loc[df["IS_TARGET"] == True]
 	result_row_count = result.shape[0]
@@ -208,21 +227,7 @@ def __main(args):
 	print("Training Y shape: {}".format(training_y.shape), file=sys.stderr)
 	assert len(training_y.shape) == 2
 
-	model = Sequential()
-	# word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
-	# model.add(word_embeddings)
-	# model.add(Embedding(top_words, embedding_vector_length, input_length=max_review_length))
-	# input shape is a pair of (timesteps, features) <https://stackoverflow.com/a/44583784/1391325>
-	input_shape = training_x.shape[1:]
-	print("Input shape: {}".format(input_shape), file=sys.stderr)
-	units = training_y.shape[1]
-	print("Units: {}".format(units), file=sys.stderr)
-	lstm = LSTM(input_shape=input_shape, units=units)
-	# lstm = LSTM(batch_input_shape = training_x.shape, stateful = True, units=len(training_y.shape))
-	model.add(lstm)
-	model.add(Dense(units, activation='sigmoid'))
-	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
-	print(model.summary())
+	model = create_model(training_x, training_y)
 
 
 # https://machinelearningmastery.com/prepare-text-data-deep-learning-keras/
