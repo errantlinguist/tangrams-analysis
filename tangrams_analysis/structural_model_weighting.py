@@ -75,7 +75,7 @@ class SequenceMatrixGenerator(object):
 		sequence_groups = df.groupby(
 			("CROSS_VALIDATION_ITER", "DYAD", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"),
 			as_index=False, sort=False)
-		return (self.__create_seq_feature_matrix(seq) for _, seq in sequence_groups)
+		return sequence_groups.apply(self.__create_seq_feature_matrix)
 
 
 def create_model(training_x: np.ndarray, training_y: np.ndarray) -> Sequential:
