@@ -12,16 +12,14 @@ __license__ = "Apache License, Version 2.0"
 
 import argparse
 import csv
-import itertools
 import random
 import sys
-from typing import Iterator, List, Mapping, Tuple
+from typing import Iterator, List, Tuple
 
 import numpy as np
 import pandas as pd
 from keras.layers import Dense
 from keras.layers import LSTM
-from keras.layers.embeddings import Embedding
 from keras.models import Sequential
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import OneHotEncoder
@@ -81,6 +79,7 @@ class SequenceMatrixFactory(object):
 		# noinspection PyProtectedMember
 		return (self.__create_datapoint_feature_array(row._asdict()) for row in df.itertuples(index=False))
 
+
 def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
 	result = df.loc[df["IS_TARGET"] == True]
 	result_row_count = result.shape[0]
@@ -99,7 +98,8 @@ def read_results_file(inpath: str, encoding: str) -> pd.DataFrame:
 						 encoding=encoding, memory_map=True, dtype=__RESULTS_FILE_DTYPES)
 	return result
 
-def split_training_testing(df: pd.DataFrame, test_set_size : int) -> Tuple[pd.DataFrame, pd.DataFrame]:
+
+def split_training_testing(df: pd.DataFrame, test_set_size: int) -> Tuple[pd.DataFrame, pd.DataFrame]:
 	dyad_ids = df["DYAD"].unique()
 	training_set_size = len(dyad_ids) - test_set_size
 	if training_set_size < 1:
@@ -163,7 +163,7 @@ def __main(args):
 	onehot_encoder = OneHotEncoder(sparse=False)
 	vocab_labels = vocab_labels.reshape(len(vocab_labels), 1)
 	onehot_encoder.fit(vocab_labels)
-	#assert onehot_encoder.n_values_ == len(vocab_words)
+	# assert onehot_encoder.n_values_ == len(vocab_words)
 	# vocab_onehot_encoded = onehot_encoder.fit_transform(vocab_labels)
 	# print(vocab_onehot_encoded)
 	# invert first example
@@ -211,14 +211,15 @@ def __main(args):
 	model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
 	print(model.summary())
 
-	# https://machinelearningmastery.com/prepare-text-data-deep-learning-keras/
-	# from keras.preprocessing.text import Tokenizer
-	# create the tokenizer
-	# t = Tokenizer()
-	# fit the tokenizer on the documents
-	# t.fit_on_texts(docs)
 
-	# https://machinelearningmastery.com/memory-in-a-long-short-term-memory-network/
+# https://machinelearningmastery.com/prepare-text-data-deep-learning-keras/
+# from keras.preprocessing.text import Tokenizer
+# create the tokenizer
+# t = Tokenizer()
+# fit the tokenizer on the documents
+# t.fit_on_texts(docs)
+
+# https://machinelearningmastery.com/memory-in-a-long-short-term-memory-network/
 
 
 # TODO: Create output features: one feature per word class, the value thereof being the referential salience, i.e. ((STDEV of probability of "true" for all referents in round being classified) * number of times classifier has been observed in training)
