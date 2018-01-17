@@ -42,7 +42,7 @@ class SequenceMatrixGenerator(object):
 		word_features = self.onehot_encoder.n_values_[0]
 		return word_features + 2
 
-	def __create_datapoint_feature_array(self, row: pd.Series) -> np.array:
+	def __create_datapoint_feature_array(self, row: pd.Series) -> Tuple[np.array]:
 		# word_features = [0.0] * len(self.__vocab_idxs)
 		# The features representing each individual vocabulary word are at the beginning of the feature vector
 		# word_features[self.__vocab_idxs[row["WORD"]]] = 1.0
@@ -64,12 +64,12 @@ class SequenceMatrixGenerator(object):
 		# result = word_features + other_features
 		result = np.concatenate((word_features, other_features))
 		# print("Created a vector of {} features.".format(len(result)), file=sys.stderr)
-		return result
+		# NOTE: Returning a tuple is a hack in order to return an instance of "np.ndarray" from "DataFrame.apply()"
+		return result,
 
 	def __create_seq_feature_matrix(self, df: pd.DataFrame) -> np.matrix:
-		# noinspection PyProtectedMember
-		return np.matrix(
-			tuple(self.__create_datapoint_feature_array(row._asdict()) for row in df.itertuples(index=False)))
+		vectors = df.apply(self.__create_datapoint_feature_array, axis=1)
+		return np.matrix(tuple(vector[0] for vector in vectors))
 
 	def __call__(self, df: pd.DataFrame) -> Iterator[np.matrix]:
 		sequence_groups = df.groupby(
