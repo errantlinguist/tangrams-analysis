@@ -16,7 +16,7 @@ import random
 import sys
 from typing import Iterator, Tuple
 
-import keras
+import keras.preprocessing.sequence
 import numpy as np
 import pandas as pd
 from keras.layers import Dense
