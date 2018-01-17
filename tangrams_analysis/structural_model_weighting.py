@@ -68,7 +68,8 @@ class SequenceMatrixGenerator(object):
 		return result,
 
 	def __create_seq_feature_matrix(self, df: pd.DataFrame) -> np.matrix:
-		vectors = df.apply(self.__create_datapoint_feature_array, axis=1)
+		# NOTE: The returned tuples have to be unpacked outside of the "apply(..)" function
+		vectors = df.apply(lambda row: self.__create_datapoint_feature_array(row)[0], axis=1)
 		return np.matrix(tuple(vector[0] for vector in vectors))
 
 	def __call__(self, df: pd.DataFrame) -> Iterator[np.matrix]:
