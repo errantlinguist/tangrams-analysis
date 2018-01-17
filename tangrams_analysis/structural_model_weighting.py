@@ -174,9 +174,7 @@ def __main(args):
 	cv_results = find_target_ref_rows(cv_results)
 
 	# Create vocab before splitting training and testing DFs so that the word feature set is stable
-	# vocab_words = tuple(sorted(cv_results["WORD"].unique()))
-	print("Fitting one-hot encoder for vocabulary of size {}.".format(len(cv_results["WORD"].unique())),
-		  file=sys.stderr)
+	print("Fitting one-hot encoder for vocabulary of size {}.".format(cv_results["WORD"].nunique()), file=sys.stderr)
 
 	# https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/
 	# integer encode
@@ -194,13 +192,6 @@ def __main(args):
 	# invert first example
 	# inverted = label_encoder.inverse_transform([np.argmax(vocab_onehot_encoded[0, :])])
 	# print(inverted)
-
-	# Create vocab before splitting training and testing DFs so that the word feature set is stable
-	vocab = tuple(sorted(cv_results["WORD"].unique()))
-	print("Fitting one-hot encoder for vocabulary of size {}.".format(len(vocab)), file=sys.stderr)
-	# https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/
-	print("Creating vocab dictionary for one-hot label encoding.", file=sys.stderr)
-	vocab_idxs = dict((word, idx) for (idx, word) in enumerate(vocab))
 
 	# https://stackoverflow.com/a/47815400/1391325
 	cv_results.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
