@@ -134,6 +134,14 @@ def split_training_testing(df: pd.DataFrame, test_set_size: int) -> Tuple[pd.Dat
 		return training_set, test_set
 
 
+def split_xy(matrix: np.array) -> Tuple[np.array, np.array]:
+	x = matrix[:, :, :-1]
+	assert len(x.shape) == 3
+	y = matrix[:, :, -1]
+	assert len(y.shape) == 2
+	return x, y
+
+
 def __create_argparser() -> argparse.ArgumentParser:
 	result = argparse.ArgumentParser(
 		description="Learns a measure of referential salience of classifiers used based on the context of their corresponding words in dialogue.")
@@ -220,12 +228,9 @@ def __main(args):
 															 value=0.)
 	print("Batch test matrix shape: {}".format(test_matrix.shape), file=sys.stderr)
 
-	training_x = training_matrix[:, :, :-1]
+	training_x, training_y = split_xy(training_matrix)
 	print("Training X shape: {}".format(training_x.shape), file=sys.stderr)
-	assert len(training_x.shape) == 3
-	training_y = training_matrix[:, :, -1]
 	print("Training Y shape: {}".format(training_y.shape), file=sys.stderr)
-	assert len(training_y.shape) == 2
 
 	model = create_model(training_x, training_y)
 
