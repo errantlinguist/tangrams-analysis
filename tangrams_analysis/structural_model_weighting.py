@@ -42,7 +42,7 @@ class SequenceMatrixGenerator(object):
 		word_features = self.onehot_encoder.n_values_[0]
 		return word_features + 2
 
-	def __create_datapoint_feature_array(self, row: pd.Series) -> Tuple[np.array]:
+	def __create_datapoint_feature_array(self, row: pd.Series) -> Tuple[np.ndarray]:
 		# word_features = [0.0] * len(self.__vocab_idxs)
 		# The features representing each individual vocabulary word are at the beginning of the feature vector
 		# word_features[self.__vocab_idxs[row["WORD"]]] = 1.0
@@ -135,7 +135,7 @@ def split_training_testing(df: pd.DataFrame, test_set_size: int) -> Tuple[pd.Dat
 		return training_set, test_set
 
 
-def split_xy(matrix: np.array) -> Tuple[np.array, np.array]:
+def split_xy(matrix: np.ndarray) -> Tuple[np.ndarray, np.ndarray]:
 	x = matrix[:, :, :-1]
 	assert len(x.shape) == 3
 	y = matrix[:, :, -1]
