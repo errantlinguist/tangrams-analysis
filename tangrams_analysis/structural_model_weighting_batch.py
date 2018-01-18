@@ -89,11 +89,11 @@ def create_model(training_x: np.ndarray, training_y: np.ndarray) -> Sequential:
 	print("Input shape: {}".format(input_shape), file=sys.stderr)
 	units = training_y.shape[1]
 	print("Units: {}".format(units), file=sys.stderr)
-	lstm = LSTM(input_shape=input_shape, units=units)
+	lstm = LSTM(input_shape=input_shape, units=units, dropout=0.1, recurrent_dropout=0.1)
 	# lstm = LSTM(batch_input_shape = training_x.shape, stateful = True, units=len(training_y.shape))
 	result.add(lstm)
-	result.add(Dense(units, activation='sigmoid'))
-	result.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+	result.add(Dense(units, activation='softmax'))
+	result.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
 	print(result.summary())
 	return result
 

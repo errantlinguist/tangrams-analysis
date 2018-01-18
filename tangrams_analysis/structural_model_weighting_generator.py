@@ -140,8 +140,8 @@ def create_model(input_feature_count: int, output_feature_count: int) -> Sequent
 	lstm = LSTM(input_shape=input_shape, units=units, dropout=0.1, recurrent_dropout=0.1)
 	# lstm = LSTM(batch_input_shape = training_x.shape, stateful = True, units=len(training_y.shape))
 	result.add(lstm)
-	result.add(Dense(units, activation='sigmoid'))
-	result.compile(loss='binary_crossentropy', optimizer='adam', metrics=['accuracy'])
+	result.add(Dense(units, activation='softmax'))
+	result.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
 	print(result.summary())
 	return result
 
