@@ -240,7 +240,8 @@ def __main(args):
 	print("Generating training data token sequences.", file=sys.stderr)
 	data_generator_factory = DataGeneratorFactory(onehot_encoder)
 	training_data_generator = data_generator_factory(training_df)
-	# validation_data_generator = data_generator_factory()
+	print("Generating validation data token sequences.", file=sys.stderr)
+	validation_data_generator = data_generator_factory(find_target_ref_rows(test_df))
 
 	# https://stackoverflow.com/a/43472000/1391325
 	with keras.backend.get_session():
@@ -250,7 +251,7 @@ def __main(args):
 		print("Training model using {} epoch(s).".format(epochs), file=sys.stderr)
 		workers = max(multiprocessing.cpu_count() - 1, 1)
 		print("Using {} worker thread(s).".format(epochs), file=sys.stderr)
-		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1, workers=workers)
+		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1, workers=workers, validation_data=validation_data_generator)
 
 
 if __name__ == "__main__":
