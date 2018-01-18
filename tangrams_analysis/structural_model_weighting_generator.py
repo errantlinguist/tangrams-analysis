@@ -213,7 +213,6 @@ def __main(args):
 
 	# Create vocab before splitting training and testing DFs so that the word feature set is stable
 	print("Fitting one-hot encoder for vocabulary of size {}.".format(cv_results["WORD"].nunique()), file=sys.stderr)
-
 	# https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/
 	# integer encode
 	label_encoder = LabelEncoder()
