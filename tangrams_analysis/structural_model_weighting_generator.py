@@ -166,7 +166,7 @@ def create_model(input_feature_count: int, output_feature_count: int) -> Sequent
 	result.add(lstm)
 	result.add(Dense(units, activation='softmax'))
 	result.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
-	print(result.summary(), file=sys.stderr)
+	result.summary(print_fn=lambda line : print(line, file=sys.stderr))
 	return result
 
 
