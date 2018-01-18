@@ -12,10 +12,11 @@ __license__ = "Apache License, Version 2.0"
 
 import argparse
 import csv
+import multiprocessing
 import random
 import sys
 from collections import defaultdict
-from typing import DefaultDict, List, Tuple
+from typing import DefaultDict, List, Sequence, Tuple
 
 import keras.preprocessing.sequence
 import numpy as np
@@ -35,6 +36,14 @@ __RESULTS_FILE_DTYPES = {"DYAD": "category", "ENTITY": "category", "IS_TARGET": 
 
 class DataGeneratorFactory(object):
 
+	@staticmethod
+	def __group_by_seq_len(seq_xy: pd.Series) -> DefaultDict[int, List[Tuple[np.matrix, np.ndarray]]]:
+		result = defaultdict(list)
+		for xy in seq_xy:
+			seq_len = xy[0].shape[0]
+			result[seq_len].append(xy)
+		return result
+
 	def __init__(self, onehot_encoder: OneHotEncoder):
 		self.onehot_encoder = onehot_encoder
 
@@ -52,8 +61,10 @@ class DataGeneratorFactory(object):
 			("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"), sort=False)
 		print("Generating data for {} entity token sequence(s).".format(len(sequence_groups)), file=sys.stderr)
 		seq_xy = sequence_groups.apply(self.__create_seq_xy)
-
-		return TokenSequenceSequence(seq_xy)
+		len_dict = self.__group_by_seq_len(seq_xy)
+		print("Created {} batches, one for each unique sequence length.".format(len(len_dict)), file=sys.stderr)
+		seq_batches_by_len = tuple(len_dict.values())
+		return TokenSequenceSequence(seq_batches_by_len)
 
 	def __create_datapoint_x(self, row: pd.Series) -> Tuple[np.ndarray,]:
 		# word_features = [0.0] * len(self.__vocab_idxs)
@@ -95,34 +106,24 @@ class TokenSequenceSequence(keras.utils.Sequence):
 	A sequence (i.e. less confusingly a dataset) of token sequences, each of which is for a given distinct entity, i.e. possible referent.
 	"""
 
-	@staticmethod
-	def __group_by_seq_len(seq_xy: pd.Series) -> DefaultDict[int, List[Tuple[np.matrix, np.ndarray]]]:
-		result = defaultdict(list)
-		for xy in seq_xy:
-			seq_len = xy[0].shape[0]
-			result[seq_len].append(xy)
-		return result
-
-	def __init__(self, seq_xy: pd.Series):
-		len_dict = self.__group_by_seq_len(seq_xy)
-		print("Created {} batches, one for each unique sequence length.".format(len(len_dict)), file=sys.stderr)
-		self.seq_batches_by_len = tuple(len_dict.values())
+	def __init__(self, seq_batches_by_len: Sequence[Sequence[Tuple[np.matrix, np.ndarray]]]):
+		self.seq_batches_by_len = seq_batches_by_len
 
 	def __len__(self) -> int:
 		return len(self.seq_batches_by_len)
 
 	def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
-		#print("Getting batch idx {}.".format(idx), file=sys.stderr)
+		# print("Getting batch idx {}.".format(idx), file=sys.stderr)
 		batch = self.seq_batches_by_len[idx]
 		seq_x = tuple(x for x, y in batch)
 		x = np.asarray(seq_x)
-		#print("X shape: {}".format(x.shape), file=sys.stderr)
+		# print("X shape: {}".format(x.shape), file=sys.stderr)
 		seq_y = tuple(y for x, y in batch)
 		if any(len(y.shape) > 1 for y in seq_y):
 			raise ValueError("Output feature vectors with a dimensionality greater than 1 are not supported.")
 		y = np.asarray(tuple(y[0] for y in seq_y))
-		#y = np.asarray(seq_y)
-		#print("Y shape: {}".format(y.shape), file=sys.stderr)
+		# y = np.asarray(seq_y)
+		# print("Y shape: {}".format(y.shape), file=sys.stderr)
 		return x, y
 
 
@@ -151,8 +152,8 @@ def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
 	complement_row_count = df.loc[~df.index.isin(result.index)].shape[0]
 	assert result_row_count + complement_row_count == df.shape[0]
 	print("Found {} non-target rows and {} target rows. Ratio: {}".format(complement_row_count, result_row_count,
-																		 complement_row_count / float(
-																			 result_row_count)), file=sys.stderr)
+																		  complement_row_count / float(
+																			  result_row_count)), file=sys.stderr)
 	return result
 
 
@@ -239,12 +240,14 @@ def __main(args):
 	print("Generating training data token sequences.", file=sys.stderr)
 	data_generator_factory = DataGeneratorFactory(onehot_encoder)
 	training_data_generator = data_generator_factory(training_df)
+	# validation_data_generator = data_generator_factory()
 
 	# https://stackoverflow.com/a/43472000/1391325
 	with keras.backend.get_session():
 		model = create_model(data_generator_factory.input_feature_count, data_generator_factory.output_feature_count)
 		# train LSTM
 		epochs = 250
+		#workers = max(multiprocessing.cpu_count() - 1, 1)
 		print("Training model using {} epoch(s).".format(epochs), file=sys.stderr)
 		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1)
 
