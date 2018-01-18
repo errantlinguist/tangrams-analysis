@@ -123,7 +123,8 @@ def split_training_testing(df: pd.DataFrame, test_set_size: int) -> Tuple[pd.Dat
 	if training_set_size < 1:
 		raise ValueError("Desired test set size is {} but only {} dyads found.".format(test_set_size, len(dyad_ids)))
 	else:
-		training_set_dyads = frozenset(np.random.choice(dyad_ids, training_set_size))
+		training_set_dyads = frozenset(np.random.choice(dyad_ids, training_set_size, replace=False))
+		assert len(training_set_dyads) == training_set_size
 		print("Training set dyads: {}".format(sorted(training_set_dyads)), file=sys.stderr)
 		training_set_idxs = df["DYAD"].isin(training_set_dyads)
 		training_set = df.loc[training_set_idxs]

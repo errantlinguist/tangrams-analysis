@@ -170,7 +170,8 @@ def split_training_testing(df: pd.DataFrame, test_set_size: int) -> Tuple[pd.Dat
 	if training_set_size < 1:
 		raise ValueError("Desired test set size is {} but only {} dyads found.".format(test_set_size, len(dyad_ids)))
 	else:
-		training_set_dyads = frozenset(np.random.choice(dyad_ids, training_set_size))
+		training_set_dyads = frozenset(np.random.choice(dyad_ids, training_set_size, replace=False))
+		assert len(training_set_dyads) == training_set_size
 		print("Training set dyads: {}".format(sorted(training_set_dyads)), file=sys.stderr)
 		training_set_idxs = df["DYAD"].isin(training_set_dyads)
 		training_set = df.loc[training_set_idxs]
@@ -244,9 +245,9 @@ def __main(args):
 	with keras.backend.get_session():
 		model = create_model(data_generator_factory.input_feature_count, data_generator_factory.output_feature_count)
 		# train LSTM
-		epochs = 50
+		epochs = 250
 		print("Training model using {} epoch(s).".format(epochs), file=sys.stderr)
-		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1)
+		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1, validation_split=0.1)
 
 
 if __name__ == "__main__":
