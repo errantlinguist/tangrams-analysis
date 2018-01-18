@@ -212,8 +212,6 @@ def __main(args):
 																	cv_results["DYAD"].nunique()),
 		  file=sys.stderr)
 
-	cv_results = find_target_ref_rows(cv_results)
-
 	# Create vocab before splitting training and testing DFs so that the word feature set is stable
 	print("Fitting one-hot encoder for vocabulary of size {}.".format(cv_results["WORD"].nunique()), file=sys.stderr)
 	# https://machinelearningmastery.com/how-to-one-hot-encode-sequence-data-in-python/
@@ -236,6 +234,8 @@ def __main(args):
 	# https://stackoverflow.com/a/47815400/1391325
 	cv_results.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
 	training_df, test_df = split_training_testing(cv_results, 1)
+	# Only train on "true" referents
+	training_df = find_target_ref_rows(training_df)
 
 	print("Generating training data token sequences.", file=sys.stderr)
 	data_generator_factory = DataGeneratorFactory(onehot_encoder)
