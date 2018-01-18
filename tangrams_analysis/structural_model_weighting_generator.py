@@ -118,8 +118,10 @@ class TokenSequenceSequence(keras.utils.Sequence):
 		x = np.asarray(seq_x)
 		print("X shape: {}".format(x.shape), file=sys.stderr)
 		seq_y = tuple(y for x, y in batch)
-		y = np.asarray(seq_y)
-		# y = np.expand_dims(y, axis=0)
+		if any(len(y.shape) > 1 for y in seq_y):
+			raise ValueError("Output feature vectors with a dimensionality greater than 1 are not supported.")
+		y = np.asarray(tuple(y[0] for y in seq_y))
+		#y = np.asarray(seq_y)
 		print("Y shape: {}".format(y.shape), file=sys.stderr)
 		return x, y
 
