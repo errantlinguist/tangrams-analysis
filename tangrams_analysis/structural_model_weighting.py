@@ -223,7 +223,9 @@ def __main(args):
 	print("Training X shape: {}".format(training_x.shape), file=sys.stderr)
 	print("Training Y shape: {}".format(training_y.shape), file=sys.stderr)
 
-	model = create_model(training_x, training_y)
+	# https://stackoverflow.com/a/43472000/1391325
+	with keras.backend.get_session():
+		model = create_model(training_x, training_y)
 
 
 # https://machinelearningmastery.com/prepare-text-data-deep-learning-keras/

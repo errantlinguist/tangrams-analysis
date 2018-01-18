@@ -112,17 +112,17 @@ class TokenSequenceSequence(keras.utils.Sequence):
 		return len(self.seq_batches_by_len)
 
 	def __getitem__(self, idx: int) -> Tuple[np.ndarray, np.ndarray]:
-		print("Getting batch idx {}.".format(idx), file=sys.stderr)
+		#print("Getting batch idx {}.".format(idx), file=sys.stderr)
 		batch = self.seq_batches_by_len[idx]
 		seq_x = tuple(x for x, y in batch)
 		x = np.asarray(seq_x)
-		print("X shape: {}".format(x.shape), file=sys.stderr)
+		#print("X shape: {}".format(x.shape), file=sys.stderr)
 		seq_y = tuple(y for x, y in batch)
 		if any(len(y.shape) > 1 for y in seq_y):
 			raise ValueError("Output feature vectors with a dimensionality greater than 1 are not supported.")
 		y = np.asarray(tuple(y[0] for y in seq_y))
 		#y = np.asarray(seq_y)
-		print("Y shape: {}".format(y.shape), file=sys.stderr)
+		#print("Y shape: {}".format(y.shape), file=sys.stderr)
 		return x, y
 
 
@@ -239,11 +239,14 @@ def __main(args):
 	print("Generating training data token sequences.", file=sys.stderr)
 	data_generator_factory = DataGeneratorFactory(onehot_encoder)
 	training_data_generator = data_generator_factory(training_df)
-	model = create_model(data_generator_factory.input_feature_count, data_generator_factory.output_feature_count)
-	# train LSTM
-	epochs = 50
-	print("Training model using {} epoch(s).".format(epochs), file=sys.stderr)
-	training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1)
+
+	# https://stackoverflow.com/a/43472000/1391325
+	with keras.backend.get_session():
+		model = create_model(data_generator_factory.input_feature_count, data_generator_factory.output_feature_count)
+		# train LSTM
+		epochs = 50
+		print("Training model using {} epoch(s).".format(epochs), file=sys.stderr)
+		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1)
 
 
 if __name__ == "__main__":
