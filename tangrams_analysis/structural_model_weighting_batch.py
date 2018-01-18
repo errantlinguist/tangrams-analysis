@@ -94,7 +94,7 @@ def create_model(training_x: np.ndarray, training_y: np.ndarray) -> Sequential:
 	result.add(lstm)
 	result.add(Dense(units, activation='softmax'))
 	result.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
-	print(result.summary())
+	print(result.summary(), file=sys.stderr)
 	return result
 
 

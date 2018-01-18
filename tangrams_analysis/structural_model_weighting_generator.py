@@ -19,6 +19,7 @@ from collections import defaultdict
 from typing import DefaultDict, List, Sequence, Tuple
 
 import keras.preprocessing.sequence
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from keras.layers import Dense
@@ -127,6 +128,29 @@ class TokenSequenceSequence(keras.utils.Sequence):
 		return x, y
 
 
+def create_loss_plot(training_history):
+	# https://machinelearningmastery.com/display-deep-learning-model-training-history-in-keras/
+
+	# list all data in history
+	# print(training_history.history.keys())
+	# summarize history for accuracy
+	plt.plot(training_history.history['acc'])
+	plt.plot(training_history.history['val_acc'])
+	plt.title('model accuracy')
+	plt.ylabel('accuracy')
+	plt.xlabel('epoch')
+	plt.legend(['train', 'test'], loc='upper left')
+	plt.show()
+	# summarize history for loss
+	plt.plot(training_history.history['loss'])
+	plt.plot(training_history.history['val_loss'])
+	plt.title('model loss')
+	plt.ylabel('loss')
+	plt.xlabel('epoch')
+	plt.legend(['train', 'test'], loc='upper left')
+	plt.show()
+
+
 def create_model(input_feature_count: int, output_feature_count: int) -> Sequential:
 	result = Sequential()
 	# word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
@@ -142,7 +166,7 @@ def create_model(input_feature_count: int, output_feature_count: int) -> Sequent
 	result.add(lstm)
 	result.add(Dense(units, activation='softmax'))
 	result.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
-	print(result.summary())
+	print(result.summary(), file=sys.stderr)
 	return result
 
 
@@ -237,8 +261,8 @@ def __main(args):
 	# Only train on "true" referents
 	training_df = find_target_ref_rows(training_df)
 
-	print("Generating training data token sequences.", file=sys.stderr)
 	data_generator_factory = DataGeneratorFactory(onehot_encoder)
+	print("Generating training data token sequences.", file=sys.stderr)
 	training_data_generator = data_generator_factory(training_df)
 	print("Generating validation data token sequences.", file=sys.stderr)
 	validation_data_generator = data_generator_factory(find_target_ref_rows(test_df))
@@ -249,9 +273,12 @@ def __main(args):
 		# train LSTM
 		epochs = 250
 		print("Training model using {} epoch(s).".format(epochs), file=sys.stderr)
-		workers = max(multiprocessing.cpu_count() / 2, 1)
+		workers = max(multiprocessing.cpu_count() // 2, 1)
 		print("Using {} worker thread(s).".format(workers), file=sys.stderr)
-		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1, validation_data=validation_data_generator, use_multiprocessing=False, workers=workers)
+		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=0,
+											   validation_data=validation_data_generator, use_multiprocessing=False,
+											   workers=workers)
+		create_loss_plot(training_history)
 
 
 if __name__ == "__main__":
