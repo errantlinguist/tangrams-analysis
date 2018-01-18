@@ -249,9 +249,9 @@ def __main(args):
 		# train LSTM
 		epochs = 250
 		print("Training model using {} epoch(s).".format(epochs), file=sys.stderr)
-		workers = max(multiprocessing.cpu_count() - 1, 1)
-		print("Using {} worker thread(s).".format(epochs), file=sys.stderr)
-		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1, workers=workers, validation_data=validation_data_generator)
+		workers = max(multiprocessing.cpu_count() / 2, 1)
+		print("Using {} worker thread(s).".format(workers), file=sys.stderr)
+		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1, validation_data=validation_data_generator, use_multiprocessing=False, workers=workers)
 
 
 if __name__ == "__main__":
