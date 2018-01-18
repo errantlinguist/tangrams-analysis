@@ -247,7 +247,7 @@ def __main(args):
 		# train LSTM
 		epochs = 250
 		print("Training model using {} epoch(s).".format(epochs), file=sys.stderr)
-		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1, validation_split=0.1)
+		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1)
 
 
 if __name__ == "__main__":
