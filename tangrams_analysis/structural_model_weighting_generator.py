@@ -35,7 +35,7 @@ __RESULTS_FILE_DTYPES = {"DYAD": "category", "ENTITY": "category", "IS_TARGET": 
 
 class DataGeneratorFactory(object):
 
-	def __init__(self, onehot_encoder):
+	def __init__(self, onehot_encoder: OneHotEncoder):
 		self.onehot_encoder = onehot_encoder
 
 	@property
