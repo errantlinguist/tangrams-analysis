@@ -12,6 +12,7 @@ __license__ = "Apache License, Version 2.0"
 
 import argparse
 import csv
+import logging
 import multiprocessing
 import random
 import sys
@@ -219,6 +220,53 @@ def __create_argparser() -> argparse.ArgumentParser:
 	return result
 
 
+def onehot_encodings(features: np.ndarray, onehot_encoder) -> np.ndarray:
+	"""
+	:param features: A 2D array of feature vectors, each of which starts with one-hot encoding features. Any other features follow those.
+	:param onehot_encoder: The instance used to encode the original values.
+	:return: A 2D numpy array consisting only of one-hot encoding features.
+	"""
+	feature_count = onehot_encoder.n_values_[0]
+	return features[:, :feature_count + 1]
+
+
+def onehot_encoded_word(onehot_encodings: np.ndarray, label_encoder) -> str:
+	# Check if there are any non-zero values
+	if onehot_encodings.any():
+		word_label = onehot_encodings.argmax()
+		result = label_encoder.inverse_transform([word_label])[0]
+	else:
+		result = "(padding)"
+	return result
+
+
+def word(features: np.ndarray, label_encoder, onehot_encoder) -> str:
+	feature_count = onehot_encoder.n_values_[0]
+	onehot = features[:feature_count + 1]
+	return onehot_encoded_word(onehot, label_encoder)
+
+
+def word_seq(x: np.ndarray, label_encoder, onehot_encoder) -> np.ndarray:
+	word_features = onehot_encodings(x, onehot_encoder)
+	return np.apply_along_axis(lambda arr: onehot_encoded_word(arr, label_encoder), 1, word_features)
+
+
+def score_entity(entity_group : pd.DataFrame, data_generator_factory : DataGeneratorFactory, model: Sequential):
+	orig_token_scores = entity_group["PROBABILITY"]
+	data_generator = data_generator_factory(entity_group)
+	predicted_scores = model.predict_generator(data_generator)
+	print(orig_token_scores)
+	print(predicted_scores)
+	assert len(orig_token_scores) == len(predicted_scores)
+
+def test_token_seq(token_seq_group: pd.DataFrame, data_generator_factory : DataGeneratorFactory, model: Sequential):
+	entity_groups = token_seq_group.groupby("ENTITY", as_index=False, sort=False)
+	entity_groups.apply(lambda entity_group : score_entity(entity_group, data_generator_factory, model))
+	#entity_data_generators = entity_groups.apply(lambda group: (group.name, data_generator_factory(group)))
+
+
+
+
 def __main(args):
 	random_seed = args.random_seed
 	print("Setting random seed to {}.".format(random_seed), file=sys.stderr)
@@ -279,6 +327,12 @@ def __main(args):
 											   validation_data=validation_data_generator, use_multiprocessing=False,
 											   workers=workers)
 		create_loss_plot(training_history)
+		token_seq_groups = test_df.groupby(
+			("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME"),
+			as_index=False, sort=False)
+		print("Will test {} token sequences.".format(len(token_seq_groups)), file=sys.stderr)
+		test_results = token_seq_groups.apply(
+			lambda group: test_token_seq(group, data_generator_factory, model))
 
 
 if __name__ == "__main__":
