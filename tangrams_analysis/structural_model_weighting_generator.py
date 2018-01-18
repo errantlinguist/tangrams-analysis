@@ -150,7 +150,7 @@ def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
 	result_row_count = result.shape[0]
 	complement_row_count = df.loc[~df.index.isin(result.index)].shape[0]
 	assert result_row_count + complement_row_count == df.shape[0]
-	print("Found {} nontarget rows and {} target rows. Ratio: {}".format(complement_row_count, result_row_count,
+	print("Found {} non-target rows and {} target rows. Ratio: {}".format(complement_row_count, result_row_count,
 																		 complement_row_count / float(
 																			 result_row_count)), file=sys.stderr)
 	return result
