@@ -247,9 +247,10 @@ def __main(args):
 		model = create_model(data_generator_factory.input_feature_count, data_generator_factory.output_feature_count)
 		# train LSTM
 		epochs = 250
-		#workers = max(multiprocessing.cpu_count() - 1, 1)
 		print("Training model using {} epoch(s).".format(epochs), file=sys.stderr)
-		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1)
+		workers = max(multiprocessing.cpu_count() - 1, 1)
+		print("Using {} worker thread(s).".format(epochs), file=sys.stderr)
+		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=1, workers=workers)
 
 
 if __name__ == "__main__":
