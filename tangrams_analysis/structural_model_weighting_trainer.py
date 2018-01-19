@@ -17,7 +17,8 @@ import os
 import random
 import sys
 from collections import defaultdict
-from typing import DefaultDict, List, Sequence, Tuple
+from enum import Enum, unique
+from typing import Callable, DefaultDict, List, Sequence, Tuple, TypeVar
 
 import keras.preprocessing.sequence
 import matplotlib.pyplot as plt
@@ -25,13 +26,14 @@ import numpy as np
 import pandas as pd
 from keras.layers import Dense
 from keras.layers import LSTM
-from keras.models import Sequential
+from keras.models import Model, Sequential, load_model
 from sklearn.externals import joblib
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import OneHotEncoder
 
 PICKLE_PROTOCOL = 4
 RESULTS_FILE_CSV_DIALECT = csv.excel_tab
+T = TypeVar("T")
 
 # NOTE: "category" dtype doesn't work with pandas-0.21.0 but does with pandas-0.21.1
 __RESULTS_FILE_DTYPES = {"DYAD": "category", "ENTITY": "category", "IS_TARGET": bool, "IS_OOV": bool,
@@ -127,6 +129,97 @@ class TokenSequenceSequence(keras.utils.Sequence):
 		# y = np.asarray(seq_y)
 		# print("Y shape: {}".format(y.shape), file=sys.stderr)
 		return x, y
+
+
+class TrainingFileData(object):
+	def __init__(self, filename: str, reader: Callable[[str], T], writer: Callable[[T, str], None]):
+		self.filename = filename
+		self.__reader = reader
+		self.__writer = writer
+
+	def create_path(self, dirpath: str) -> str:
+		return os.path.join(dirpath, self.filename)
+
+	def read(self, indir: str) -> T:
+		infile_path = self.create_path(indir)
+		return self.__reader(infile_path)
+
+	def write(self, data: T, outdir: str):
+		outfile_path = self.create_path(outdir)
+		return self.__writer(data, outfile_path)
+
+
+def _read_random_seed(filepath: str) -> int:
+	print("Reading random seed from \"{}\".".format(filepath), file=sys.stderr)
+	with open(filepath, "r") as inf:
+		data = inf.read()
+		return int(data)
+
+
+def _write_random_seed(random_seed: int, filepath: str):
+	print("Writing random seed to \"{}\".".format(filepath), file=sys.stderr)
+	with open(filepath, "w") as inf:
+		inf.write(str(random_seed))
+
+
+def _read_vocab_labels(filepath: str) -> LabelEncoder:
+	print("Reading vocabulary integer label mappings from \"{}\".".format(filepath), file=sys.stderr)
+	return joblib.load(filepath)
+
+
+def _write_vocab_labels(label_encoder: LabelEncoder, filepath: str):
+	print("Writing vocabulary integer label mappings to \"{}\".".format(filepath), file=sys.stderr)
+	joblib.dump(label_encoder, filepath, protocol=PICKLE_PROTOCOL)
+
+
+def _read_onehot_encodings(filepath: str) -> OneHotEncoder:
+	print("Reading one-hot encoding data from \"{}\".".format(filepath), file=sys.stderr)
+	return joblib.load(filepath)
+
+
+def _write_onehot_encodings(onehot_encoder: OneHotEncoder, filepath: str):
+	print("Writing one-hot encoding data to \"{}\".".format(filepath), file=sys.stderr)
+	joblib.dump(onehot_encoder, filepath, protocol=PICKLE_PROTOCOL)
+
+
+def _read_training_data(filepath: str) -> pd.DataFrame:
+	print("Reading training data from \"{}\".".format(filepath), file=sys.stderr)
+	return pd.read_pickle(filepath)
+
+
+def _write_training_data(df: pd.DataFrame, filepath: str):
+	print("Writing training data to \"{}\".".format(filepath), file=sys.stderr)
+	df.to_pickle(filepath, protocol=PICKLE_PROTOCOL)
+
+
+def _read_test_data(filepath: str) -> pd.DataFrame:
+	print("Reading test data from \"{}\".".format(filepath), file=sys.stderr)
+	return pd.read_pickle(filepath)
+
+
+def _write_test_data(df: pd.DataFrame, filepath: str):
+	print("Writing test data to \"{}\".".format(filepath), file=sys.stderr)
+	df.to_pickle(filepath, protocol=PICKLE_PROTOCOL)
+
+
+def _read_model(filepath: str) -> Model:
+	print("Reading model from \"{}\".".format(filepath), file=sys.stderr)
+	return load_model(filepath)
+
+
+def _write_model(model: Model, filepath: str):
+	print("Writing model to \"{}\".".format(filepath), file=sys.stderr)
+	model.save(filepath)
+
+
+@unique
+class TrainingFile(Enum):
+	RANDOM_SEED = TrainingFileData("random-seed.txt", _read_random_seed, _write_random_seed)
+	VOCAB_LABELS = TrainingFileData("vocab-labels.pkl", _read_vocab_labels, _write_vocab_labels)
+	ONEHOT_ENCODINGS = TrainingFileData("onehot-encodings.pkl", _read_onehot_encodings, _write_onehot_encodings)
+	TRAINING_DATA = TrainingFileData("training-data.pkl", _read_training_data, _write_training_data)
+	TEST_DATA = TrainingFileData("test-data.pkl", _read_test_data, _write_test_data)
+	MODEL = TrainingFileData("model.h5", _read_model, _write_model)
 
 
 def create_loss_plot(training_history):
@@ -241,10 +334,7 @@ def __main(args):
 	# fix random seed for reproducibility
 	random.seed(random_seed)
 	np.random.seed(random_seed)
-	random_seed_file = os.path.join(outdir, "random-seed.txt")
-	print("Writing random seed to \"{}\".".format(random_seed_file), file=sys.stderr)
-	with open(random_seed_file, 'w') as rand_outf:
-		rand_outf.write(str(random_seed))
+	TrainingFile.RANDOM_SEED.value.write(random_seed, outdir)
 
 	infiles = args.infiles
 	encoding = args.encoding
@@ -261,11 +351,8 @@ def __main(args):
 	# integer encode
 	label_encoder = LabelEncoder()
 	vocab_labels = label_encoder.fit_transform(cv_results["WORD"])
-
 	# http://scikit-learn.org/stable/modules/model_persistence.html
-	vocab_labels_outfile = os.path.join(outdir, "vocab-labels.pkl")
-	print("Writing vocabulary integer label mappings to \"{}\".".format(vocab_labels_outfile), file=sys.stderr)
-	joblib.dump(label_encoder, vocab_labels_outfile, protocol=PICKLE_PROTOCOL)
+	TrainingFile.VOCAB_LABELS.value.write(label_encoder, outdir)
 
 	cv_results["WORD_LABEL"] = vocab_labels
 	# binary encode
@@ -278,22 +365,15 @@ def __main(args):
 	# invert first example
 	# inverted = label_encoder.inverse_transform([np.argmax(vocab_onehot_encoded[0, :])])
 	# print(inverted)
-	onehot_encoding_outfile = os.path.join(outdir, "onehot-encodings.pkl")
-	print("Writing one-hot encoding data to \"{}\".".format(onehot_encoding_outfile), file=sys.stderr)
-	joblib.dump(onehot_encoder, onehot_encoding_outfile, protocol=PICKLE_PROTOCOL)
+	TrainingFile.ONEHOT_ENCODINGS.value.write(onehot_encoder, outdir)
 
 	# https://stackoverflow.com/a/47815400/1391325
 	cv_results.sort_values("TOKEN_SEQ_ORDINALITY", inplace=True)
 	training_df, test_df = split_training_testing(cv_results, 1)
 	# Only train on "true" referents
 	training_df = find_target_ref_rows(training_df)
-
-	training_data_outfile = os.path.join(outdir, "training-data.pkl")
-	print("Writing training data to \"{}\".".format(training_data_outfile), file=sys.stderr)
-	training_df.to_pickle(training_data_outfile, protocol=PICKLE_PROTOCOL)
-	test_data_outfile = os.path.join(outdir, "test-data.pkl")
-	print("Writing test data to \"{}\".".format(test_data_outfile), file=sys.stderr)
-	training_df.to_pickle(test_data_outfile, protocol=PICKLE_PROTOCOL)
+	TrainingFile.TRAINING_DATA.value.write(training_df, outdir)
+	TrainingFile.TEST_DATA.value.write(test_df, outdir)
 
 	seq_feature_extractor = SequenceFeatureExtractor(onehot_encoder)
 	data_generator_factory = DataGeneratorFactory(seq_feature_extractor)
@@ -313,9 +393,7 @@ def __main(args):
 		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=0,
 											   validation_data=validation_data_generator, use_multiprocessing=False,
 											   workers=workers)
-		model_file = os.path.join(outdir, "model.h5")
-		print("Writing model data to \"{}\".".format(model_file), file=sys.stderr)
-		model.save(model_file)
+		TrainingFile.MODEL.write(model, outdir)
 
 
 if __name__ == "__main__":
