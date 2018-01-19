@@ -235,10 +235,10 @@ def onehot_encodings(features: np.ndarray, onehot_encoder) -> np.ndarray:
 	return features[:, :feature_count + 1]
 
 
-def onehot_encoded_word(onehot_encodings: np.ndarray, label_encoder) -> str:
+def onehot_encoded_word(onehot_features: np.ndarray, label_encoder) -> str:
 	# Check if there are any non-zero values
-	if onehot_encodings.any():
-		word_label = onehot_encodings.argmax()
+	if onehot_features.any():
+		word_label = onehot_features.argmax()
 		result = label_encoder.inverse_transform([word_label])[0]
 	else:
 		result = "(padding)"
