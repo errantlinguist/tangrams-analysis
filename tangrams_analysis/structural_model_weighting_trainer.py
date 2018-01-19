@@ -231,12 +231,20 @@ def __create_argparser() -> argparse.ArgumentParser:
 
 
 def __main(args):
+	outdir = args.outdir
+	print("Will write results to \"{}\"".format(outdir), file=sys.stderr)
+	os.makedirs(outdir, exist_ok=True)
+
 	random_seed = args.random_seed
 	print("Setting random seed to {}.".format(random_seed), file=sys.stderr)
 	# https://machinelearningmastery.com/time-series-prediction-lstm-recurrent-neural-networks-python-keras/
 	# fix random seed for reproducibility
 	random.seed(random_seed)
 	np.random.seed(random_seed)
+	random_seed_file = os.path.join(outdir, "random-seed.txt")
+	print("Writing random seed to \"{}\".".format(random_seed_file), file=sys.stderr)
+	with open(random_seed_file, 'w') as rand_outf:
+		rand_outf.write(str(random_seed))
 
 	infiles = args.infiles
 	encoding = args.encoding
@@ -246,10 +254,6 @@ def __main(args):
 	print("Read {} cross-validation results for {} dyad(s).".format(cv_results.shape[0],
 																	cv_results["DYAD"].nunique()),
 		  file=sys.stderr)
-
-	outdir = args.outdir
-	print("Will write results to \"{}\"".format(outdir), file=sys.stderr)
-	os.makedirs(outdir, exist_ok=True)
 
 	# Create vocab before splitting training and testing DFs so that the word feature set is stable
 	print("Fitting one-hot encoder for vocabulary of size {}.".format(cv_results["WORD"].nunique()), file=sys.stderr)
