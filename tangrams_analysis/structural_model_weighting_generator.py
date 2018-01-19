@@ -12,7 +12,6 @@ __license__ = "Apache License, Version 2.0"
 
 import argparse
 import csv
-import logging
 import multiprocessing
 import random
 import sys
@@ -46,6 +45,22 @@ class DataGeneratorFactory(object):
 			result[seq_len].append(xy)
 		return result
 
+	def __init__(self, seq_feature_extractor: "SequenceFeatureExtractor"):
+		self.seq_feature_extractor = seq_feature_extractor
+
+	def __call__(self, df: pd.DataFrame) -> "TokenSequenceSequence":
+		sequence_groups = df.groupby(
+			("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"), sort=False)
+		print("Generating data for {} entity token sequence(s).".format(len(sequence_groups)), file=sys.stderr)
+		seq_xy = sequence_groups.apply(self.seq_feature_extractor)
+		len_dict = self.__group_by_seq_len(seq_xy)
+		print("Created {} batches, one for each unique sequence length.".format(len(len_dict)), file=sys.stderr)
+		seq_batches_by_len = tuple(len_dict.values())
+		return TokenSequenceSequence(seq_batches_by_len)
+
+
+class SequenceFeatureExtractor(object):
+
 	def __init__(self, onehot_encoder: OneHotEncoder):
 		self.onehot_encoder = onehot_encoder
 
@@ -58,15 +73,10 @@ class DataGeneratorFactory(object):
 	def output_feature_count(self) -> int:
 		return 1
 
-	def __call__(self, df: pd.DataFrame) -> "TokenSequenceSequence":
-		sequence_groups = df.groupby(
-			("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"), sort=False)
-		print("Generating data for {} entity token sequence(s).".format(len(sequence_groups)), file=sys.stderr)
-		seq_xy = sequence_groups.apply(self.__create_seq_xy)
-		len_dict = self.__group_by_seq_len(seq_xy)
-		print("Created {} batches, one for each unique sequence length.".format(len(len_dict)), file=sys.stderr)
-		seq_batches_by_len = tuple(len_dict.values())
-		return TokenSequenceSequence(seq_batches_by_len)
+	def __call__(self, seq_df: pd.DataFrame) -> Tuple[np.matrix, np.ndarray]:
+		x = self.__create_seq_x_matrix(seq_df)
+		y = seq_df["PROBABILITY"].values
+		return x, y
 
 	def __create_datapoint_x(self, row: pd.Series) -> Tuple[np.ndarray,]:
 		# word_features = [0.0] * len(self.__vocab_idxs)
@@ -96,11 +106,6 @@ class DataGeneratorFactory(object):
 		# NOTE: The returned tuples have to be unpacked outside of the "apply(..)" function
 		vectors = seq_df.apply(self.__create_datapoint_x, axis=1)
 		return np.matrix(tuple(vector[0] for vector in vectors))
-
-	def __create_seq_xy(self, seq_df: pd.DataFrame) -> Tuple[np.matrix, np.ndarray]:
-		x = self.__create_seq_x_matrix(seq_df)
-		y = seq_df["PROBABILITY"].values
-		return x, y
 
 
 class TokenSequenceSequence(keras.utils.Sequence):
@@ -167,7 +172,7 @@ def create_model(input_feature_count: int, output_feature_count: int) -> Sequent
 	result.add(lstm)
 	result.add(Dense(units, activation='softmax'))
 	result.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
-	result.summary(print_fn=lambda line : print(line, file=sys.stderr))
+	result.summary(print_fn=lambda line: print(line, file=sys.stderr))
 	return result
 
 
@@ -251,7 +256,7 @@ def word_seq(x: np.ndarray, label_encoder, onehot_encoder) -> np.ndarray:
 	return np.apply_along_axis(lambda arr: onehot_encoded_word(arr, label_encoder), 1, word_features)
 
 
-def score_entity(entity_group : pd.DataFrame, data_generator_factory : DataGeneratorFactory, model: Sequential):
+def score_entity(entity_group: pd.DataFrame, data_generator_factory: DataGeneratorFactory, model: Sequential):
 	orig_token_scores = entity_group["PROBABILITY"]
 	data_generator = data_generator_factory(entity_group)
 	predicted_scores = model.predict_generator(data_generator)
@@ -259,12 +264,13 @@ def score_entity(entity_group : pd.DataFrame, data_generator_factory : DataGener
 	print(predicted_scores)
 	assert len(orig_token_scores) == len(predicted_scores)
 
-def test_token_seq(token_seq_group: pd.DataFrame, data_generator_factory : DataGeneratorFactory, model: Sequential):
+
+def test_token_seq(token_seq_group: pd.DataFrame, data_generator_factory: DataGeneratorFactory, model: Sequential):
 	entity_groups = token_seq_group.groupby("ENTITY", as_index=False, sort=False)
-	entity_groups.apply(lambda entity_group : score_entity(entity_group, data_generator_factory, model))
-	#entity_data_generators = entity_groups.apply(lambda group: (group.name, data_generator_factory(group)))
+	entity_groups.apply(lambda entity_group: score_entity(entity_group, data_generator_factory, model))
 
 
+# entity_data_generators = entity_groups.apply(lambda group: (group.name, data_generator_factory(group)))
 
 
 def __main(args):
@@ -309,7 +315,8 @@ def __main(args):
 	# Only train on "true" referents
 	training_df = find_target_ref_rows(training_df)
 
-	data_generator_factory = DataGeneratorFactory(onehot_encoder)
+	seq_feature_extractor = SequenceFeatureExtractor(onehot_encoder)
+	data_generator_factory = DataGeneratorFactory(seq_feature_extractor)
 	print("Generating training data token sequences.", file=sys.stderr)
 	training_data_generator = data_generator_factory(training_df)
 	print("Generating validation data token sequences.", file=sys.stderr)
@@ -317,7 +324,7 @@ def __main(args):
 
 	# https://stackoverflow.com/a/43472000/1391325
 	with keras.backend.get_session():
-		model = create_model(data_generator_factory.input_feature_count, data_generator_factory.output_feature_count)
+		model = create_model(seq_feature_extractor.input_feature_count, seq_feature_extractor.output_feature_count)
 		# train LSTM
 		epochs = 250
 		print("Training model using {} epoch(s).".format(epochs), file=sys.stderr)
