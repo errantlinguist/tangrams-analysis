@@ -37,14 +37,6 @@ __RESULTS_FILE_DTYPES = {"DYAD": "category", "ENTITY": "category", "IS_TARGET": 
 
 class DataGeneratorFactory(object):
 
-	@staticmethod
-	def __group_by_seq_len(seq_xy: pd.Series) -> DefaultDict[int, List[Tuple[np.matrix, np.ndarray]]]:
-		result = defaultdict(list)
-		for xy in seq_xy:
-			seq_len = xy[0].shape[0]
-			result[seq_len].append(xy)
-		return result
-
 	def __init__(self, seq_feature_extractor: "SequenceFeatureExtractor"):
 		self.seq_feature_extractor = seq_feature_extractor
 
@@ -53,7 +45,7 @@ class DataGeneratorFactory(object):
 			("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"), sort=False)
 		print("Generating data for {} entity token sequence(s).".format(len(sequence_groups)), file=sys.stderr)
 		seq_xy = sequence_groups.apply(self.seq_feature_extractor)
-		len_dict = self.__group_by_seq_len(seq_xy)
+		len_dict = group_seqs_by_len(seq_xy)
 		print("Created {} batches, one for each unique sequence length.".format(len(len_dict)), file=sys.stderr)
 		seq_batches_by_len = tuple(len_dict.values())
 		return TokenSequenceSequence(seq_batches_by_len)
@@ -184,6 +176,14 @@ def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
 	print("Found {} non-target rows and {} target rows. Ratio: {}".format(complement_row_count, result_row_count,
 																		  complement_row_count / float(
 																			  result_row_count)), file=sys.stderr)
+	return result
+
+
+def group_seqs_by_len(seq_xy: pd.Series) -> DefaultDict[int, List[Tuple[np.matrix, np.ndarray]]]:
+	result = defaultdict(list)
+	for xy in seq_xy:
+		seq_len = xy[0].shape[0]
+		result[seq_len].append(xy)
 	return result
 
 
