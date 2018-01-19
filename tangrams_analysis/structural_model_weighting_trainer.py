@@ -260,7 +260,7 @@ def __main(args):
 
 	# http://scikit-learn.org/stable/modules/model_persistence.html
 	vocab_labels_outfile = os.path.join(outdir, "vocab-labels.pkl")
-	print("Writing vocabulary integer label mappings to \"{}\"".format(vocab_labels_outfile), file=sys.stderr)
+	print("Writing vocabulary integer label mappings to \"{}\".".format(vocab_labels_outfile), file=sys.stderr)
 	joblib.dump(label_encoder, vocab_labels_outfile, protocol=PICKLE_PROTOCOL)
 
 	cv_results["WORD_LABEL"] = vocab_labels
@@ -275,7 +275,7 @@ def __main(args):
 	# inverted = label_encoder.inverse_transform([np.argmax(vocab_onehot_encoded[0, :])])
 	# print(inverted)
 	onehot_encoding_outfile = os.path.join(outdir, "onehot-encodings.pkl")
-	print("Writing one-hot encoding data to \"{}\"".format(onehot_encoding_outfile), file=sys.stderr)
+	print("Writing one-hot encoding data to \"{}\".".format(onehot_encoding_outfile), file=sys.stderr)
 	joblib.dump(onehot_encoder, onehot_encoding_outfile, protocol=PICKLE_PROTOCOL)
 
 	# https://stackoverflow.com/a/47815400/1391325
@@ -285,10 +285,10 @@ def __main(args):
 	training_df = find_target_ref_rows(training_df)
 
 	training_data_outfile = os.path.join(outdir, "training-data.pkl")
-	print("Writing training data to \"{}\"".format(training_data_outfile), file=sys.stderr)
+	print("Writing training data to \"{}\".".format(training_data_outfile), file=sys.stderr)
 	training_df.to_pickle(training_data_outfile, protocol=PICKLE_PROTOCOL)
 	test_data_outfile = os.path.join(outdir, "test-data.pkl")
-	print("Writing test data to \"{}\"".format(test_data_outfile), file=sys.stderr)
+	print("Writing test data to \"{}\".".format(test_data_outfile), file=sys.stderr)
 	training_df.to_pickle(test_data_outfile, protocol=PICKLE_PROTOCOL)
 
 	seq_feature_extractor = SequenceFeatureExtractor(onehot_encoder)
@@ -310,7 +310,7 @@ def __main(args):
 											   validation_data=validation_data_generator, use_multiprocessing=False,
 											   workers=workers)
 		model_file = os.path.join(outdir, "model.h5")
-		print("Writing model data to \"{}\"".format(model_file), file=sys.stderr)
+		print("Writing model data to \"{}\".".format(model_file), file=sys.stderr)
 		model.save(model_file)
 
 
