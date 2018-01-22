@@ -327,7 +327,7 @@ def __create_argparser() -> argparse.ArgumentParser:
 						help="The random seed to use.")
 	result.add_argument("-o", "--outdir", metavar="DIR", required=True,
 						help="The directory to write the result model data files to.")
-	result.add_argument("-es", "--epochs", metavar="COUNT", type=int, default=250,
+	result.add_argument("-ep", "--epochs", metavar="COUNT", type=int, default=250,
 						help="The number of epochs to use for training.")
 	return result
 
