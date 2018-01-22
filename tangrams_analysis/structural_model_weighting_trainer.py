@@ -27,6 +27,7 @@ import pandas as pd
 from keras.layers import Dense
 from keras.layers import LSTM
 from keras.models import Model, Sequential, load_model
+from keras.layers.wrappers import TimeDistributed
 from sklearn.externals import joblib
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import OneHotEncoder
@@ -216,13 +217,15 @@ def create_model(input_feature_count: int, output_feature_count: int) -> Sequent
 	print("Input shape: {}".format(input_shape), file=sys.stderr)
 	units = output_feature_count
 	print("Units: {}".format(units), file=sys.stderr)
-	lstm = LSTM(input_shape=input_shape, units=units, dropout=0.1, recurrent_dropout=0.1)
-	# lstm = LSTM(batch_input_shape = training_x.shape, stateful = True, units=len(training_y.shape))
+	#lstm = LSTM(units, input_shape=input_shape, dropout=0.1, recurrent_dropout=0.1)
+	lstm = LSTM(units, input_shape=input_shape, dropout=0.1, recurrent_dropout=0.1, return_sequences=True)
 	result.add(lstm)
 	# https://keras.io/activations/#relu
 	# https://en.wikipedia.org/wiki/Rectifier_(neural_networks)
 	dense = Dense(units, activation='relu')
-	result.add(dense)
+	#result.add(dense)
+	time_distributed = TimeDistributed(dense)
+	result.add(time_distributed)
 	result.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
 	result.summary(print_fn=lambda line: print(line, file=sys.stderr))
 	return result
