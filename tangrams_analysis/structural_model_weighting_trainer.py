@@ -327,6 +327,8 @@ def __create_argparser() -> argparse.ArgumentParser:
 						help="The random seed to use.")
 	result.add_argument("-o", "--outdir", metavar="DIR", required=True,
 						help="The directory to write the result model data files to.")
+	result.add_argument("-es", "--epochs", metavar="COUNT", type=int, default=250,
+						help="The number of epochs to use for training.")
 	return result
 
 
@@ -392,7 +394,7 @@ def __main(args):
 	with keras.backend.get_session():
 		model = create_model(seq_feature_extractor.input_feature_count, seq_feature_extractor.output_feature_count)
 		# train LSTM
-		epochs = 250
+		epochs = args.epochs
 		print("Training model using {} epoch(s).".format(epochs), file=sys.stderr)
 		workers = max(multiprocessing.cpu_count() // 2, 1)
 		print("Using {} worker thread(s).".format(workers), file=sys.stderr)
