@@ -18,10 +18,11 @@ import keras.preprocessing.sequence
 import numpy as np
 import pandas as pd
 from keras.models import Sequential
+from typing import DefaultDict, List, Tuple
+from collections import defaultdict
 
-from structural_model_weighting_trainer import DataGeneratorFactory, SequenceFeatureExtractor, TokenSequenceSequence, TrainingFile, \
+from structural_model_weighting_trainer import SequenceFeatureExtractor, TokenSequenceSequence, TrainingFile, \
 	find_target_ref_rows, group_seq_xy_by_len
-
 
 def onehot_encodings(features: np.ndarray, onehot_encoder) -> np.ndarray:
 	"""
@@ -72,9 +73,14 @@ def score_entity(entity_utts: pd.DataFrame, seq_feature_extractor, model: Sequen
 	#predictions = model.predict_generator(data_seq)
 	#print(predictions)
 	for seq_len, xy in len_dict.items():
-		print("Classifying inputs with length {}.".format(seq_len))
-		predictions = model.predict(xy)
+		print("Classifying {} inputs with length {}.".format(len(xy), seq_len), file=sys.stderr)
+		x_only = np.asarray(tuple(np.asarray(x) for x,y in xy))
+		for elem in x_only:
+			print(type(elem))
+		#print(x_only)
+		predictions = model.predict(x_only)
 		print(predictions)
+		#print(predictions)
 	#for xy in seq_batches_by_len:
 	#	print(type(xy))
 
@@ -116,11 +122,10 @@ def __main(args):
 	test_df = TrainingFile.TEST_DATA.value.read(indir)
 
 	seq_feature_extractor = SequenceFeatureExtractor(onehot_encoder)
-	data_generator_factory = DataGeneratorFactory(seq_feature_extractor)
 	# print("Generating training data token sequences.", file=sys.stderr)
 	# training_data_generator = data_generator_factory(training_df)
 	print("Generating validation data token sequences.", file=sys.stderr)
-	validation_data_generator = data_generator_factory(find_target_ref_rows(test_df))
+	#validation_data_generator = data_generator_factory(find_target_ref_rows(test_df))
 
 	# https://stackoverflow.com/a/43472000/1391325
 	with keras.backend.get_session():

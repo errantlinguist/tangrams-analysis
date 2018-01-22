@@ -40,22 +40,6 @@ __RESULTS_FILE_DTYPES = {"DYAD": "category", "ENTITY": "category", "IS_TARGET": 
 						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
 
 
-class DataGeneratorFactory(object):
-
-	def __init__(self, seq_feature_extractor: "SequenceFeatureExtractor"):
-		self.seq_feature_extractor = seq_feature_extractor
-
-	def __call__(self, df: pd.DataFrame) -> "TokenSequenceSequence":
-		sequence_groups = df.groupby(
-			("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"), sort=False)
-		print("Generating data for {} entity token sequence(s).".format(len(sequence_groups)), file=sys.stderr)
-		seq_xy = sequence_groups.apply(self.seq_feature_extractor)
-		len_dict = group_seq_xy_by_len(seq_xy)
-		print("Created {} batches, one for each unique sequence length.".format(len(len_dict)), file=sys.stderr)
-		seq_batches_by_len = tuple(len_dict.values())
-		return TokenSequenceSequence(seq_batches_by_len)
-
-
 class SequenceFeatureExtractor(object):
 
 	def __init__(self, onehot_encoder: OneHotEncoder):
@@ -241,6 +225,18 @@ def create_model(input_feature_count: int, output_feature_count: int) -> Sequent
 	return result
 
 
+def create_training_data_sequence(df: pd.DataFrame,
+								  seq_feature_extractor: "SequenceFeatureExtractor") -> "TokenSequenceSequence":
+	sequence_groups = df.groupby(
+		("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"), sort=False)
+	print("Generating data for {} entity token sequence(s).".format(len(sequence_groups)), file=sys.stderr)
+	seq_xy = sequence_groups.apply(seq_feature_extractor)
+	len_dict = group_seq_xy_by_len(seq_xy)
+	print("Created {} batches, one for each unique sequence length.".format(len(len_dict)), file=sys.stderr)
+	seq_batches_by_len = tuple(len_dict.values())
+	return TokenSequenceSequence(seq_batches_by_len)
+
+
 def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
 	result = df.loc[df["IS_TARGET"] == True]
 	result_row_count = result.shape[0]
@@ -387,11 +383,10 @@ def __main(args):
 	TrainingFile.TEST_DATA.value.write(test_df, outdir)
 
 	seq_feature_extractor = SequenceFeatureExtractor(onehot_encoder)
-	data_generator_factory = DataGeneratorFactory(seq_feature_extractor)
 	print("Generating training data token sequences.", file=sys.stderr)
-	training_data_generator = data_generator_factory(training_df)
+	training_data_generator = create_training_data_sequence(training_df, seq_feature_extractor)
 	print("Generating validation data token sequences.", file=sys.stderr)
-	validation_data_generator = data_generator_factory(find_target_ref_rows(test_df))
+	validation_data_generator = create_training_data_sequence(test_df, seq_feature_extractor)
 
 	# https://stackoverflow.com/a/43472000/1391325
 	with keras.backend.get_session():
