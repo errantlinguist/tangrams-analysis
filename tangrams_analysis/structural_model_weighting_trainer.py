@@ -221,7 +221,8 @@ def create_model(input_feature_count: int, output_feature_count: int) -> Sequent
 	result.add(lstm)
 	# https://keras.io/activations/#relu
 	# https://en.wikipedia.org/wiki/Rectifier_(neural_networks)
-	result.add(Dense(units, activation='relu'))
+	dense = Dense(units, activation='relu')
+	result.add(dense)
 	result.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
 	result.summary(print_fn=lambda line: print(line, file=sys.stderr))
 	return result
