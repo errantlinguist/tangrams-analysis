@@ -50,7 +50,7 @@ class DataGeneratorFactory(object):
 			("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"), sort=False)
 		print("Generating data for {} entity token sequence(s).".format(len(sequence_groups)), file=sys.stderr)
 		seq_xy = sequence_groups.apply(self.seq_feature_extractor)
-		len_dict = group_seqs_by_len(seq_xy)
+		len_dict = group_seq_xy_by_len(seq_xy)
 		print("Created {} batches, one for each unique sequence length.".format(len(len_dict)), file=sys.stderr)
 		seq_batches_by_len = tuple(len_dict.values())
 		return TokenSequenceSequence(seq_batches_by_len)
@@ -252,7 +252,7 @@ def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
 	return result
 
 
-def group_seqs_by_len(seq_xy: pd.Series) -> DefaultDict[int, List[Tuple[np.matrix, np.ndarray]]]:
+def group_seq_xy_by_len(seq_xy: pd.Series) -> DefaultDict[int, List[Tuple[np.matrix, np.ndarray]]]:
 	result = defaultdict(list)
 	for xy in seq_xy:
 		seq_len = xy[0].shape[0]

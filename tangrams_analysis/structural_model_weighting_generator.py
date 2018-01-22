@@ -19,8 +19,8 @@ import numpy as np
 import pandas as pd
 from keras.models import Sequential
 
-from structural_model_weighting_trainer import DataGeneratorFactory, SequenceFeatureExtractor, TrainingFile, \
-	find_target_ref_rows, group_seqs_by_len
+from structural_model_weighting_trainer import DataGeneratorFactory, SequenceFeatureExtractor, TokenSequenceSequence, TrainingFile, \
+	find_target_ref_rows, group_seq_xy_by_len
 
 
 def onehot_encodings(features: np.ndarray, onehot_encoder) -> np.ndarray:
@@ -63,13 +63,20 @@ def score_entity(entity_utts: pd.DataFrame, seq_feature_extractor, model: Sequen
 	#    print(tok_seq)
 
 	seq_xy = sequence_groups.apply(seq_feature_extractor)
-	len_dict = group_seqs_by_len(seq_xy)
+	len_dict = group_seq_xy_by_len(seq_xy)
 	print("Created {} batches, one for each unique sequence length.".format(len(len_dict)), file=sys.stderr)
-	for seq_len, seqs in sorted(len_dict.items(), key=lambda item: item[0]):
-		print(seqs)
+	#for seq_len, seqs in sorted(len_dict.items(), key=lambda item: item[0]):
+	#	print(seqs)
 	seq_batches_by_len = tuple(len_dict.values())
-	for xy in seq_batches_by_len:
-		print(type(xy))
+	data_seq = TokenSequenceSequence(seq_batches_by_len)
+	#predictions = model.predict_generator(data_seq)
+	#print(predictions)
+	for seq_len, xy in len_dict.items():
+		print("Classifying inputs with length {}.".format(seq_len))
+		predictions = model.predict(xy)
+		print(predictions)
+	#for xy in seq_batches_by_len:
+	#	print(type(xy))
 
 
 def test_round(round_group: pd.DataFrame, seq_feature_extractor, model: Sequential):
