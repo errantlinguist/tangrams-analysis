@@ -231,8 +231,8 @@ def create_model(input_feature_count: int, output_feature_count: int) -> Sequent
 	return result
 
 
-def create_training_data_sequence(df: pd.DataFrame,
-								  seq_feature_extractor: "SequenceFeatureExtractor") -> "TokenSequenceSequence":
+def create_data_xy_sequence(df: pd.DataFrame,
+							seq_feature_extractor: "SequenceFeatureExtractor") -> "TokenSequenceSequence":
 	sequence_groups = df.groupby(
 		("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"), sort=False)
 	print("Generating data for {} entity token sequence(s).".format(len(sequence_groups)), file=sys.stderr)
@@ -392,9 +392,9 @@ def __main(args):
 
 	seq_feature_extractor = SequenceFeatureExtractor(onehot_encoder)
 	print("Generating training data token sequences.", file=sys.stderr)
-	training_data_seq = create_training_data_sequence(training_df, seq_feature_extractor)
+	training_data_seq = create_data_xy_sequence(training_df, seq_feature_extractor)
 	print("Generating validation data token sequences.", file=sys.stderr)
-	validation_data_seq = create_training_data_sequence(test_df, seq_feature_extractor)
+	validation_data_seq = create_data_xy_sequence(test_df, seq_feature_extractor)
 
 	# https://stackoverflow.com/a/43472000/1391325
 	with keras.backend.get_session():
