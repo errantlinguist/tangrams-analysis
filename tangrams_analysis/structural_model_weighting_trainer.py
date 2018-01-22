@@ -70,7 +70,7 @@ class SequenceFeatureExtractor(object):
 	def output_feature_count(self) -> int:
 		return 1
 
-	def __call__(self, seq_df: pd.DataFrame) -> Tuple[np.matrix, np.ndarray]:
+	def __call__(self, seq_df: pd.DataFrame) -> Tuple[np.ndarray, np.ndarray]:
 		x = self.__create_seq_x_matrix(seq_df)
 		y = seq_df["PROBABILITY"].values
 		return x, y
@@ -99,10 +99,10 @@ class SequenceFeatureExtractor(object):
 		# NOTE: Returning a tuple is a hack in order to return an instance of "np.ndarray" from "DataFrame.apply()"
 		return result,
 
-	def __create_seq_x_matrix(self, seq_df: pd.DataFrame) -> np.matrix:
+	def __create_seq_x_matrix(self, seq_df: pd.DataFrame) -> np.ndarray:
 		# NOTE: The returned tuples have to be unpacked outside of the "apply(..)" function
 		vectors = seq_df.apply(self.__create_datapoint_x, axis=1)
-		return np.matrix(tuple(vector[0] for vector in vectors))
+		return np.asarray(tuple(vector[0] for vector in vectors))
 
 
 class TokenSequenceSequence(keras.utils.Sequence):
@@ -110,7 +110,7 @@ class TokenSequenceSequence(keras.utils.Sequence):
 	A sequence (i.e. less confusingly a dataset) of token sequences, each of which is for a given distinct entity, i.e. possible referent.
 	"""
 
-	def __init__(self, seq_batches_by_len: Sequence[Sequence[Tuple[np.matrix, np.ndarray]]]):
+	def __init__(self, seq_batches_by_len: Sequence[Sequence[Tuple[np.ndarray, np.ndarray]]]):
 		self.seq_batches_by_len = seq_batches_by_len
 
 	def __len__(self) -> int:
@@ -252,7 +252,7 @@ def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
 	return result
 
 
-def group_seq_xy_by_len(seq_xy: pd.Series) -> DefaultDict[int, List[Tuple[np.matrix, np.ndarray]]]:
+def group_seq_xy_by_len(seq_xy: pd.Series) -> DefaultDict[int, List[Tuple[np.ndarray, np.ndarray]]]:
 	result = defaultdict(list)
 	for xy in seq_xy:
 		seq_len = xy[0].shape[0]
