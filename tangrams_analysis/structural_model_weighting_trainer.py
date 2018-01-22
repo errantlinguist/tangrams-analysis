@@ -219,7 +219,9 @@ def create_model(input_feature_count: int, output_feature_count: int) -> Sequent
 	lstm = LSTM(input_shape=input_shape, units=units, dropout=0.1, recurrent_dropout=0.1)
 	# lstm = LSTM(batch_input_shape = training_x.shape, stateful = True, units=len(training_y.shape))
 	result.add(lstm)
-	result.add(Dense(units, activation='softmax'))
+	# https://keras.io/activations/#relu
+	# https://en.wikipedia.org/wiki/Rectifier_(neural_networks)
+	result.add(Dense(units, activation='relu'))
 	result.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
 	result.summary(print_fn=lambda line: print(line, file=sys.stderr))
 	return result
