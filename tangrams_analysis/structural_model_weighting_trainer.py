@@ -384,9 +384,9 @@ def __main(args):
 
 	seq_feature_extractor = SequenceFeatureExtractor(onehot_encoder)
 	print("Generating training data token sequences.", file=sys.stderr)
-	training_data_generator = create_training_data_sequence(training_df, seq_feature_extractor)
+	training_data_seq = create_training_data_sequence(training_df, seq_feature_extractor)
 	print("Generating validation data token sequences.", file=sys.stderr)
-	validation_data_generator = create_training_data_sequence(test_df, seq_feature_extractor)
+	validation_data_seq = create_training_data_sequence(test_df, seq_feature_extractor)
 
 	# https://stackoverflow.com/a/43472000/1391325
 	with keras.backend.get_session():
@@ -396,8 +396,8 @@ def __main(args):
 		print("Training model using {} epoch(s).".format(epochs), file=sys.stderr)
 		workers = max(multiprocessing.cpu_count() // 2, 1)
 		print("Using {} worker thread(s).".format(workers), file=sys.stderr)
-		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=0,
-											   validation_data=validation_data_generator, use_multiprocessing=False,
+		training_history = model.fit_generator(training_data_seq, epochs=epochs, verbose=0,
+											   validation_data=validation_data_seq, use_multiprocessing=False,
 											   workers=workers)
 		plot_accuracy(training_history, os.path.join(outdir, "accuracy.eps"), "eps")
 		plot_loss(training_history, os.path.join(outdir, "loss.eps"), "eps")
