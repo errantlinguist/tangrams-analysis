@@ -222,29 +222,6 @@ class TrainingFile(Enum):
 	MODEL = TrainingFileData("model.h5", _read_model, _write_model)
 
 
-def create_loss_plot(training_history):
-	# https://machinelearningmastery.com/display-deep-learning-model-training-history-in-keras/
-
-	# list all data in history
-	# print(training_history.history.keys())
-	# summarize history for accuracy
-	plt.plot(training_history.history['acc'])
-	plt.plot(training_history.history['val_acc'])
-	plt.title('model accuracy')
-	plt.ylabel('accuracy')
-	plt.xlabel('epoch')
-	plt.legend(['train', 'test'], loc='upper left')
-	plt.show()
-	# summarize history for loss
-	plt.plot(training_history.history['loss'])
-	plt.plot(training_history.history['val_loss'])
-	plt.title('model loss')
-	plt.ylabel('loss')
-	plt.xlabel('epoch')
-	plt.legend(['train', 'test'], loc='upper left')
-	plt.show()
-
-
 def create_model(input_feature_count: int, output_feature_count: int) -> Sequential:
 	result = Sequential()
 	# word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
@@ -281,6 +258,40 @@ def group_seqs_by_len(seq_xy: pd.Series) -> DefaultDict[int, List[Tuple[np.matri
 		seq_len = xy[0].shape[0]
 		result[seq_len].append(xy)
 	return result
+
+
+def plot_accuracy(training_history, outfile: str, format: str):
+	plt.clf()
+	# https://machinelearningmastery.com/display-deep-learning-model-training-history-in-keras/
+
+	# list all data in history
+	# print(training_history.history.keys())
+	# summarize history for accuracy
+	plt.plot(training_history.history['acc'])
+	plt.plot(training_history.history['val_acc'])
+	plt.title('Model accuracy')
+	plt.ylabel('Accuracy')
+	plt.xlabel('Epoch')
+	plt.legend(['Train', 'Test'], loc='upper left')
+	print("Writing accuracy plot to \"{}\" as format \"{}\".".format(outfile, format), file=sys.stderr)
+	plt.savefig(outfile, format=format, dpi=1000)
+	plt.clf()
+
+
+def plot_loss(training_history, outfile: str, format: str):
+	plt.clf()
+	# https://machinelearningmastery.com/display-deep-learning-model-training-history-in-keras/
+
+	# summarize history for loss
+	plt.plot(training_history.history['loss'])
+	plt.plot(training_history.history['val_loss'])
+	plt.title('Model loss')
+	plt.ylabel('Loss')
+	plt.xlabel('Epoch')
+	plt.legend(['Train', 'Test'], loc='upper left')
+	print("Writing loss plot to \"{}\" as format \"{}\".".format(outfile, format), file=sys.stderr)
+	plt.savefig(outfile, format=format, dpi=1000)
+	plt.clf()
 
 
 def read_results_file(inpath: str, encoding: str) -> pd.DataFrame:
@@ -393,7 +404,9 @@ def __main(args):
 		training_history = model.fit_generator(training_data_generator, epochs=epochs, verbose=0,
 											   validation_data=validation_data_generator, use_multiprocessing=False,
 											   workers=workers)
-		TrainingFile.MODEL.write(model, outdir)
+		plot_accuracy(training_history, os.path.join(outdir, "accuracy.eps"), "eps")
+		plot_loss(training_history, os.path.join(outdir, "loss.eps"), "eps")
+		TrainingFile.MODEL.value.write(model, outdir)
 
 
 if __name__ == "__main__":
