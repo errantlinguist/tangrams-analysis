@@ -15,36 +15,12 @@ import random
 import sys
 
 import keras.preprocessing.sequence
-import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
 from keras.models import Sequential
 
 from structural_model_weighting_trainer import DataGeneratorFactory, SequenceFeatureExtractor, TrainingFile, \
 	find_target_ref_rows, group_seqs_by_len
-
-
-def create_loss_plot(training_history):
-	# https://machinelearningmastery.com/display-deep-learning-model-training-history-in-keras/
-
-	# list all data in history
-	# print(training_history.history.keys())
-	# summarize history for accuracy
-	plt.plot(training_history.history['acc'])
-	plt.plot(training_history.history['val_acc'])
-	plt.title('model accuracy')
-	plt.ylabel('accuracy')
-	plt.xlabel('epoch')
-	plt.legend(['train', 'test'], loc='upper left')
-	plt.show()
-	# summarize history for loss
-	plt.plot(training_history.history['loss'])
-	plt.plot(training_history.history['val_loss'])
-	plt.title('model loss')
-	plt.ylabel('loss')
-	plt.xlabel('epoch')
-	plt.legend(['train', 'test'], loc='upper left')
-	plt.show()
 
 
 def onehot_encodings(features: np.ndarray, onehot_encoder) -> np.ndarray:
