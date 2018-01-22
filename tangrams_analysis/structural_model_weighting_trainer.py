@@ -32,6 +32,8 @@ from sklearn.externals import joblib
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import OneHotEncoder
 
+ENTITY_TOKEN_SEQUENCE_GROUP_INDICES = (
+"CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY")
 PICKLE_PROTOCOL = 4
 RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 T = TypeVar("T")
@@ -209,8 +211,7 @@ class TrainingFile(Enum):
 
 def create_data_xy_sequence(df: pd.DataFrame,
 							seq_feature_extractor: "SequenceFeatureExtractor") -> "TokenSequenceSequence":
-	sequence_groups = df.groupby(
-		("CROSS_VALIDATION_ITER", "DYAD", "ROUND", "UTT_START_TIME", "UTT_END_TIME", "ENTITY"), sort=False)
+	sequence_groups = df.groupby(ENTITY_TOKEN_SEQUENCE_GROUP_INDICES, sort=False)
 	print("Generating data for {} entity token sequence(s).".format(len(sequence_groups)), file=sys.stderr)
 	seq_xy = sequence_groups.apply(seq_feature_extractor)
 	len_dict = group_seq_xy_by_len(seq_xy)
@@ -234,7 +235,7 @@ def create_model(input_feature_count: int, output_feature_count: int) -> Sequent
 	result.add(lstm)
 	# https://keras.io/activations/#relu
 	# https://en.wikipedia.org/wiki/Rectifier_(neural_networks)
-	dense = Dense(units, activation='relu')
+	dense = Dense(1, activation='relu')
 	# result.add(dense)
 	time_distributed = TimeDistributed(dense)
 	result.add(time_distributed)
