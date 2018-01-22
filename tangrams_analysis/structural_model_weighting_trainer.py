@@ -26,8 +26,8 @@ import numpy as np
 import pandas as pd
 from keras.layers import Dense
 from keras.layers import LSTM
-from keras.models import Model, Sequential, load_model
 from keras.layers.wrappers import TimeDistributed
+from keras.models import Model, Sequential, load_model
 from sklearn.externals import joblib
 from sklearn.preprocessing import LabelEncoder
 from sklearn.preprocessing import OneHotEncoder
@@ -207,30 +207,6 @@ class TrainingFile(Enum):
 	MODEL = TrainingFileData("model.h5", _read_model, _write_model)
 
 
-def create_model(input_feature_count: int, output_feature_count: int) -> Sequential:
-	result = Sequential()
-	# word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
-	# model.add(word_embeddings)
-	# model.add(Embedding(top_words, embedding_vector_length, input_length=max_review_length))
-	# input shape is a pair of (timesteps, features) <https://stackoverflow.com/a/44583784/1391325>
-	input_shape = (None, input_feature_count)
-	print("Input shape: {}".format(input_shape), file=sys.stderr)
-	units = output_feature_count
-	print("Units: {}".format(units), file=sys.stderr)
-	#lstm = LSTM(units, input_shape=input_shape, dropout=0.1, recurrent_dropout=0.1)
-	lstm = LSTM(units, input_shape=input_shape, dropout=0.1, recurrent_dropout=0.1, return_sequences=True)
-	result.add(lstm)
-	# https://keras.io/activations/#relu
-	# https://en.wikipedia.org/wiki/Rectifier_(neural_networks)
-	dense = Dense(units, activation='relu')
-	#result.add(dense)
-	time_distributed = TimeDistributed(dense)
-	result.add(time_distributed)
-	result.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
-	result.summary(print_fn=lambda line: print(line, file=sys.stderr))
-	return result
-
-
 def create_data_xy_sequence(df: pd.DataFrame,
 							seq_feature_extractor: "SequenceFeatureExtractor") -> "TokenSequenceSequence":
 	sequence_groups = df.groupby(
@@ -241,6 +217,30 @@ def create_data_xy_sequence(df: pd.DataFrame,
 	print("Created {} batches, one for each unique sequence length.".format(len(len_dict)), file=sys.stderr)
 	seq_batches_by_len = tuple(len_dict.values())
 	return TokenSequenceSequence(seq_batches_by_len)
+
+
+def create_model(input_feature_count: int, output_feature_count: int) -> Sequential:
+	result = Sequential()
+	# word_embeddings = Embedding(len(vocab), embedding_vector_length, input_length=max_review_length)
+	# model.add(word_embeddings)
+	# model.add(Embedding(top_words, embedding_vector_length, input_length=max_review_length))
+	# input shape is a pair of (timesteps, features) <https://stackoverflow.com/a/44583784/1391325>
+	input_shape = (None, input_feature_count)
+	print("Input shape: {}".format(input_shape), file=sys.stderr)
+	units = output_feature_count
+	print("Units: {}".format(units), file=sys.stderr)
+	# lstm = LSTM(units, input_shape=input_shape, dropout=0.1, recurrent_dropout=0.1)
+	lstm = LSTM(units, input_shape=input_shape, dropout=0.1, recurrent_dropout=0.1, return_sequences=True)
+	result.add(lstm)
+	# https://keras.io/activations/#relu
+	# https://en.wikipedia.org/wiki/Rectifier_(neural_networks)
+	dense = Dense(units, activation='relu')
+	# result.add(dense)
+	time_distributed = TimeDistributed(dense)
+	result.add(time_distributed)
+	result.compile(loss='mean_squared_error', optimizer='adam', metrics=['accuracy'])
+	result.summary(print_fn=lambda line: print(line, file=sys.stderr))
+	return result
 
 
 def find_target_ref_rows(df: pd.DataFrame) -> pd.DataFrame:
