@@ -9,7 +9,7 @@ __license__ = "Apache License, Version 2.0"
 import csv
 import os
 from enum import Enum, unique
-from typing import Dict, Iterator, Iterable, Tuple
+from typing import Dict, Iterator, Iterable, Optional, Tuple
 
 import pandas as pd
 
@@ -50,7 +50,8 @@ __SESSION_DATA_FILENAMES = frozenset(datum.canonical_filename for datum in Sessi
 
 
 class SessionData(object):
-	def __init__(self, session_file_prefix: str):
+	def __init__(self, session_file_prefix: str, name: Optional[str] = None):
+		self.name = os.path.basename(session_file_prefix) if name is None else name
 		self.events = os.path.join(session_file_prefix, SessionDatum.EVENTS.canonical_filename)
 		self.session_metadata = os.path.join(session_file_prefix, SessionDatum.SESSION_METADATA.canonical_filename)
 		self.participant_metadata = os.path.join(session_file_prefix,
@@ -98,7 +99,7 @@ class SessionData(object):
 
 	@property
 	def __key(self):
-		return self.events, self.session_metadata, self.utts
+		return self.name, self.events, self.session_metadata, self.utts
 
 
 def is_session_dir(filenames: Iterable[str]) -> bool:
