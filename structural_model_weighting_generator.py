@@ -18,11 +18,9 @@ import keras.preprocessing.sequence
 import numpy as np
 import pandas as pd
 from keras.models import Sequential
-from typing import DefaultDict, List, Tuple
-from collections import defaultdict
 
 from structural_model_weighting_trainer import SequenceFeatureExtractor, TokenSequenceSequence, TrainingFile, \
-	find_target_ref_rows, group_seq_xy_by_len
+	group_seq_xy_by_len
 
 def onehot_encodings(features: np.ndarray, onehot_encoder) -> np.ndarray:
 	"""

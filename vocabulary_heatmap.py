@@ -3,7 +3,7 @@
 """
 Creates a heatmap of vocabulary used in different sessions.
 
-Use with e.g. "find ~/Documents/Projects/Tangrams/Data/Ready/ -iname "utts.tsv" -exec ./vocabulary_heatmap.py {} +"
+Use with e.g. "find ~/Documents/Projects/Tangrams/Språkbanken/Data/ -iname "utts.tsv" -exec ./vocabulary_heatmap.py {} +"
 """
 
 __author__ = "Todd Shore <errantlinguist+github@gmail.com>"
