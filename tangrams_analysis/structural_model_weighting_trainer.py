@@ -263,7 +263,7 @@ def group_seq_xy_by_len(seq_xy: pd.Series) -> DefaultDict[int, List[Tuple[np.nda
 	return result
 
 
-def plot_accuracy(training_history, outfile: str, format: str):
+def plot_accuracy(training_history, outfile: str, output_format: str):
 	plt.clf()
 	# https://machinelearningmastery.com/display-deep-learning-model-training-history-in-keras/
 
@@ -276,12 +276,12 @@ def plot_accuracy(training_history, outfile: str, format: str):
 	plt.ylabel('Accuracy')
 	plt.xlabel('Epoch')
 	plt.legend(['Train', 'Test'], loc='upper left')
-	print("Writing accuracy plot to \"{}\" as format \"{}\".".format(outfile, format), file=sys.stderr)
-	plt.savefig(outfile, format=format, dpi=1000)
+	print("Writing accuracy plot to \"{}\" as format \"{}\".".format(outfile, output_format), file=sys.stderr)
+	plt.savefig(outfile, format=output_format, dpi=1000)
 	plt.clf()
 
 
-def plot_loss(training_history, outfile: str, format: str):
+def plot_loss(training_history, outfile: str, output_format: str):
 	plt.clf()
 	# https://machinelearningmastery.com/display-deep-learning-model-training-history-in-keras/
 
@@ -292,8 +292,8 @@ def plot_loss(training_history, outfile: str, format: str):
 	plt.ylabel('Loss')
 	plt.xlabel('Epoch')
 	plt.legend(['Train', 'Test'], loc='upper left')
-	print("Writing loss plot to \"{}\" as format \"{}\".".format(outfile, format), file=sys.stderr)
-	plt.savefig(outfile, format=format, dpi=1000)
+	print("Writing loss plot to \"{}\" as format \"{}\".".format(outfile, output_format), file=sys.stderr)
+	plt.savefig(outfile, format=output_format, dpi=1000)
 	plt.clf()
 
 
