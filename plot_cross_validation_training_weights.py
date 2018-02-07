@@ -85,11 +85,12 @@ def __main(args):
 	print("Dyads present: {}".format(sorted(cv_results["DYAD"].unique(), key=natural_keys)), file=sys.stderr)
 	print("Unique discounting values: {}".format(sorted(cv_results["DISCOUNT"].unique())), file=sys.stderr)
 	print("Unique updating weights: {}".format(sorted(cv_results["UPDATE_WEIGHT"].unique())), file=sys.stderr)
+	cv_results["RR"] = 1.0 / cv_results["RANK"]
 	# groups = cv_results.groupby(("ROUND", "UPDATE_WEIGHT"))
 	# print(groups["RANK"].mean())
 
 	sns.set_style("whitegrid")
-	sns_plot = sns.lmplot(x="ROUND", y="RANK", hue="UPDATE_WEIGHT", data=cv_results)
+	sns_plot = sns.lmplot(x="ROUND", y="RR", hue="UPDATE_WEIGHT", data=cv_results)
 	# https://stackoverflow.com/a/39482402/1391325
 	# fig = sns_plot.get_figure()
 	outfile = args.outfile
