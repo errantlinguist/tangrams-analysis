@@ -15,35 +15,21 @@ import csv
 import os
 import re
 import sys
-import typing
-from numbers import Integral
-from typing import Sequence
+from typing import Iterable, Pattern, Sequence
 
 import matplotlib.pyplot as plt
-import numpy as np
 import pandas as pd
 import seaborn as sns
+
+from tangrams_analysis import natural_keys
 
 MULTIVALUE_DELIM_PATTERN = re.compile("\\s*,\\s*")
 RESULTS_FILE_ENCODING = "utf-8"
 RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 
-__LONGFLOAT_ONE = np.longfloat(1)
-
-
-def __parse_sequence(input_str: str) -> typing.Tuple[str, ...]:
-	values = MULTIVALUE_DELIM_PATTERN.split(input_str)
-	return tuple(sys.intern(value) for value in values)
-
-
-def __parse_set(input_str: str) -> typing.FrozenSet[str]:
-	values = MULTIVALUE_DELIM_PATTERN.split(input_str)
-	return frozenset(sys.intern(value) for value in values)
-
-
-__RESULTS_FILE_CONVERTERS = {"REFERRING_TOKENS": __parse_sequence, "REFERRING_TOKEN_TYPES": __parse_set,
-							 "OOV_TYPES": __parse_set}
-__RESULTS_FILE_DTYPES = {"DYAD": "category", "SHAPE": "category", "ONLY_INSTRUCTOR": bool}
+# NOTE: "category" dtype doesn't work with pandas-0.21.0 but does with pandas-0.21.1
+__RESULTS_FILE_DTYPES = {"DYAD": "category", "IS_TARGET": bool, "IS_OOV": bool,
+						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
 
 
 def anonymize_dyad_ids(df: pd.DataFrame, dyad_ids: Sequence[str]):
@@ -51,34 +37,39 @@ def anonymize_dyad_ids(df: pd.DataFrame, dyad_ids: Sequence[str]):
 	df["DYAD"] = df["DYAD"].transform(lambda dyad_id: dyad_id_idxs[dyad_id])
 
 
-def create_training_set_size_series(df: pd.DataFrame, dyad_ids: Sequence[str]) -> pd.Series:
-	max_training_set_size = len(dyad_ids) - 1
-	return df["TRAINING_SET_SIZE_DISCOUNT"].transform(
-		lambda discount_value: (max_training_set_size - discount_value) / np.longfloat(max_training_set_size))
-
-
 def plot_ranks(discount_mean_ranks: pd.DataFrame) -> sns.axisgrid.FacetGrid:
-	sns.set()
 	# https://stackoverflow.com/a/47407428/1391325
 	# Use lmplot to plot scatter points
-	graph = sns.lmplot(x="TRAINING_SET_SIZE", y="RR", hue="DYAD", data=discount_mean_ranks, fit_reg=False)
+	graph = sns.lmplot(x="BACKGROUND_DATA_WORD_TOKEN_COUNT", y="RR", hue="DYAD", data=discount_mean_ranks,
+					   fit_reg=False)
 	# Use regplot to plot the regression line for the whole points
-	sns.regplot(x="TRAINING_SET_SIZE", y="RR", data=discount_mean_ranks, scatter=False, ax=graph.axes[0, 0])
+	sns.regplot(x="BACKGROUND_DATA_WORD_TOKEN_COUNT", y="RR", data=discount_mean_ranks, scatter=False,
+				ax=graph.axes[0, 0])
 	graph.set_axis_labels("Training set size", "MRR")
 	return graph
 
 
-def read_results_file(inpath: str) -> pd.DataFrame:
-	print("Reading \"{}\".".format(inpath), file=sys.stderr)
+def read_results_files(inpaths: Iterable[str], pattern: Pattern, encoding: str) -> pd.DataFrame:
+	dfs = []
+	for inpath in inpaths:
+		if os.path.isdir(inpath):
+			for root, dirnames, filenames in os.walk(inpath, followlinks=True):
+				for filename in filenames:
+					if pattern.match(filename):
+						abs_path = os.path.join(root, filename)
+						dfs.append(read_results_file(abs_path, encoding))
+		else:
+			# Don't check if the file matches the pattern for directly-specified files
+			dfs.append(read_results_file(inpath, encoding))
+	return pd.concat(dfs)
+
+
+def read_results_file(inpath: str, encoding: str) -> pd.DataFrame:
+	print("Reading \"{}\" using encoding \"{}\".".format(inpath, encoding), file=sys.stderr)
 	result = pd.read_csv(inpath, dialect=RESULTS_FILE_CSV_DIALECT, sep=RESULTS_FILE_CSV_DIALECT.delimiter,
 						 float_precision="round_trip",
-						 encoding=RESULTS_FILE_ENCODING, memory_map=True, converters=__RESULTS_FILE_CONVERTERS,
-						 dtype=__RESULTS_FILE_DTYPES)
+						 encoding=encoding, memory_map=True, dtype=__RESULTS_FILE_DTYPES)
 	return result
-
-
-def rr(rank: Integral) -> np.longfloat:
-	return __LONGFLOAT_ONE / np.longfloat(rank)
 
 
 def __create_argparser() -> argparse.ArgumentParser:
@@ -86,6 +77,10 @@ def __create_argparser() -> argparse.ArgumentParser:
 		description="Plots the results of using different training set discount values.")
 	result.add_argument("infiles", metavar="INPATH", nargs='+',
 						help="The files to process.")
+	result.add_argument("-e", "--encoding", metavar="CODEC", default="utf-8",
+						help="The input file encoding.")
+	result.add_argument("-p", "--pattern", metavar="REGEX", type=re.compile, default=re.compile(".+\.tsv"),
+						help="A regular expression to match the desired files.")
 	result.add_argument("-o", "--outfile", metavar="OUTFILE",
 						help="The path to write the plot graphics to.")
 	return result
@@ -99,31 +94,30 @@ def __parse_format(path: str, default="png") -> str:
 
 def __main(args):
 	infiles = args.infiles
-	print("Will read {} file(s).".format(len(infiles)), file=sys.stderr)
-	cv_results = pd.concat((read_results_file(infile) for infile in infiles))
-	print(
-		"Read {} cross-validation round(s) from {} file(s) with {} column(s).".format(cv_results.shape[0], len(infiles),
-																					  cv_results.shape[1]),
-		file=sys.stderr)
-	# noinspection PyUnresolvedReferences
-	dyad_ids = tuple(sorted(cv_results["DYAD"].unique()))
-	# noinspection PyTypeChecker
-	anonymize_dyad_ids(cv_results, dyad_ids)
-	# noinspection PyTypeChecker,PyUnresolvedReferences
-	cv_results["TRAINING_SET_SIZE"] = create_training_set_size_series(cv_results, dyad_ids)
-	# noinspection PyUnresolvedReferences
-	cv_results["RR"] = cv_results["RANK"].transform(rr)
+	pattern = args.pattern
+	encoding = args.encoding
+	print("Will search {} paths(s) for files matching \"{}\", to be read using encoding \"{}\".".format(len(infiles),
+																										pattern.pattern,
+																										encoding),
+		  file=sys.stderr)
+	cv_results = read_results_files(infiles, pattern, encoding)
+	print("Read results for {} iteration(s) of {}-fold cross-validation (one for each dyad).".format(
+		cv_results["CROSS_VALIDATION_ITER"].nunique(), cv_results["DYAD"].nunique()), file=sys.stderr)
+	print("Dyads present: {}".format(sorted(cv_results["DYAD"].unique(), key=natural_keys)), file=sys.stderr)
+	print("Unique discounting values: {}".format(sorted(cv_results["DISCOUNT"].unique())), file=sys.stderr)
+	print("Unique updating weights: {}".format(sorted(cv_results["UPDATE_WEIGHT"].unique())), file=sys.stderr)
+	cv_results["RR"] = 1.0 / cv_results["RANK"]
 
 	# noinspection PyUnresolvedReferences
-	discount_results = cv_results.groupby(["DYAD", "TRAINING_SET_SIZE"], as_index=False)
+	discount_results = cv_results.groupby(["DYAD", "BACKGROUND_DATA_WORD_TOKEN_COUNT"], as_index=False)
 	discount_mean_ranks = discount_results.agg({"RANK": "mean", "RR": "mean"})
 	print("Plotting.", file=sys.stderr)
+	sns.set_style("whitegrid")
 	graph = plot_ranks(discount_mean_ranks)
-	print(type(graph))
 
 	outfile = args.outfile
-	output_format = __parse_format(outfile)
 	if outfile:
+		output_format = __parse_format(outfile)
 		print("Writing to \"{}\" as format \"{}\".".format(outfile, output_format), file=sys.stderr)
 		graph.savefig(outfile, format=output_format, dpi=1000)
 	else:
