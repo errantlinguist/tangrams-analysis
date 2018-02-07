@@ -65,6 +65,12 @@ def __create_argparser() -> argparse.ArgumentParser:
 	return result
 
 
+def __parse_format(path: str, default="png") -> str:
+	_, ext = os.path.splitext(path)
+	# Strip leading "." of extension
+	return ext[1:] if ext else default
+
+
 def __main(args):
 	infiles = args.infiles
 	pattern = args.pattern
@@ -87,9 +93,9 @@ def __main(args):
 	# https://stackoverflow.com/a/39482402/1391325
 	# fig = sns_plot.get_figure()
 	outfile = args.outfile
-	ext = os.path.splitext(outfile)[1][1:]
-	print("Writing to \"{}\" as format \"{}\".".format(outfile, ext), file=sys.stderr)
-	sns_plot.savefig(outfile, format=ext, dpi=1000)
+	output_format = __parse_format(outfile)
+	print("Writing to \"{}\" as format \"{}\".".format(outfile, output_format), file=sys.stderr)
+	sns_plot.savefig(outfile, format=output_format, dpi=1000)
 
 
 # fig.savefig(...)
