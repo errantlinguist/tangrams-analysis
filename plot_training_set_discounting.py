@@ -12,6 +12,7 @@ __license__ = "Apache License, Version 2.0"
 
 import argparse
 import csv
+import os
 import re
 import sys
 import typing
@@ -90,6 +91,12 @@ def __create_argparser() -> argparse.ArgumentParser:
 	return result
 
 
+def __parse_format(path: str, default="png") -> str:
+	_, ext = os.path.splitext(path)
+	# Strip leading "." of extension
+	return ext[1:] if ext else default
+
+
 def __main(args):
 	infiles = args.infiles
 	print("Will read {} file(s).".format(len(infiles)), file=sys.stderr)
@@ -115,9 +122,10 @@ def __main(args):
 	print(type(graph))
 
 	outfile = args.outfile
+	output_format = __parse_format(outfile)
 	if outfile:
-		print("Writing to \"{}\".".format(outfile), file=sys.stderr)
-		graph.savefig(outfile, format='eps', dpi=1000)
+		print("Writing to \"{}\" as format \"{}\".".format(outfile, output_format), file=sys.stderr)
+		graph.savefig(outfile, format=output_format, dpi=1000)
 	else:
 		plt.show()
 
