@@ -15,7 +15,7 @@ import csv
 import os
 import re
 import sys
-from typing import Iterable, Pattern, Sequence
+from typing import Iterable, Pattern
 
 import matplotlib.pyplot as plt
 import pandas as pd
@@ -30,11 +30,6 @@ RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 # NOTE: "category" dtype doesn't work with pandas-0.21.0 but does with pandas-0.21.1
 __RESULTS_FILE_DTYPES = {"DYAD": "category", "IS_TARGET": bool, "IS_OOV": bool,
 						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
-
-
-def anonymize_dyad_ids(df: pd.DataFrame, dyad_ids: Sequence[str]):
-	dyad_id_idxs = dict((dyad_id, idx) for (idx, dyad_id) in enumerate(dyad_ids, start=1))
-	df["DYAD"] = df["DYAD"].transform(lambda dyad_id: dyad_id_idxs[dyad_id])
 
 
 def plot_ranks(discount_mean_ranks: pd.DataFrame) -> sns.axisgrid.FacetGrid:
