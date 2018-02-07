@@ -35,13 +35,13 @@ __RESULTS_FILE_DTYPES = {"DYAD": "category", "IS_TARGET": bool, "IS_OOV": bool,
 def plot_ranks(discount_mean_ranks: pd.DataFrame) -> sns.axisgrid.FacetGrid:
 	# https://stackoverflow.com/a/47407428/1391325
 	# Use lmplot to plot scatter points
-	graph = sns.lmplot(x="BACKGROUND_DATA_WORD_TOKEN_COUNT", y="RR", hue="DYAD", data=discount_mean_ranks,
+	result = sns.lmplot(x="BACKGROUND_DATA_WORD_TOKEN_COUNT", y="RR", hue="DYAD", data=discount_mean_ranks,
 					   fit_reg=False)
 	# Use regplot to plot the regression line for the whole points
 	sns.regplot(x="BACKGROUND_DATA_WORD_TOKEN_COUNT", y="RR", data=discount_mean_ranks, scatter=False,
-				ax=graph.axes[0, 0])
-	graph.set_axis_labels("Training set size", "MRR")
-	return graph
+				ax=result.axes[0, 0])
+	result.set_axis_labels("Training set size", "MRR")
+	return result
 
 
 def read_results_files(inpaths: Iterable[str], pattern: Pattern, encoding: str) -> pd.DataFrame:
