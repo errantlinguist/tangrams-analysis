@@ -106,7 +106,7 @@ def __main(args):
 	discount_mean_ranks = discount_results.agg({"RANK": "mean", "RR": "mean"})
 	print("Plotting.", file=sys.stderr)
 
-	with sns.plotting_context():
+	with sns.plotting_context("paper"):
 		sns.set(style="whitegrid", font="serif")
 		graph = plot_ranks(discount_mean_ranks)
 
