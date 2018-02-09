@@ -1,4 +1,6 @@
 library(ggplot2)
+library(lme4)
+library(scales)
 
 read_results <- function(inpath) {
   return(read.csv(inpath, sep = "\t", colClasses=c(DYAD="factor", ONLY_INSTRUCTOR="logical", WEIGHT_BY_FREQ="logical", UPDATE_WEIGHT="factor")))
@@ -21,7 +23,6 @@ df$RR <- 1.0 / df$RANK
 # Hack to change legend label
 names(df)[names(df) == "UPDATE_WEIGHT"] <- "Weight"
 
-library(lme4)
 model <- lmer(RR ~ ROUND + BACKGROUND_DATA_WORD_TOKEN_COUNT + INTERACTION_DATA_WORD_TOKEN_COUNT + (1|DYAD), data = df)
 
 #refLevel <- 0
@@ -35,8 +36,12 @@ model
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 plot <- ggplot(df, aes(x=ROUND, y=RR, group=Weight, shape=Weight, color=Weight, linetype=Weight)) + geom_jitter(alpha = 0.5)
-plot <- plot + geom_smooth(method="lm")
-plot + xlab("Rank") + ylab("RR") + theme_bw() + theme(text=element_text(family="Times")) + scale_colour_manual(values=cbbPalette)
+plot <- plot + geom_smooth(method="lm", fullrange=TRUE)
+
+xmin <- min(df$ROUND)
+xmax <- round(max(df$ROUND), -1)
+ymin <- 0
+plot + xlab("Rank") + ylab("RR") + theme_bw() + theme(text=element_text(family="Times"), aspect.ratio=3/4) + scale_colour_manual(values=cbbPalette) + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), oob=squish, breaks = scales::pretty_breaks(n = 5)) +  scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0), oob=squish)
 
 # https://stackoverflow.com/a/31095291
 #ggplot(tempEf,aes(TRTYEAR, r, group=interaction(site, Myc), col=site, shape=Myc )) + 
