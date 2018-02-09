@@ -116,7 +116,7 @@ def __main(args):
 	# print(groups["RANK"].mean())
 
 	with sns.plotting_context("paper"):
-		sns.set(style="whitegrid", font="serif")
+		sns.set(style="whitegrid", font="Times New Roman")
 		fig = sns.lmplot(x="ROUND", y="RR", hue="UPDATE_WEIGHT", data=cv_results)
 	# cv_results["DATA_RATIO"] = cv_results["INTERACTION_DATA_WORD_TOKEN_COUNT"] / cv_results["BACKGROUND_DATA_WORD_TOKEN_COUNT"]
 	# fig = sns.lmplot(x="DATA_RATIO", y="RR", hue="UPDATE_WEIGHT", data=cv_results)

@@ -107,7 +107,7 @@ def __main(args):
 	print("Plotting.", file=sys.stderr)
 
 	with sns.plotting_context("paper"):
-		sns.set(style="whitegrid", font="serif")
+		sns.set(style="whitegrid", font="Times New Roman")
 		graph = plot_ranks(discount_mean_ranks)
 
 	outfile = args.outfile
