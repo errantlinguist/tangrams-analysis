@@ -54,6 +54,36 @@ def plot_heatmap(cv_results: pd.DataFrame):
 	return result
 
 
+def plot_rounds(cv_results: pd.DataFrame, ci=95) -> sns.axisgrid.FacetGrid:
+	#fig = sns.lmplot(x="ROUND", y="RR", hue="UPDATE_WEIGHT", data=cv_results, scatter_kws={"s": 10}, markers=["o", "x"])
+	#hue_group_kws = {"marker" : ["^", "v"], 'color': ['C0', 'k'], "ls": ["-", "--"]}
+	hue_group_kws = {"marker": ["^", "v"], "line_kws" : [{"linestyle" : "-"}, {"linestyle" : "--"}]}
+	result = sns.FacetGrid(cv_results, hue="UPDATE_WEIGHT", sharex=True, sharey=True, hue_kws=hue_group_kws, legend_out=True, palette="colorblind")
+	# Draw the regression plot on each facet
+	#regplot_kws = dict(
+	#	x_estimator=x_estimator, x_bins=x_bins, x_ci=x_ci,
+	#	scatter=scatter, fit_reg=fit_reg, ci=ci, n_boot=n_boot, units=units,
+	#	order=order, logistic=logistic, lowess=lowess, robust=robust,
+	#	logx=logx, x_partial=x_partial, y_partial=y_partial, truncate=truncate,
+	#	x_jitter=x_jitter, y_jitter=y_jitter,
+	#	scatter_kws=scatter_kws, line_kws=line_kws,
+	#)
+	confounding_vars = "BACKGROUND_DATA_WORD_TOKEN_COUNT"
+	result.map_dataframe(sns.regplot, "ROUND", "RR", scatter_kws={"s": 10}, n_boot=2000, y_jitter=0.001, robust=True, ci=ci, y_partial=confounding_vars)
+
+	# https://stackoverflow.com/a/47407428/1391325
+	# Use lmplot to plot scatter points
+	#result = sns.lmplot(x="ROUND", y="RR", hue="UPDATE_WEIGHT", data=cv_results,
+	#				   fit_reg=False)
+	# Use regplot to plot the regression line for the whole points
+	#sns.regplot(x="ROUND", y="RR", data=cv_results, scatter=False,
+	#			ax=result.axes[0, 0])
+	#result.set_axis_labels("Round", "RR")
+	result.set_axis_labels("Round", "RR")
+	result.add_legend(title="Interaction data weight")
+	return result
+
+
 def read_results_files(inpaths: Iterable[str], pattern: Pattern, encoding: str) -> pd.DataFrame:
 	dfs = []
 	for inpath in inpaths:
@@ -117,7 +147,8 @@ def __main(args):
 
 	with sns.plotting_context("paper"):
 		sns.set(style="whitegrid", font="Times New Roman")
-		fig = sns.lmplot(x="ROUND", y="RR", hue="UPDATE_WEIGHT", data=cv_results)
+		#fig = sns.lmplot(x="ROUND", y="RR", hue="UPDATE_WEIGHT", data=cv_results, scatter_kws={"s": 10}, markers=["o", "x"])
+		fit = plot_rounds(cv_results)
 	# cv_results["DATA_RATIO"] = cv_results["INTERACTION_DATA_WORD_TOKEN_COUNT"] / cv_results["BACKGROUND_DATA_WORD_TOKEN_COUNT"]
 	# fig = sns.lmplot(x="DATA_RATIO", y="RR", hue="UPDATE_WEIGHT", data=cv_results)
 
