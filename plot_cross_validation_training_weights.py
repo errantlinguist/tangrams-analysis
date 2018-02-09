@@ -15,9 +15,11 @@ import re
 import sys
 from typing import Iterable, Pattern
 
-import pandas as pd
 # Matplotlib for additional customization
+import matplotlib.pyplot as plt
+import pandas as pd
 import seaborn as sns
+from matplotlib.pyplot import cm
 
 from tangrams_analysis import natural_keys
 
@@ -26,6 +28,30 @@ RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 # NOTE: "category" dtype doesn't work with pandas-0.21.0 but does with pandas-0.21.1
 __RESULTS_FILE_DTYPES = {"DYAD": "category", "IS_TARGET": bool, "IS_OOV": bool,
 						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
+
+
+def plot_heatmap(cv_results: pd.DataFrame):
+	# print(cv_results["BACKGROUND_DATA_WORD_TOKEN_COUNT"].dtype)
+	# print(cv_results["INTERACTION_DATA_WORD_TOKEN_COUNT"].dtype)
+	# https://stackoverflow.com/a/28652153/1391325
+	# dataset_size_table = cv_results.pivot_table(
+	#	values="RR",
+	#		index="BACKGROUND_DATA_WORD_TOKEN_COUNT",
+	#		columns="INTERACTION_DATA_WORD_TOKEN_COUNT", aggfunc='mean').fillna(0.0)
+	#	print(dataset_size_table)
+	# Draw a heatmap with the numeric values in each cell
+	# f, ax = plt.subplots(figsize=(9, 6))
+	# with sns.axes_style("white"):
+	# result = sns.heatmap(dataset_size_table, cmap=cm.magma_r)
+	# result = sns.kdeplot(dataset_size_table, cmap=cm.magma_r, kind='hex', stat_func="mean")
+	means = cv_results.groupby(("BACKGROUND_DATA_WORD_TOKEN_COUNT", "INTERACTION_DATA_WORD_TOKEN_COUNT"))["RANK"].mean()
+	print(means)
+	result = sns.heatmap(means, cmap=cm.magma_r)
+	# result = plt.hexbin(cv_results["BACKGROUND_DATA_WORD_TOKEN_COUNT"], cv_results["INTERACTION_DATA_WORD_TOKEN_COUNT"], cv_results["RR"])
+	# result.set(xlabel='Background', ylabel='Interaction')
+	# result.set(xlabel='x', ylabel='y')
+	# result.invert_yaxis()
+	return result
 
 
 def read_results_files(inpaths: Iterable[str], pattern: Pattern, encoding: str) -> pd.DataFrame:
@@ -60,7 +86,7 @@ def __create_argparser() -> argparse.ArgumentParser:
 						help="The input file encoding.")
 	result.add_argument("-p", "--pattern", metavar="REGEX", type=re.compile, default=re.compile(".+\.tsv"),
 						help="A regular expression to match the desired files.")
-	result.add_argument("-o", "--outfile", metavar="OUTFILE", required=True,
+	result.add_argument("-o", "--outfile", metavar="OUTFILE",
 						help="The path to write the plot graphics to.")
 	return result
 
@@ -90,16 +116,20 @@ def __main(args):
 	# print(groups["RANK"].mean())
 
 	sns.set_style("whitegrid")
-	sns_plot = sns.lmplot(x="ROUND", y="RR", hue="UPDATE_WEIGHT", data=cv_results)
+	fig = sns.lmplot(x="ROUND", y="RR", hue="UPDATE_WEIGHT", data=cv_results)
+	# cv_results["DATA_RATIO"] = cv_results["INTERACTION_DATA_WORD_TOKEN_COUNT"] / cv_results["BACKGROUND_DATA_WORD_TOKEN_COUNT"]
+	# fig = sns.lmplot(x="DATA_RATIO", y="RR", hue="UPDATE_WEIGHT", data=cv_results)
+
+	# sns_plot = plot_heatmap(cv_results)
 	# https://stackoverflow.com/a/39482402/1391325
 	# fig = sns_plot.get_figure()
 	outfile = args.outfile
-	output_format = __parse_format(outfile)
-	print("Writing to \"{}\" as format \"{}\".".format(outfile, output_format), file=sys.stderr)
-	sns_plot.savefig(outfile, format=output_format, dpi=1000)
-
-
-# fig.savefig(...)
+	if outfile:
+		output_format = __parse_format(outfile)
+		print("Writing to \"{}\" as format \"{}\".".format(outfile, output_format), file=sys.stderr)
+		fig.savefig(outfile, format=output_format, dpi=1000)
+	else:
+		plt.show()
 
 
 if __name__ == "__main__":
