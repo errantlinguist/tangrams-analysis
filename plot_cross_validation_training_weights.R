@@ -35,13 +35,17 @@ model
 # The palette with black:
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-plot <- ggplot(df, aes(x=ROUND, y=RR, group=Weight, shape=Weight, color=Weight, linetype=Weight)) + geom_jitter(alpha = 0.5)
+plot <- ggplot(df, aes(x=ROUND, y=RR, group=Weight, shape=Weight, color=Weight, linetype=Weight)) + geom_jitter(alpha = 0.3)
 plot <- plot + geom_smooth(method="lm", fullrange=TRUE)
 
 xmin <- min(df$ROUND)
 xmax <- round(max(df$ROUND), -1)
 ymin <- 0
-plot + xlab("Rank") + ylab("RR") + theme_bw() + theme(text=element_text(family="Times"), aspect.ratio=3/4) + scale_colour_manual(values=cbbPalette) + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), oob=squish, breaks = scales::pretty_breaks(n = 5)) +  scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0), oob=squish)
+plot <- plot + xlab("Rank") + ylab("RR") + theme_bw() + theme(text=element_text(family="Times"), aspect.ratio=3/4) + scale_colour_manual(values=cbbPalette) + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), oob=squish, breaks = scales::pretty_breaks(n = 5)) +  scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0), oob=squish)
+
+outpath <- "D:\\Users\\tcshore\\Downloads\\fig-updating.pdf"
+ggsave(outpath, plot = plot, device="pdf", width = 100, height = 100, units="mm", dpi=1000)
+
 
 # https://stackoverflow.com/a/31095291
 #ggplot(tempEf,aes(TRTYEAR, r, group=interaction(site, Myc), col=site, shape=Myc )) + 
