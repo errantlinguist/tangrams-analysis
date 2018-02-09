@@ -19,12 +19,28 @@ df <- rbind(baseline_df, updating_df)
 df$RR <- 1.0 / df$RANK
 #df$UPDATE_WEIGHT <- ifelse(df$UPDATE_WEIGHT > 0, "yes", "no")
 
-model <- lm(ROUND ~ RR, data = df)
-summary(model)
+library(lme4)
+model <- lmer(RR ~ ROUND + BACKGROUND_DATA_WORD_TOKEN_COUNT + INTERACTION_DATA_WORD_TOKEN_COUNT + (1|DYAD), data = df)
+
+#refLevel <- 0
+#Set the reference level for Training
+#relevel(df$UPDATE_WEIGHT, ref=refLevel) -> cvResults$UPDATE_WEIGHT
+
+df$fit <- predict(model)   #Add model fits to dataframe
+model
+
+# The palette with black:
+cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 # + scale_color_manual(values=c("#000000", "#E69F00", "#56B4E9", "#009E73","#F0E442", "#0072B2", "#D55E00", "#CC79A7"))
-scatter_plot <- ggplot(df, aes(x=ROUND, y=RR, group=UPDATE_WEIGHT, shape=UPDATE_WEIGHT, color=UPDATE_WEIGHT, linetype=UPDATE_WEIGHT)) + geom_jitter(alpha = 0.5) + xlab("Rank") + ylab("RR") + theme_light() + theme(text=element_text(family="Times"))
-scatter_plot + geom_smooth(method="lm")
+plot <- ggplot(df, aes(x=ROUND, y=RR, group=UPDATE_WEIGHT, shape=UPDATE_WEIGHT, color=UPDATE_WEIGHT, linetype=UPDATE_WEIGHT)) + geom_jitter(alpha = 0.5)
+plot <- plot + geom_smooth(method="lm")
+plot + xlab("Rank") + ylab("RR") + theme_bw() + theme(text=element_text(family="Times")) + scale_colour_manual(values=cbbPalette)
 
-
-
+# https://stackoverflow.com/a/31095291
+#ggplot(tempEf,aes(TRTYEAR, r, group=interaction(site, Myc), col=site, shape=Myc )) + 
+#  facet_grid(~N) +
+#  geom_line(aes(y=fit, lty=Myc), size=0.8) +
+#  geom_point(alpha = 0.3) + 
+#  geom_hline(yintercept=0, linetype="dashed") +
+#  theme_bw()
