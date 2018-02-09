@@ -105,8 +105,10 @@ def __main(args):
 	discount_results = cv_results.groupby(["DYAD", "BACKGROUND_DATA_WORD_TOKEN_COUNT"], as_index=False)
 	discount_mean_ranks = discount_results.agg({"RANK": "mean", "RR": "mean"})
 	print("Plotting.", file=sys.stderr)
-	sns.set_style("whitegrid")
-	graph = plot_ranks(discount_mean_ranks)
+
+	with sns.plotting_context():
+		sns.set(style="whitegrid", font="serif")
+		graph = plot_ranks(discount_mean_ranks)
 
 	outfile = args.outfile
 	if outfile:

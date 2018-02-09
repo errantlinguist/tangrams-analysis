@@ -115,14 +115,16 @@ def __main(args):
 	# groups = cv_results.groupby(("ROUND", "UPDATE_WEIGHT"))
 	# print(groups["RANK"].mean())
 
-	sns.set_style("whitegrid")
-	fig = sns.lmplot(x="ROUND", y="RR", hue="UPDATE_WEIGHT", data=cv_results)
+	with sns.plotting_context():
+		sns.set(style="whitegrid", font="serif")
+		fig = sns.lmplot(x="ROUND", y="RR", hue="UPDATE_WEIGHT", data=cv_results)
 	# cv_results["DATA_RATIO"] = cv_results["INTERACTION_DATA_WORD_TOKEN_COUNT"] / cv_results["BACKGROUND_DATA_WORD_TOKEN_COUNT"]
 	# fig = sns.lmplot(x="DATA_RATIO", y="RR", hue="UPDATE_WEIGHT", data=cv_results)
 
 	# sns_plot = plot_heatmap(cv_results)
 	# https://stackoverflow.com/a/39482402/1391325
 	# fig = sns_plot.get_figure()
+
 	outfile = args.outfile
 	if outfile:
 		output_format = __parse_format(outfile)
