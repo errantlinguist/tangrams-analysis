@@ -22,7 +22,7 @@ df <- read_results(file.path(indir, "results.csv"))
 df$RR <- 1.0 / df$rank
 #df$UPDATE_WEIGHT <- ifelse(df$UPDATE_WEIGHT > 0, "yes", "no")
 # Hack to change legend label
-#names(df)[names(df) == "UPDATE_WEIGHT"] <- "Weight"
+names(df)[names(df) == "cond"] <- "Condition"
 
 model <- lmer(RR ~ round + (1|sess), data = df)
 
@@ -36,7 +36,7 @@ model
 # The palette with black:
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-plot <- ggplot(df, aes(x=round, y=RR, group=cond, shape=cond, color=cond, linetype=cond)) + geom_jitter(alpha = 0.3, size=0.1)
+plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition)) + geom_jitter(alpha = 0.3, size=0.1)
 plot <- plot + geom_smooth(method="lm", fullrange=TRUE, size=0.5)
 
 xmin <- min(df$round)
