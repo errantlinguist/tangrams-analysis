@@ -36,16 +36,17 @@ model
 # The palette with black:
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-plot <- ggplot(df, aes(x=round, y=RR, group=cond, shape=cond, color=cond, linetype=cond)) + geom_jitter(alpha = 0.3)
-plot <- plot + geom_smooth(method="lm", fullrange=TRUE)
+plot <- ggplot(df, aes(x=round, y=RR, group=cond, shape=cond, color=cond, linetype=cond)) + geom_jitter(alpha = 0.3, size=0.1)
+plot <- plot + geom_smooth(method="lm", fullrange=TRUE, size=0.5)
 
 xmin <- min(df$round)
 xmax <- round(max(df$round), digits = -1)
 ymin <- 0
-plot <- plot + xlab("Rank") + ylab("RR") + theme_bw() + theme(text=element_text(family="Times"), aspect.ratio=3/4) + scale_colour_manual(values=cbbPalette) + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), oob=squish, breaks = scales::pretty_breaks(n = 5)) +  scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0), oob=squish)
+plot <- plot + xlab("Rank") + ylab("RR") + theme_bw() + theme(text=element_text(family="Times"), aspect.ratio=1) + scale_colour_manual(values=cbbPalette) + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), oob=squish, breaks = scales::pretty_breaks(n = 5)) +  scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0), oob=squish)
 
 #outpath <- "D:\\Users\\tcshore\\Downloads\\fig-updating.pdf"
 outpath <- file.path(indir, "fig-updating.pdf")
+plot
 ggsave(outpath, plot = plot, device="pdf", width = 100, height = 100, units="mm", dpi=1000)
 
 
