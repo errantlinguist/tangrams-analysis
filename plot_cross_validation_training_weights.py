@@ -17,6 +17,7 @@ from typing import Iterable, Pattern
 
 # Matplotlib for additional customization
 import matplotlib.pyplot as plt
+import numpy as np
 import pandas as pd
 import seaborn as sns
 from matplotlib.pyplot import cm
@@ -72,7 +73,8 @@ def plot_rounds(cv_results: pd.DataFrame, ci=95) -> sns.axisgrid.FacetGrid:
 	#)
 	#confounding_var = "sess"
 	#print(cv_results)
-	result.map_dataframe(sns.regplot, "round", "RR", scatter_kws={"s": 10}, n_boot=2000, y_jitter=0.001, robust=True, ci=ci)
+	#result.map_dataframe(sns.pointplot,  "round", "RR", scatter_kws={"s": 10}, robust=False, ci=ci)
+	result.map_dataframe(sns.regplot, "round", "RR", scatter_kws={"s": 10}, n_boot=1000, robust=False, ci=ci, x_estimator=np.mean)
 
 	# https://stackoverflow.com/a/47407428/1391325
 	# Use lmplot to plot scatter points
@@ -83,7 +85,7 @@ def plot_rounds(cv_results: pd.DataFrame, ci=95) -> sns.axisgrid.FacetGrid:
 	#			ax=result.axes[0, 0])
 	#result.set_axis_labels("Round", "RR")
 	result.set_axis_labels("Round", "RR")
-	result.add_legend()
+	result.add_legend(title="Condition")
 	return result
 
 
