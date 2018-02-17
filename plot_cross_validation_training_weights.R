@@ -18,7 +18,8 @@ indir <- "/home/tshore/Projects/tangrams-restricted/Data/Analysis"
 #infile_dfs = lapply(infiles, read.csv)
 #do.call("rbind", list(DF1, DF2, DF3))
 
-df <- read_results(file.path(indir, "results.csv"))
+#df <- read_results(file.path(indir, "results.csv"))
+df <- read_results(file.path(indir, "weighting.csv"))
 df$RR <- 1.0 / df$rank
 #df$UPDATE_WEIGHT <- ifelse(df$UPDATE_WEIGHT > 0, "yes", "no")
 # Hack to change legend label
@@ -44,8 +45,8 @@ xmax <- round(max(df$round), digits = -1)
 ymin <- 0
 plot <- plot + xlab("Rank") + ylab("RR") + theme_bw() + theme(text=element_text(family="Times"), aspect.ratio=1) + scale_colour_manual(values=cbbPalette) + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), oob=squish, breaks = scales::pretty_breaks(n = 5)) +  scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0), oob=squish)
 
-#outpath <- "D:\\Users\\tcshore\\Downloads\\fig-updating.pdf"
-outpath <- file.path(indir, "fig-updating.pdf")
+#outpath <- "D:\\Users\\tcshore\\Downloads\\fig-weighting.pdf"
+outpath <- file.path(indir, "fig-weighting.pdf")
 plot
 ggsave(outpath, plot = plot, device="pdf", width = 100, height = 100, units="mm", dpi=1000)
 
