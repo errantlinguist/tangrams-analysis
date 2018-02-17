@@ -3,27 +3,28 @@ library(lme4)
 library(scales)
 
 read_results <- function(inpath) {
-  return(read.csv(inpath, sep = "\t", colClasses=c(DYAD="factor", ONLY_INSTRUCTOR="logical", WEIGHT_BY_FREQ="logical", UPDATE_WEIGHT="factor")))
+  #return(read.xlsx2(inpath, 1, colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", mrr="numeric", accuracy="integer")))
+  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", mrr="numeric", accuracy="integer")))
+  #return(read.csv(inpath, sep = "\t", colClasses=c(DYAD="factor", ONLY_INSTRUCTOR="logical", WEIGHT_BY_FREQ="logical", UPDATE_WEIGHT="factor")))
 }
 
 # https://stackoverflow.com/a/27694724
 windowsFonts(Times=windowsFont("Times New Roman"))
 
-indir <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\output\\tangrams-updating"
+#indir <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\output\\tangrams-updating"
+indir <- "/home/tshore/Projects/tangrams-restricted/Data/Analysis"
 #setwd(indir)
 #infiles <- list.files(pattern = "*bothspkr\\.tsv")
 #infile_dfs = lapply(infiles, read.csv)
 #do.call("rbind", list(DF1, DF2, DF3))
 
-baseline_df <- read_results(file.path(indir, "Update0.0-bothspkr.tsv"))
-updating_df <- read_results(file.path(indir, "Update1.0-bothspkr.tsv"))
-df <- rbind(baseline_df, updating_df)
-df$RR <- 1.0 / df$RANK
+df <- read_results(file.path(indir, "results.csv"))
+df$RR <- 1.0 / df$rank
 #df$UPDATE_WEIGHT <- ifelse(df$UPDATE_WEIGHT > 0, "yes", "no")
 # Hack to change legend label
-names(df)[names(df) == "UPDATE_WEIGHT"] <- "Weight"
+#names(df)[names(df) == "UPDATE_WEIGHT"] <- "Weight"
 
-model <- lmer(RR ~ ROUND + BACKGROUND_DATA_WORD_TOKEN_COUNT + INTERACTION_DATA_WORD_TOKEN_COUNT + (1|DYAD), data = df)
+model <- lmer(RR ~ round + (1|sess), data = df)
 
 #refLevel <- 0
 #Set the reference level for Training
@@ -35,15 +36,16 @@ model
 # The palette with black:
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-plot <- ggplot(df, aes(x=ROUND, y=RR, group=Weight, shape=Weight, color=Weight, linetype=Weight)) + geom_jitter(alpha = 0.3)
+plot <- ggplot(df, aes(x=round, y=RR, group=cond, shape=cond, color=cond, linetype=cond)) + geom_jitter(alpha = 0.3)
 plot <- plot + geom_smooth(method="lm", fullrange=TRUE)
 
-xmin <- min(df$ROUND)
-xmax <- round(max(df$ROUND), -1)
+xmin <- min(df$round)
+xmax <- round(max(df$round), digits = -1)
 ymin <- 0
 plot <- plot + xlab("Rank") + ylab("RR") + theme_bw() + theme(text=element_text(family="Times"), aspect.ratio=3/4) + scale_colour_manual(values=cbbPalette) + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), oob=squish, breaks = scales::pretty_breaks(n = 5)) +  scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0), oob=squish)
 
-outpath <- "D:\\Users\\tcshore\\Downloads\\fig-updating.pdf"
+#outpath <- "D:\\Users\\tcshore\\Downloads\\fig-updating.pdf"
+outpath <- file.path(indir, "fig-updating.pdf")
 ggsave(outpath, plot = plot, device="pdf", width = 100, height = 100, units="mm", dpi=1000)
 
 

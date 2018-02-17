@@ -26,9 +26,9 @@ from tangrams_analysis import natural_keys
 RESULTS_FILE_CSV_DIALECT = csv.excel_tab
 
 # NOTE: "category" dtype doesn't work with pandas-0.21.0 but does with pandas-0.21.1
-__RESULTS_FILE_DTYPES = {"DYAD": "category", "IS_TARGET": bool, "IS_OOV": bool,
-						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
-
+#__RESULTS_FILE_DTYPES = {"DYAD": "category", "IS_TARGET": bool, "IS_OOV": bool,
+#						 "IS_INSTRUCTOR": bool, "SHAPE": "category", "ONLY_INSTRUCTOR": bool, "WEIGHT_BY_FREQ": bool}
+__RESULTS_FILE_DTYPES = {"cond" : "category", "sess" : "category", "round" : int, "rank" :int, "mrr" : float, "accuracy" : int}
 
 def plot_heatmap(cv_results: pd.DataFrame):
 	# print(cv_results["BACKGROUND_DATA_WORD_TOKEN_COUNT"].dtype)
@@ -57,8 +57,10 @@ def plot_heatmap(cv_results: pd.DataFrame):
 def plot_rounds(cv_results: pd.DataFrame, ci=95) -> sns.axisgrid.FacetGrid:
 	#fig = sns.lmplot(x="ROUND", y="RR", hue="UPDATE_WEIGHT", data=cv_results, scatter_kws={"s": 10}, markers=["o", "x"])
 	#hue_group_kws = {"marker" : ["^", "v"], 'color': ['C0', 'k'], "ls": ["-", "--"]}
-	hue_group_kws = {"marker": ["^", "v"], "line_kws" : [{"linestyle" : "-"}, {"linestyle" : "--"}]}
-	result = sns.FacetGrid(cv_results, hue="UPDATE_WEIGHT", sharex=True, sharey=True, hue_kws=hue_group_kws, legend_out=True, palette="colorblind")
+	#hue_kws = {"marker": ["^", "v"], "line_kws" : [{"linestyle" : "-"}, {"linestyle" : "--"}]}
+	# result = sns.lmplot("round", "RR", cv_results, hue="cond")
+	result = sns.FacetGrid(cv_results, hue="cond", sharex=True, sharey=True, legend_out=True, palette="colorblind")
+
 	# Draw the regression plot on each facet
 	#regplot_kws = dict(
 	#	x_estimator=x_estimator, x_bins=x_bins, x_ci=x_ci,
@@ -68,8 +70,9 @@ def plot_rounds(cv_results: pd.DataFrame, ci=95) -> sns.axisgrid.FacetGrid:
 	#	x_jitter=x_jitter, y_jitter=y_jitter,
 	#	scatter_kws=scatter_kws, line_kws=line_kws,
 	#)
-	confounding_vars = "BACKGROUND_DATA_WORD_TOKEN_COUNT"
-	result.map_dataframe(sns.regplot, "ROUND", "RR", scatter_kws={"s": 10}, n_boot=2000, y_jitter=0.001, robust=True, ci=ci, y_partial=confounding_vars)
+	#confounding_var = "sess"
+	#print(cv_results)
+	result.map_dataframe(sns.regplot, "round", "RR", scatter_kws={"s": 10}, n_boot=2000, y_jitter=0.001, robust=True, ci=ci)
 
 	# https://stackoverflow.com/a/47407428/1391325
 	# Use lmplot to plot scatter points
@@ -80,7 +83,7 @@ def plot_rounds(cv_results: pd.DataFrame, ci=95) -> sns.axisgrid.FacetGrid:
 	#			ax=result.axes[0, 0])
 	#result.set_axis_labels("Round", "RR")
 	result.set_axis_labels("Round", "RR")
-	result.add_legend(title="Interaction data weight")
+	result.add_legend()
 	return result
 
 
@@ -114,7 +117,7 @@ def __create_argparser() -> argparse.ArgumentParser:
 						help="The cross-validation results files to process.")
 	result.add_argument("-e", "--encoding", metavar="CODEC", default="utf-8",
 						help="The input file encoding.")
-	result.add_argument("-p", "--pattern", metavar="REGEX", type=re.compile, default=re.compile(".+\.tsv"),
+	result.add_argument("-p", "--pattern", metavar="REGEX", type=re.compile, default=re.compile(".+\.[ct]sv"),
 						help="A regular expression to match the desired files.")
 	result.add_argument("-o", "--outfile", metavar="OUTFILE",
 						help="The path to write the plot graphics to.")
@@ -136,19 +139,18 @@ def __main(args):
 																										encoding),
 		  file=sys.stderr)
 	cv_results = read_results_files(infiles, pattern, encoding)
-	print("Read results for {} iteration(s) of {}-fold cross-validation (one for each dyad).".format(
-		cv_results["CROSS_VALIDATION_ITER"].nunique(), cv_results["DYAD"].nunique()), file=sys.stderr)
-	print("Dyads present: {}".format(sorted(cv_results["DYAD"].unique(), key=natural_keys)), file=sys.stderr)
-	print("Unique discounting values: {}".format(sorted(cv_results["DISCOUNT"].unique())), file=sys.stderr)
-	print("Unique updating weights: {}".format(sorted(cv_results["UPDATE_WEIGHT"].unique())), file=sys.stderr)
-	cv_results["RR"] = 1.0 / cv_results["RANK"]
+	print("Read results for {} dyads.".format(cv_results["sess"].nunique()), file=sys.stderr)
+	#print("Dyads present: {}".format(sorted(cv_results["DYAD"].unique(), key=natural_keys)), file=sys.stderr)
+	#print("Unique discounting values: {}".format(sorted(cv_results["DISCOUNT"].unique())), file=sys.stderr)
+	#print("Unique updating weights: {}".format(sorted(cv_results["UPDATE_WEIGHT"].unique())), file=sys.stderr)
+	cv_results["RR"] = 1.0 / cv_results["rank"]
 	# groups = cv_results.groupby(("ROUND", "UPDATE_WEIGHT"))
 	# print(groups["RANK"].mean())
 
 	with sns.plotting_context("paper"):
 		sns.set(style="whitegrid", font="Times New Roman")
 		#fig = sns.lmplot(x="ROUND", y="RR", hue="UPDATE_WEIGHT", data=cv_results, scatter_kws={"s": 10}, markers=["o", "x"])
-		fit = plot_rounds(cv_results)
+		fig = plot_rounds(cv_results)
 	# cv_results["DATA_RATIO"] = cv_results["INTERACTION_DATA_WORD_TOKEN_COUNT"] / cv_results["BACKGROUND_DATA_WORD_TOKEN_COUNT"]
 	# fig = sns.lmplot(x="DATA_RATIO", y="RR", hue="UPDATE_WEIGHT", data=cv_results)
 
