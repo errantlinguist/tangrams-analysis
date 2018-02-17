@@ -41,17 +41,18 @@ plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Co
 plot <- plot + stat_summary_bin(fun.data = mean_se, alpha=0.8)
 #plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
 plot <- plot + geom_smooth(method="lm", fullrange=TRUE, size=0.5)
-
 plot <- plot + xlab("Round") + ylab("MRR") + theme_bw() + theme(text=element_text(family="Times"), aspect.ratio=1) + scale_colour_manual(values=cbbPalette)
 plot
 
-#xmin <- min(df$round)
-#xmax <- round(max(df$round), digits = -1)
+xmin <- min(df$round)
+xmax <- round(max(df$round), digits = -1)
 #round_mrrs <- aggregate(RR ~ round, data = df, FUN = mean)
 #ymin <- min(round_mrrs)
-#ymin <- 0.8
+ymin <- 0.4
+ymax = 1.0
+plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim=c(ymin, ymax))
 #plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
-#plot
+plot
 
 #outpath <- "D:\\Users\\tcshore\\Downloads\\fig-weighting.pdf"
 outpath <- file.path(indir, "fig-weighting.pdf")
