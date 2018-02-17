@@ -25,29 +25,36 @@ df$RR <- 1.0 / df$rank
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
 
-model <- lmer(RR ~ round + (1|sess), data = df)
+#model <- lmer(RR ~ round + (1|sess), data = df)
 
 #refLevel <- 0
 #Set the reference level for Training
 #relevel(df$Weight, ref=refLevel) -> cvResults$Weight
 
-df$fit <- predict(model)   #Add model fits to dataframe
-model
+#df$fit <- predict(model)   #Add model fits to dataframe
+#model
 
 # The palette with black:
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
-plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition)) + geom_jitter(alpha = 0.3, size=0.1)
+plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition)) 
+plot <- plot + stat_summary_bin(fun.data = mean_se, alpha=0.8)
+#plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
 plot <- plot + geom_smooth(method="lm", fullrange=TRUE, size=0.5)
 
-xmin <- min(df$round)
-xmax <- round(max(df$round), digits = -1)
-ymin <- 0
-plot <- plot + xlab("Rank") + ylab("RR") + theme_bw() + theme(text=element_text(family="Times"), aspect.ratio=1) + scale_colour_manual(values=cbbPalette) + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), oob=squish, breaks = scales::pretty_breaks(n = 5)) +  scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0), oob=squish)
+plot <- plot + xlab("Round") + ylab("MRR") + theme_bw() + theme(text=element_text(family="Times"), aspect.ratio=1) + scale_colour_manual(values=cbbPalette)
+plot
+
+#xmin <- min(df$round)
+#xmax <- round(max(df$round), digits = -1)
+#round_mrrs <- aggregate(RR ~ round, data = df, FUN = mean)
+#ymin <- min(round_mrrs)
+#ymin <- 0.8
+#plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
+#plot
 
 #outpath <- "D:\\Users\\tcshore\\Downloads\\fig-weighting.pdf"
 outpath <- file.path(indir, "fig-weighting.pdf")
-plot
 ggsave(outpath, plot = plot, device="pdf", width = 100, height = 100, units="mm", dpi=1000)
 
 
