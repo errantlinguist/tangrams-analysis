@@ -50,7 +50,7 @@ xmax <- round(max(df$round), digits = -1)
 #ymin <- min(round_mrrs)
 ymin <- 0.4
 ymax = 1.0
-plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim=c(ymin, ymax))
+plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = FALSE)
 #plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
 plot
 
