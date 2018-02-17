@@ -5,7 +5,7 @@
       <sourceFolder url="file://$MODULE_DIR$/tangrams_analysis" isTestSource="false" />
       <sourceFolder url="file://$MODULE_DIR$" isTestSource="false" />
     </content>
-    <orderEntry type="jdk" jdkName="Python 3 (System)" jdkType="Python SDK" />
+    <orderEntry type="jdk" jdkName="Python 3" jdkType="Python SDK" />
     <orderEntry type="sourceFolder" forTests="false" />
     <orderEntry type="library" name="R User Library" level="project" />
     <orderEntry type="library" name="R Skeletons" level="application" />
