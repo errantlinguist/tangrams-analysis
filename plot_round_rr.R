@@ -56,6 +56,7 @@ df$RR <- 1.0 / df$rank
 #df$UPDATE_WEIGHT <- ifelse(df$UPDATE_WEIGHT > 0, "yes", "no")
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
+names(df)[names(df) == "sess"] <- "Dyad"
 df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
 #reorder(levels(df$Condition), new.order=c("Baseline", "W", "U,W"))
 
@@ -63,7 +64,7 @@ refLevel <- "Baseline"
 # Set the reference level
 relevel(df$Condition, ref=refLevel) -> df$Condition
 
-model <- lmer(RR ~ Condition + poly(round, 2) + (1|sess), data = df, REML=TRUE)
+model <- lmer(RR ~ Condition + poly(round, 2) + (1|Dyad), data = df, REML=TRUE)
 summary(model)
 texreg(model, digits=3, float.pos="htb", single.row=TRUE)
 
@@ -72,7 +73,7 @@ plot <- plot + stat_summary_bin(fun.data = mean_se, alpha=0.8, size=0.3)
 #plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
 #plot <- plot + geom_smooth(method="loess", level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
 plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x, 2), level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
-plot <- plot + xlab(expression(paste("Game round ", italic("n")))) + ylab("MRR") + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=1, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="vertical", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
+plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RR") + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=1, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="vertical", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
 
 # The palette with black:
 #cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
