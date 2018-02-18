@@ -32,6 +32,7 @@ outfile <- args[2]
 
 library(ggplot2)
 library(lmerTest)
+library(texreg)
 library(tools)  
 
 if (!require("viridis")) {
@@ -64,6 +65,7 @@ relevel(df$Condition, ref=refLevel) -> df$Condition
 
 model <- lmer(RR ~ Condition + poly(round, 2) + (1|sess), data = df, REML=TRUE)
 summary(model)
+texreg(model, digits=3, float.pos="htb", single.row=TRUE)
 
 plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition)) 
 plot <- plot + stat_summary_bin(fun.data = mean_se, alpha=0.8, size=0.3)
