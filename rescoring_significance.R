@@ -33,7 +33,7 @@ library(texreg)
 
 read_results <- function(inpath) {
   #return(read.xlsx2(inpath, 1, colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", mrr="numeric", accuracy="integer")))
-  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", Updating="logical", Weighting="logical")))
+  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", Updating="logical", Weighting="logical", RandomData="logical")))
   #return(read.csv(inpath, sep = "\t", colClasses=c(DYAD="factor", ONLY_INSTRUCTOR="logical", WEIGHT_BY_FREQ="logical", UPDATE_WEIGHT="factor")))
 }
 
@@ -49,8 +49,27 @@ refLevel <- "Baseline"
 # Set the reference level
 relevel(df$Condition, ref=refLevel) -> df$Condition
 
-m.additive <- lmer(RR ~ Updating + Weighting + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
-m.interaction <- lmer(RR ~ Updating * Weighting + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
+m.additive <- lmer(RR ~ Updating + Weighting + RandomData + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
+m.interaction <- lmer(RR ~ Updating * Weighting + RandomData + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
+
+#This is a test for whether the interaction model improved anything over the additive model.
+p <- anova(m.additive, m.interaction)
+p$Chisq
+p$`Pr(>Chisq)`
+p
+
+summary(m.additive)
+texreg(m.additive, digits=3, float.pos="!htb", single.row=TRUE)
+
+summary(m.interaction)
+texreg(m.interaction, digits=3, float.pos="!htb", single.row=TRUE)
+
+
+print("Re-leveling to updating", quote=FALSE)
+relevel(df$Condition, ref="Updating") -> df$Condition
+
+m.additive <- lmer(RR ~ Updating + Weighting + RandomData + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
+m.interaction <- lmer(RR ~ Updating * Weighting + RandomData + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
 
 #This is a test for whether the interaction model improved anything over the additive model.
 p <- anova(m.additive, m.interaction)
