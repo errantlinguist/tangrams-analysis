@@ -1,7 +1,38 @@
 #!/usr/bin/env Rscript
 
+# Plots RR for round and calculates significance using a general linear model with random effects for dyad ("sess")
+#
+#
+# Copyright 2018 Todd Shore
+#
+#	Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#   http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+args <- commandArgs(trailingOnly=TRUE)
+if(length(args) < 2)
+{
+  stop("Usage: <scriptname> INFILE OUTFILE")
+}
+
+infile <- args[1]
+if (!file_test("-f", infile)) {
+  stop(sprintf("No file found at \"%s\".", infile));
+}
+
+outfile <- args[2]
+
 library(ggplot2)
 library(lmerTest)
+library(tools)  
 
 if (!require("viridis")) {
   if (!require("devtools")) install.packages("devtools")
@@ -18,15 +49,8 @@ read_results <- function(inpath) {
 # https://stackoverflow.com/a/27694724
 try(windowsFonts(Times=windowsFont("Times New Roman")))
 
-#indir <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\output\\tangrams-updating"
-indir <- "/home/tshore/Projects/tangrams-restricted/Data/Analysis"
-#setwd(indir)
-#infiles <- list.files(pattern = "*bothspkr\\.tsv")
-#infile_dfs = lapply(infiles, read.csv)
-#do.call("rbind", list(DF1, DF2, DF3))
 
-#df <- read_results(file.path(indir, "results.csv"))
-df <- read_results(file.path(indir, "weighting.csv"))
+df <- read_results(infile)
 df$RR <- 1.0 / df$rank
 #df$UPDATE_WEIGHT <- ifelse(df$UPDATE_WEIGHT > 0, "yes", "no")
 # Hack to change legend label
@@ -51,7 +75,7 @@ plot <- plot + xlab("Round") + ylab("MRR") + theme_light() + theme(text=element_
 #cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 #plot <- plot + scale_colour_manual(values=cbbPalette)
 plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis") #+ scale_colour_manual(values=cbbPalette)
-plot
+#plot
 
 xmin <- min(df$round)
 #xmax <- round(max(df$round), digits = -1)
@@ -62,11 +86,11 @@ ymin <- 0.4
 ymax = 1.0
 plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = FALSE)
 #plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
-plot
+#plot
 
-#outpath <- "D:\\Users\\tcshore\\Downloads\\fig-weighting.pdf"
-outpath <- file.path(indir, "round-mrr-weighting.pdf")
-ggsave(outpath, plot = plot, device="pdf", width = 100, height = 100, units="mm", dpi=1000)
+output_device <- file_ext(outfile)
+print(sprintf("Writing plot to \"%s\" using format \"%s\".", outfile, output_device), quote=FALSE)
+ggsave(outfile, plot = plot, device=output_device, width = 100, height = 100, units="mm", dpi=1000)
 
 
 # https://stackoverflow.com/a/31095291
