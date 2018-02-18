@@ -48,7 +48,8 @@ plot <- plot + xlab("Round") + ylab("MRR") + theme_bw() + theme(text=element_tex
 plot
 
 xmin <- min(df$round)
-xmax <- round(max(df$round), digits = -1)
+#xmax <- round(max(df$round), digits = -1)
+xmax <- max(df$round)
 #round_mrrs <- aggregate(RR ~ round, data = df, FUN = mean)
 #ymin <- min(round_mrrs)
 ymin <- 0.4
