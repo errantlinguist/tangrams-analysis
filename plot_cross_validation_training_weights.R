@@ -3,6 +3,12 @@
 library(ggplot2)
 library(lmerTest)
 
+if (!require("viridis")) {
+  if (!require("devtools")) install.packages("devtools")
+  devtools::install_github("sjmgarnier/viridis")
+  library(viridis)
+}
+
 read_results <- function(inpath) {
   #return(read.xlsx2(inpath, 1, colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", mrr="numeric", accuracy="integer")))
   return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", mrr="numeric", accuracy="integer")))
@@ -25,6 +31,8 @@ df$RR <- 1.0 / df$rank
 #df$UPDATE_WEIGHT <- ifelse(df$UPDATE_WEIGHT > 0, "yes", "no")
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
+df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
+#reorder(levels(df$Condition), new.order=c("Baseline", "W", "U,W"))
 
 refLevel <- "Baseline"
 # Set the reference level
@@ -33,18 +41,16 @@ relevel(df$Condition, ref=refLevel) -> df$Condition
 model <- lmer(RR ~ Condition + round + (1|sess), data = df, REML=TRUE)
 summary(model)
 
-
-#df$fit <- predict(model)   #Add model fits to dataframe
-#model
-
-# The palette with black:
-cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-
 plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition)) 
 plot <- plot + stat_summary_bin(fun.data = mean_se, alpha=0.8, size=0.3)
 #plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
 plot <- plot + geom_smooth(method="glm", level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
-plot <- plot + xlab("Round") + ylab("MRR") + theme_bw() + theme(text=element_text(family="Times"), aspect.ratio=1) + scale_colour_manual(values=cbbPalette)
+plot <- plot + xlab("Round") + ylab("MRR") + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=1) 
+
+# The palette with black:
+#cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
+#plot <- plot + scale_colour_manual(values=cbbPalette)
+plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis") #+ scale_colour_manual(values=cbbPalette)
 plot
 
 xmin <- min(df$round)
