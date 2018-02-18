@@ -75,7 +75,7 @@ plot <- plot + xlab(expression(paste("Game round ", italic("n")))) + ylab("MRR")
 # The palette with black:
 #cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 #plot <- plot + scale_colour_manual(values=cbbPalette)
-plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis") #+ scale_colour_manual(values=cbbPalette)
+plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis", direction=-1) #+ scale_colour_manual(values=cbbPalette)
 #plot
 
 xmin <- min(df$round)
