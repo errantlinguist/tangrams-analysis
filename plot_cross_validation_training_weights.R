@@ -1,6 +1,7 @@
+#!/usr/bin/env Rscript
+
 library(ggplot2)
-library(lme4)
-library(scales)
+library(lmerTest)
 
 read_results <- function(inpath) {
   #return(read.xlsx2(inpath, 1, colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", mrr="numeric", accuracy="integer")))
@@ -9,7 +10,7 @@ read_results <- function(inpath) {
 }
 
 # https://stackoverflow.com/a/27694724
-windowsFonts(Times=windowsFont("Times New Roman"))
+try(windowsFonts(Times=windowsFont("Times New Roman")))
 
 #indir <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\output\\tangrams-updating"
 indir <- "/home/tshore/Projects/tangrams-restricted/Data/Analysis"
@@ -25,11 +26,13 @@ df$RR <- 1.0 / df$rank
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
 
-#model <- lmer(RR ~ round + (1|sess), data = df)
+refLevel <- "Baseline"
+# Set the reference level
+relevel(df$Condition, ref=refLevel) -> df$Condition
 
-#refLevel <- 0
-#Set the reference level for Training
-#relevel(df$Weight, ref=refLevel) -> cvResults$Weight
+model <- lmer(RR ~ Condition + round + (1|sess), data = df, REML=TRUE)
+summary(model)
+
 
 #df$fit <- predict(model)   #Add model fits to dataframe
 #model
@@ -38,9 +41,9 @@ names(df)[names(df) == "cond"] <- "Condition"
 cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
 
 plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition)) 
-plot <- plot + stat_summary_bin(fun.data = mean_se, alpha=0.8)
+plot <- plot + stat_summary_bin(fun.data = mean_se, alpha=0.8, size=0.3)
 #plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
-plot <- plot + geom_smooth(method="lm", fullrange=TRUE, size=0.5)
+plot <- plot + geom_smooth(method="glm", level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
 plot <- plot + xlab("Round") + ylab("MRR") + theme_bw() + theme(text=element_text(family="Times"), aspect.ratio=1) + scale_colour_manual(values=cbbPalette)
 plot
 
@@ -55,7 +58,7 @@ plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expan
 plot
 
 #outpath <- "D:\\Users\\tcshore\\Downloads\\fig-weighting.pdf"
-outpath <- file.path(indir, "fig-weighting.pdf")
+outpath <- file.path(indir, "round-mrr-weighting.pdf")
 ggsave(outpath, plot = plot, device="pdf", width = 100, height = 100, units="mm", dpi=1000)
 
 
