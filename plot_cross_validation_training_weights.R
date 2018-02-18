@@ -45,7 +45,7 @@ plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Co
 plot <- plot + stat_summary_bin(fun.data = mean_se, alpha=0.8, size=0.3)
 #plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
 plot <- plot + geom_smooth(method="glm", level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
-plot <- plot + xlab("Round") + ylab("MRR") + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=1) 
+plot <- plot + xlab("Round") + ylab("MRR") + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=1, plot.margin=margin(0,0,0,0), legend.margin=margin(0,0,0,0), legend.box.margin=margin(0,0,0,0)) 
 
 # The palette with black:
 #cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
