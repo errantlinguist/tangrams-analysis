@@ -76,7 +76,10 @@ plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis", direction=-1
 plot <- plot + stat_summary_bin(fun.data = mean_se, alpha=0.8, size=0.3)
 #plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
 #plot <- plot + geom_smooth(method="loess", level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
-plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x, 2), level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
+#regressionAlpha <- 1.0 / nlevels(df$Condition)
+regressionAlpha <- 0.333333
+print(sprintf("Using alpha transparency = %f for each individual regression line.", regressionAlpha), quote=FALSE)
+plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x, 2), level=0.95, fullrange=TRUE, size=0.7, alpha=regressionAlpha)
 
 xmin <- min(df$round)
 #xmax <- round(max(df$round), digits = -1)
