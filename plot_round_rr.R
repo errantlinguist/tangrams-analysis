@@ -55,8 +55,10 @@ df <- read_results(infile)
 df$RR <- 1.0 / df$rank
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
-names(df)[names(df) == "sess"] <- "Dyad"
 df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
+names(df)[names(df) == "sess"] <- "Dyad"
+# https://stackoverflow.com/a/15665536
+df$Dyad <- factor(df$Dyad, levels = paste(sort(as.integer(levels(df$Dyad)))))
 
 refLevel <- "Baseline"
 # Set the reference level
