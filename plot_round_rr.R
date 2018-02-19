@@ -68,18 +68,14 @@ model <- lmer(RR ~ Condition + poly(round, 2) + (1|Dyad), data = df, REML=TRUE)
 summary(model)
 texreg(model, digits=3, float.pos="!htb", single.row=TRUE)
 
-plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition)) 
+plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition))
+plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RR") + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=1, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="vertical", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
+plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis", direction=-1)
+
 plot <- plot + stat_summary_bin(fun.data = mean_se, alpha=0.8, size=0.3)
 #plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
 #plot <- plot + geom_smooth(method="loess", level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
 plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x, 2), level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
-plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RR") + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=1, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="vertical", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
-
-# The palette with black:
-#cbbPalette <- c("#000000", "#E69F00", "#56B4E9", "#009E73", "#F0E442", "#0072B2", "#D55E00", "#CC79A7")
-#plot <- plot + scale_colour_manual(values=cbbPalette)
-plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis", direction=-1) #+ scale_colour_manual(values=cbbPalette)
-#plot
 
 xmin <- min(df$round)
 #xmax <- round(max(df$round), digits = -1)
