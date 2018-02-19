@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# Plots RR for round and calculates significance using a general linear model with random effects for dyad ("sess")
+# Plots RR for round and calculates significance using a general linear model with random effects for dyad ("sess").
 #
 #
 # Copyright 2018 Todd Shore
