@@ -59,9 +59,9 @@ df$Dyad <- factor(df$Dyad, levels = paste(sort(as.integer(levels(df$Dyad)))))
 plot <- ggplot(df, aes(x=round, y=MRA))
 plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RA")
 plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=1, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.99), legend.position = c(0.99, 0.99), legend.text=element_text(family="mono", face="bold"))
-plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis")
+plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis") + scale_shape_manual(values=1:nlevels(df$Dyad))
 
-plot <- plot + stat_summary_bin(fun.data = mean_se, alpha=0.8, size=0.3, aes(group=Dyad, color=Dyad, linetype=Dyad))
+plot <- plot + stat_summary_bin(fun.data = mean_se, alpha=0.8, size=0.3, aes(group=Dyad, color=Dyad, shape=Dyad))
 #plot <- plot + geom_line()
 plot
 #plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
