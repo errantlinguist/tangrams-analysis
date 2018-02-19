@@ -72,7 +72,7 @@ plot
 xmin <- min(df$round)
 xmax <- max(df$round)
 round_mra <- aggregate(MRA ~ round, data = df, FUN = mean)
-ymin <- min(round_mra$MRA)
+ymin <- 0
 #ymax <- max(round_mra$MRA)
 ymax <- 0.3
 plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = FALSE)
