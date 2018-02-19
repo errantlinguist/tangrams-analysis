@@ -53,12 +53,10 @@ try(windowsFonts(Times=windowsFont("Times New Roman")))
 
 df <- read_results(infile)
 df$RR <- 1.0 / df$rank
-#df$UPDATE_WEIGHT <- ifelse(df$UPDATE_WEIGHT > 0, "yes", "no")
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
 names(df)[names(df) == "sess"] <- "Dyad"
 df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
-#reorder(levels(df$Condition), new.order=c("Baseline", "W", "U,W"))
 
 refLevel <- "Baseline"
 # Set the reference level
