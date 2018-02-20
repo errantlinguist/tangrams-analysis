@@ -55,7 +55,7 @@ std.error <- function(x) {
 # https://stackoverflow.com/a/27694724
 try(windowsFonts(Times=windowsFont("Times New Roman")))
 
-
+print(sprintf("Reading data from \"%s\".", infile), quote=FALSE)
 df <- read_results(infile)
 df$RR <- 1.0 / df$rank
 # Hack to change legend label
