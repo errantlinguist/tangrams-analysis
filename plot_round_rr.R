@@ -70,7 +70,7 @@ refLevel <- "Baseline"
 relevel(df$Condition, ref=refLevel) -> df$Condition
 
 digits <- 4
-print(sprintf("Printing values rounded to %d signficant figures.", digits), quote=FALSE)
+print(sprintf("Printing values rounded to %d significant figures.", digits), quote=FALSE)
 
 print("Condition avg rank:", quote=FALSE)
 print(aggregate(rank ~ Condition, data = df, FUN = mean), short=FALSE, digits=digits)
