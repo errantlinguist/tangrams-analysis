@@ -69,22 +69,25 @@ refLevel <- "Baseline"
 # Set the reference level
 relevel(df$Condition, ref=refLevel) -> df$Condition
 
-digits <- 4
-print(sprintf("Printing values rounded to %d significant figures.", digits), quote=FALSE)
+rank_digits <- 5
+print(sprintf("Printing ranks rounded to %d significant figures.", rank_digits), quote=FALSE)
 
 print("Condition avg rank:", quote=FALSE)
-print(aggregate(rank ~ Condition, data = df, FUN = mean), short=FALSE, digits=digits)
+print(aggregate(rank ~ Condition, data = df, FUN = mean), short=FALSE, digits=rank_digits)
 print("Condition avg rank standard deviation:", quote=FALSE)
-print(aggregate(rank ~ Condition, data = df, FUN = sd), short=FALSE, digits=digits)
+print(aggregate(rank ~ Condition, data = df, FUN = sd), short=FALSE, digits=rank_digits)
 print("Condition avg rank standard error:", quote=FALSE)
-print(aggregate(rank ~ Condition, data = df, FUN = std.error), short=FALSE, digits=digits)
+print(aggregate(rank ~ Condition, data = df, FUN = std.error), short=FALSE, digits=rank_digits)
+
+mrr_digits <- 4
+print(sprintf("Printing MRR rounded to %d significant figures.", mrr_digits), quote=FALSE)
 
 print("Condition MRR:", quote=FALSE)
-print(aggregate(RR ~ Condition, data = df, FUN = mean), short=FALSE, digits=digits)
+print(aggregate(RR ~ Condition, data = df, FUN = mean), short=FALSE, digits=mrr_digits)
 print("Condition MRR standard deviation:", quote=FALSE)
-print(aggregate(RR ~ Condition, data = df, FUN = sd), short=FALSE, digits=digits)
+print(aggregate(RR ~ Condition, data = df, FUN = sd), short=FALSE, digits=mrr_digits)
 print("Condition MRR standard error:", quote=FALSE)
-print(aggregate(RR ~ Condition, data = df, FUN = std.error), short=FALSE, digits=digits)
+print(aggregate(RR ~ Condition, data = df, FUN = std.error), short=FALSE, digits=mrr_digits)
 
 model <- lmer(RR ~ Condition + poly(round, 2) + (1|Dyad), data = df, REML=TRUE)
 summary(model)
