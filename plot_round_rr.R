@@ -95,7 +95,8 @@ texreg(model, digits=3, float.pos="!htb", single.row=TRUE)
 
 plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition))
 plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RR")
-plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=1, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="vertical", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
+aspectRatio <- 3/4
+plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="vertical", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
 plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis", direction=-1)
 
 plot <- plot + stat_summary_bin(fun.data = mean_se, size=0.3)
@@ -119,7 +120,10 @@ plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expan
 
 output_device <- file_ext(outfile)
 print(sprintf("Writing plot to \"%s\" using format \"%s\".", outfile, output_device), quote=FALSE)
-ggsave(outfile, plot = plot, device=output_device, width = 100, height = 100, units="mm", dpi=1000)
+
+width <- 100
+height <- width * aspectRatio
+ggsave(outfile, plot = plot, device=output_device, width = width, height = height, units="mm", dpi=1000)
 
 
 # https://stackoverflow.com/a/31095291
