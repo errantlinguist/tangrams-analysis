@@ -70,7 +70,7 @@ plot <- plot + stat_summary_bin(fun.data = mean_se, size=0.3, aes(group=Dyad, co
 #plot <- plot + geom_smooth(method="loess", level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
 #regressionAlpha <- 0.333333
 #print(sprintf("Using alpha transparency = %f for each individual regression line.", regressionAlpha), quote=FALSE)
-plot <- plot + geom_smooth(method = "lm", formula = y ~ x, level=0.95, fullrange=TRUE, size=0.7, color="darkred")
+plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x,2), level=0.95, fullrange=TRUE, size=0.7, color="darkred")
 #plot <- plot + geom_smooth(method = "lm", formula = y ~ x, level=0.95, fullrange=TRUE, size=0.7, aes(color=Dyad))
 #plot
 
