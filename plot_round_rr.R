@@ -69,12 +69,19 @@ refLevel <- "Baseline"
 # Set the reference level
 relevel(df$Condition, ref=refLevel) -> df$Condition
 
+print("Condition avg rank:", quote=FALSE)
+print(aggregate(rank ~ Condition, data = df, FUN = mean), short=FALSE, digits=4)
+print("Condition avg rank standard deviation:", quote=FALSE)
+print(aggregate(rank ~ Condition, data = df, FUN = sd), short=FALSE, digits=4)
+print("Condition avg rank standard error:", quote=FALSE)
+print(aggregate(rank ~ Condition, data = df, FUN = std.error), short=FALSE, digits=4)
+
 print("Condition MRR:", quote=FALSE)
-aggregate(RR ~ Condition, data = df, FUN = mean)
+print(aggregate(RR ~ Condition, data = df, FUN = mean), short=FALSE, digits=4)
 print("Condition MRR standard deviation:", quote=FALSE)
-aggregate(RR ~ Condition, data = df, FUN = sd)
+print(aggregate(RR ~ Condition, data = df, FUN = sd), short=FALSE, digits=4)
 print("Condition MRR standard error:", quote=FALSE)
-aggregate(RR ~ Condition, data = df, FUN = std.error)
+print(aggregate(RR ~ Condition, data = df, FUN = std.error), short=FALSE, digits=4)
 
 model <- lmer(RR ~ Condition + poly(round, 2) + (1|Dyad), data = df, REML=TRUE)
 summary(model)
