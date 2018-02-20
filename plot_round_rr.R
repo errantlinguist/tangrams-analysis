@@ -47,6 +47,11 @@ read_results <- function(inpath) {
   #return(read.csv(inpath, sep = "\t", colClasses=c(DYAD="factor", ONLY_INSTRUCTOR="logical", WEIGHT_BY_FREQ="logical", UPDATE_WEIGHT="factor")))
 }
 
+std.error <- function(x) {
+  # https://www.rdocumentation.org/packages/plotrix/versions/3.7/topics/std.error
+  return(sd(x)/sqrt(sum(!is.na(x))))
+}
+
 # https://stackoverflow.com/a/27694724
 try(windowsFonts(Times=windowsFont("Times New Roman")))
 
@@ -63,6 +68,13 @@ df$Dyad <- factor(df$Dyad, levels = paste(sort(as.integer(levels(df$Dyad)))))
 refLevel <- "Baseline"
 # Set the reference level
 relevel(df$Condition, ref=refLevel) -> df$Condition
+
+print("Condition MRR:", quote=FALSE)
+aggregate(RR ~ Condition, data = df, FUN = mean)
+print("Condition MRR standard deviation:", quote=FALSE)
+aggregate(RR ~ Condition, data = df, FUN = sd)
+print("Condition MRR standard error:", quote=FALSE)
+aggregate(RR ~ Condition, data = df, FUN = std.error)
 
 model <- lmer(RR ~ Condition + poly(round, 2) + (1|Dyad), data = df, REML=TRUE)
 summary(model)
