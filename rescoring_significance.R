@@ -53,21 +53,33 @@ refLevel <- "Baseline"
 # Set the reference level
 relevel(df$Condition, ref=refLevel) -> df$Condition
 
+print("Additive model with the condition \"Random\":", quote=FALSE)
 # NOTE: Eliminated because the Random condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
 m.additive <- lmer(RR ~ Updating + Weighting + Random + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
 summary(m.additive)
 
+print("Additive model without the condition \"Random\":", quote=FALSE)
 # The Random condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
 # This is the final model from backwards selection: Removing any more effects significantly hurts model fit
 m.additiveNoRandomCondition <- lmer(RR ~ Updating + Weighting + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
 summary(m.additiveNoRandomCondition)
 #texreg(m.additiveNoRandomCondition, single.row=TRUE, float.pos="htb", digits=3, fontsize="small")
 
+print("ANOVA comparison of additive model with and without \"Random\" condition (to conclude that it is not significant):", quote=FALSE)
 p <- anova(m.additive, m.additiveNoRandomCondition)
-p$Chisq
-p$`Pr(>Chisq)`
 p
-summary(p)
+#summary(p)
+
+print("Interaction model without the condition \"Random\":", quote=FALSE)
+# The Random condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
+# This is the final model from backwards selection: Removing any more effects significantly hurts model fit
+m.interactionNoRandomCondition <- lmer(RR ~ Updating * Weighting + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
+summary(m.interactionNoRandomCondition)
+
+print("ANOVA comparison of additive model and interactive model, both without \"Random\" condition (to conclude that there is no significant interaction):", quote=FALSE)
+p <- anova(m.additiveNoRandomCondition, m.interactionNoRandomCondition)
+p
+#summary(p)
 
 #m.zeroModel <- lmer(RR ~ poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
 #summary(m.zeroModel)
