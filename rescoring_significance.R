@@ -23,22 +23,24 @@ if(length(args) < 1)
   stop("Usage: <scriptname> INFILE")
 }
 
-infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\update-weight-3.tsv"
-#infile <- args[1]
+#infile <- "/home/tshore/Projects/tangrams-restricted/Data/Analysis//update-weight-3.tsv"
+#infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\update-weight-3.tsv"
+infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
 }
 
 library(lmerTest)
-library(texreg)
 
 read_results <- function(inpath) {
   #return(read.xlsx2(inpath, 1, colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", mrr="numeric", accuracy="integer")))
-  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", Updating="logical", Weighting="logical", Random="logical")))
+  #return(read.csv(inpath, sep = "\t"))
+  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", sess="factor")))
   #return(read.csv(inpath, sep = "\t", colClasses=c(DYAD="factor", ONLY_INSTRUCTOR="logical", WEIGHT_BY_FREQ="logical", UPDATE_WEIGHT="factor")))
 }
 
 df <- read_results(infile)
+sapply(df, class)
 df$RR <- 1.0 / df$rank
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
@@ -57,7 +59,7 @@ summary(m.additive)
 # The Random condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
 # This is the final model from backwards selection: Removing any more effects significantly hurts model fit
 m.additiveNoRandomCondition <- lmer(RR ~ Updating + Weighting + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
-print(summary(m.additiveNoRandomCondition),digits=3)
+summary(m.additiveNoRandomCondition)
 texreg(m.additiveNoRandomCondition, single.row=TRUE, float.pos="htb", digits=3, fontsize="small")
 
 p <- anova(m.additive, m.additiveNoRandomCondition)
