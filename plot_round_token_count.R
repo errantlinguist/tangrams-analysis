@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# Plots mean token count for round and calculates.
+# Plots mean token count for round.
 #
 #
 # Copyright 2018 Todd Shore

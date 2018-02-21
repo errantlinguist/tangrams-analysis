@@ -1,6 +1,6 @@
 #!/usr/bin/env Rscript
 
-# Calculates significance of different recoring methods for RR per round using a general linear model with random effects for dyad ("sess")
+# Calculates significance of different rescoring methods for RR per round using a general linear model with random effects for dyad ("sess").
 #
 #
 # Copyright 2018 Todd Shore
@@ -23,17 +23,18 @@ if(length(args) < 1)
   stop("Usage: <scriptname> INFILE")
 }
 
+#infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\update-weight-3.tsv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
 }
 
 library(lmerTest)
-library(texreg)
+#library(texreg)
 
 read_results <- function(inpath) {
   #return(read.xlsx2(inpath, 1, colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", mrr="numeric", accuracy="integer")))
-  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", Updating="logical", Weighting="logical", RandomData="logical")))
+  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", Updating="logical", Weighting="logical", Random="logical")))
   #return(read.csv(inpath, sep = "\t", colClasses=c(DYAD="factor", ONLY_INSTRUCTOR="logical", WEIGHT_BY_FREQ="logical", UPDATE_WEIGHT="factor")))
 }
 
@@ -49,36 +50,30 @@ refLevel <- "Baseline"
 # Set the reference level
 relevel(df$Condition, ref=refLevel) -> df$Condition
 
-m.additive <- lmer(RR ~ Updating + Weighting + RandomData + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
-m.interaction <- lmer(RR ~ Updating * Weighting + RandomData + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
-
-#This is a test for whether the interaction model improved anything over the additive model.
-p <- anova(m.additive, m.interaction)
-p$Chisq
-p$`Pr(>Chisq)`
-p
-
-summary(m.additive)
-texreg(m.additive, digits=3, float.pos="!htb", single.row=TRUE)
-
-summary(m.interaction)
-texreg(m.interaction, digits=3, float.pos="!htb", single.row=TRUE)
-
 
 print("Re-leveling to updating", quote=FALSE)
 relevel(df$Condition, ref="Updating") -> df$Condition
 
-m.additive <- lmer(RR ~ Updating + Weighting + RandomData + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
-m.interaction <- lmer(RR ~ Updating * Weighting + RandomData + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
+m.additiveSimple <- lmer(RR ~ Updating + Weighting + Random + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
+summary(m.additiveSimple)
+
+m.interactionSimple <- lmer(RR ~ Updating * Weighting + Random + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
+summary(m.interactionSimple)
+
+m.additiveComplex <- lmer(RR ~ Updating + Weighting + Random + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
+summary(m.additiveComplex)
+
+m.interactionComplex <- lmer(RR ~ Updating * Weighting + Random + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
+summary(m.interactionComplex)
+
+m.onlyUpdating <- lmer(RR ~ Updating + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
+summary(m.onlyUpdating)
+
+m.onlyWeighting <- lmer(RR ~ Weighting + poly(round, 2) + (1|Dyad), data = df, REML=FALSE)
+summary(m.onlyWeighting)
 
 #This is a test for whether the interaction model improved anything over the additive model.
-p <- anova(m.additive, m.interaction)
+p <- anova(m.additiveSimple, m.interactionSimple, m.additiveComplex, m.interactionComplex, m.onlyUpdating, m.onlyWeighting)
 p$Chisq
 p$`Pr(>Chisq)`
-p
-
-summary(m.additive)
-texreg(m.additive, digits=3, float.pos="!htb", single.row=TRUE)
-
-summary(m.interaction)
-texreg(m.interaction, digits=3, float.pos="!htb", single.row=TRUE)
+summary(p)
