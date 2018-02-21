@@ -31,8 +31,6 @@ if (!file_test("-f", infile)) {
 outfile <- args[2]
 
 library(ggplot2)
-library(lmerTest)
-library(texreg)
 library(tools)  
 
 if (!require("viridis")) {
@@ -88,10 +86,6 @@ print("Condition MRR standard deviation:", quote=FALSE)
 print(aggregate(RR ~ Condition, data = df, FUN = sd), short=FALSE, digits=mrr_digits)
 print("Condition MRR standard error:", quote=FALSE)
 print(aggregate(RR ~ Condition, data = df, FUN = std.error), short=FALSE, digits=mrr_digits)
-
-model <- lmer(RR ~ Condition + poly(round, 2) + (1|Dyad), data = df, REML=TRUE)
-summary(model)
-texreg(model, digits=3, float.pos="!htb", single.row=TRUE)
 
 plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition))
 plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RR")
