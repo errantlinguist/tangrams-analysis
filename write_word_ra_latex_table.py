@@ -38,7 +38,7 @@ def __main(args):
 	print("\\begin{tabular}{| l r r |}")
 	for row in rows:
 		word_repr = "\\lingform{%s}" % row[0]
-		ra_repr = "${0:.2f}$".format(float(row[RA_COL_IDX]))
+		ra_repr = "${0:.5f}$".format(float(row[RA_COL_IDX]))
 		count_repr = "${}$".format(row[COUNT_COL_IDX])
 		latex_row = (word_repr, ra_repr, count_repr)
 		latex_line = "\t" + "\t&\t".join(latex_row) + " \\\\"
