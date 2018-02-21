@@ -62,7 +62,9 @@ df$TrainingSet <- as.character(df$removal)
 df$TrainingSet <- as.numeric(df$TrainingSet)
 df$TrainingSet <- 32 - as.numeric(df$TrainingSet)
 #df$TrainingSet <- factor(df$TrainingSet)
+levels(df$Condition)
 df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
+levels(df$Condition)
 df$Dyad <- factor(df$Dyad)
 # https://stackoverflow.com/a/15665536
 df$Dyad <- factor(df$Dyad, levels = paste(sort(as.integer(levels(df$Dyad)))))
@@ -95,11 +97,14 @@ plot <- ggplot(df, aes(x=TrainingSet, y=RR))
 plot <- plot + xlab("Background data size (dialogues) ") + ylab("Mean RR")
 aspectRatio <- 2/3
 plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box="horizontal", legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
-plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis") + scale_shape_manual(values=1:nlevels(df$Dyad))
+
+# Manually created because viridis is annoying
+colors <- c("#21908CFF", "#440154FF")
+plot <- plot + scale_color_manual(values = colors) + scale_shape_manual(values=1:nlevels(df$Dyad))
 
 baseline_mrr <- 0.6472291648
 #updating_mrr <- 0.6925557115
-plot <- plot + geom_hline(aes(yintercept = baseline_mrr, linetype="Baseline, 32 dialogues"), color="darkred", size=0.7) + scale_linetype_manual(values=c("dashed"))
+plot <- plot + geom_hline(aes(yintercept = baseline_mrr, linetype="Baseline, 32 dialogues"), color="#FDE725FF", size=0.7) + scale_linetype_manual(values=c("dashed"))
 
 plot <- plot + stat_summary(fun.data = mean_se, size=0.3, aes(group=Condition, color=Condition, shape=Condition))
 agg_mrrs <- aggregate(RR ~ TrainingSet + Condition, data = df, FUN = mean)
