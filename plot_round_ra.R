@@ -23,6 +23,7 @@ if(length(args) < 2)
   stop("Usage: <scriptname> INFILE OUTFILE")
 }
 
+#infile = "~/Projects/tangrams-restricted/Data/Analysis/rounds.tsv"
 #infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\rounds.tsv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
