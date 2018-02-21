@@ -36,6 +36,9 @@ def __main(args):
 		rows = tuple(sorted(reader, key=lambda row: float(row[RA_COL_IDX]), reverse=True))
 
 	print("\\begin{tabular}{| l r r |}")
+	print("\t\\hline")
+	print("\tWord & RA & Count \\\\")
+	print("\t\\hline")
 	for row in rows:
 		word_repr = "\\lingform{%s}" % row[0]
 		ra_repr = "${0:.5f}$".format(float(row[RA_COL_IDX]))
@@ -43,6 +46,7 @@ def __main(args):
 		latex_row = (word_repr, ra_repr, count_repr)
 		latex_line = "\t" + "\t&\t".join(latex_row) + " \\\\"
 		print(latex_line)
+	print("\t\\hline")
 	print("\\end{tabular}")
 
 
