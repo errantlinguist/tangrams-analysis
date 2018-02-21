@@ -31,6 +31,7 @@ if (!file_test("-f", infile)) {
 }
 
 library(lmerTest)
+#library(texreg)
 
 read_results <- function(inpath) {
   #return(read.xlsx2(inpath, 1, colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", mrr="numeric", accuracy="integer")))
@@ -60,7 +61,7 @@ summary(m.additive)
 # This is the final model from backwards selection: Removing any more effects significantly hurts model fit
 m.additiveNoRandomCondition <- lmer(RR ~ Updating + Weighting + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
 summary(m.additiveNoRandomCondition)
-texreg(m.additiveNoRandomCondition, single.row=TRUE, float.pos="htb", digits=3, fontsize="small")
+#texreg(m.additiveNoRandomCondition, single.row=TRUE, float.pos="htb", digits=3, fontsize="small")
 
 p <- anova(m.additive, m.additiveNoRandomCondition)
 p$Chisq
