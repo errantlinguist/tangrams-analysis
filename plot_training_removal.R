@@ -23,6 +23,7 @@ if(length(args) < 2)
   stop("Usage: <scriptname> INFILE OUTFILE")
 }
 
+#infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\removal-with-baseline.tsv"
 #infile = "~/Projects/tangrams-restricted/Data/Analysis/removal.csv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
@@ -58,14 +59,14 @@ print(sprintf("Reading data from \"%s\".", infile), quote=FALSE)
 df <- read_results(infile)
 sapply(df, class)
 df$RR <- 1.0 / df$rank
-df$TrainingSet <- as.character(df$removal)
-df$TrainingSet <- as.numeric(df$TrainingSet)
-df$TrainingSet <- 32 - as.numeric(df$TrainingSet)
+#df$TrainingSet <- as.character(df$removal)
+#df$TrainingSet <- as.numeric(df$TrainingSet)
+df$TrainingSet <- 32 - df$removal
 #df$TrainingSet <- factor(df$TrainingSet)
 levels(df$Condition)
 df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
 levels(df$Condition)
-df$Dyad <- factor(df$Dyad)
+#df$Dyad <- factor(df$Dyad)
 # https://stackoverflow.com/a/15665536
 df$Dyad <- factor(df$Dyad, levels = paste(sort(as.integer(levels(df$Dyad)))))
 sapply(df, class)
@@ -93,21 +94,21 @@ print(aggregate(RR ~ Condition, data = df, FUN = sd), short=FALSE, digits=mrr_di
 print("Condition MRR standard error:", quote=FALSE)
 print(aggregate(RR ~ Condition, data = df, FUN = std.error), short=FALSE, digits=mrr_digits)
 
-plot <- ggplot(df, aes(x=TrainingSet, y=RR))
+plot <- ggplot(df, aes(x=TrainingSet, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition))
 plot <- plot + xlab(expression(paste("Background data size (", italic("n"), " dialogues)"))) + ylab("Mean RR")
-aspectRatio <- 2/3
-plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box="vertical", legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.99), legend.position = c(0.99, 0.99), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
+aspectRatio <- 9/16
+plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box="vertical", legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
 
 # Manually created because viridis is annoying
 colors <- c("#21908CFF", "#440154FF")
 # Skip one because it's reserved for the baseline. This keeps the shapes equivalent across different plots
 #shapes <- 2:(nlevels(df$Condition)+1)
-shapes <- c(17,15)
-plot <- plot + scale_color_manual(values = colors) + scale_shape_manual(values=shapes)
+#shapes <- c(17,15)
+plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis", direction=-1) #+ scale_shape_manual(values=shapes)
 
-baseline_mrr <- 0.6472291648
+#baseline_mrr <- 0.6472291648
 #updating_mrr <- 0.6925557115
-plot <- plot + geom_hline(aes(yintercept = baseline_mrr, linetype="Baseline, 32 dialogues"), color="#FDE725FF", size=0.7) + scale_linetype_manual(values=c("dashed"))
+#plot <- plot + geom_hline(aes(yintercept = baseline_mrr, linetype="Baseline, 32 dialogues"), color="#FDE725FF", size=0.7) + scale_linetype_manual(values=c("dashed"))
 
 plot <- plot + stat_summary(fun.data = mean_se, size=0.3, aes(group=Condition, color=Condition, shape=Condition))
 agg_mrrs <- aggregate(RR ~ TrainingSet + Condition, data = df, FUN = mean)
@@ -124,7 +125,8 @@ plot <- plot + scale_x_continuous(breaks=sort(unique(df$TrainingSet)))
 #xmax <- round(max(df$removal), digits = -1)
 #xmax <- max(df$removal)
 #ymin <- min(round_mrrs)
-ymin <- 0.6
+#ymin <- min(agg_mrrs$RR)
+ymin <- 0.4
 ymax = 1.0
 plot <- plot + coord_cartesian(ylim = c(ymin, ymax), expand = FALSE)
 #plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
