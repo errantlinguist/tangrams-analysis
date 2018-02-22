@@ -24,7 +24,7 @@ if(length(args) < 1)
 }
 
 #infile <- "/home/tshore/Projects/tangrams-restricted/Data/Analysis//update-weight-3.tsv"
-infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\update-weight-3.tsv"
+#infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\update-weight-3.tsv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
