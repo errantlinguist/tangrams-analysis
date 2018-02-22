@@ -24,7 +24,7 @@ if(length(args) < 2)
 }
 
 #infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\removal-with-baseline.tsv"
-#infile = "~/Projects/tangrams-restricted/Data/Analysis/removal.csv"
+#infile = "~/Projects/tangrams-restricted/Data/Analysis/removal-with-baseline.tsv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
