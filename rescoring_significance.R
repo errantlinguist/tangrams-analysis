@@ -24,7 +24,7 @@ if(length(args) < 1)
 }
 
 #infile <- "/home/tshore/Projects/tangrams-restricted/Data/Analysis//update-weight-3.tsv"
-#infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\update-weight-3.tsv"
+infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\update-weight-3.tsv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
@@ -53,53 +53,63 @@ refLevel <- "Baseline"
 # Set the reference level
 relevel(df$Condition, ref=refLevel) -> df$Condition
 
-print("Additive model with the condition \"Random\":", quote=FALSE)
-# NOTE: Eliminated because the Random condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
-m.additive <- lmer(RR ~ Updating + Weighting + Random + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
+print("Additive model with the condition \"RndAdt\":", quote=FALSE)
+# NOTE: Eliminated because the RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
+m.additive <- lmer(RR ~ Adaptation + Weighting + RndAdt + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
 summary(m.additive)
 
-print("Additive model without the condition \"Random\":", quote=FALSE)
-# The Random condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
+print("Additive model without the condition \"RndAdt\":", quote=FALSE)
+# The RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
 # This is the final model from backwards selection: Removing any more effects significantly hurts model fit
-m.additiveNoRandomCondition <- lmer(RR ~ Updating + Weighting + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
+m.additiveNoRandomCondition <- lmer(RR ~ Adaptation + Weighting + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
 summary(m.additiveNoRandomCondition)
 #texreg(m.additiveNoRandomCondition, single.row=TRUE, float.pos="htb", digits=3, fontsize="small")
 
-print("ANOVA comparison of additive model with and without \"Random\" condition (to conclude that it is not significant):", quote=FALSE)
+print("ANOVA comparison of additive model with and without \"RndAdt\" condition (to conclude that it is not significant):", quote=FALSE)
 p <- anova(m.additive, m.additiveNoRandomCondition)
 p
 #summary(p)
 
-print("Interaction model without the condition \"Random\":", quote=FALSE)
-# The Random condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
-# This is the final model from backwards selection: Removing any more effects significantly hurts model fit
-m.interactionNoRandomCondition <- lmer(RR ~ Updating * Weighting + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
-summary(m.interactionNoRandomCondition)
+print("Additive model without the condition \"Weighting\" or \"RndAdt\":", quote=FALSE)
+# The RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
+m.additiveNoRandomNoWeighting <- lmer(RR ~ Adaptation + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
+summary(m.additiveNoRandomNoWeighting)
 
-print("ANOVA comparison of additive model and interactive model, both without \"Random\" condition (to conclude that there is no significant interaction):", quote=FALSE)
-p <- anova(m.additiveNoRandomCondition, m.interactionNoRandomCondition)
+print("ANOVA comparison of additive model with and without \"Weighting\" condition (to conclude that it is not significant):", quote=FALSE)
+p <- anova(m.additiveNoRandomCondition, m.additiveNoRandomNoWeighting)
 p
 #summary(p)
 
-#m.zeroModel <- lmer(RR ~ poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
+#print("Interaction model without the condition \"RndAdt\":", quote=FALSE)
+# The RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
+# This is the final model from backwards selection: Removing any more effects significantly hurts model fit
+#m.interactionNoRandomCondition <- lmer(RR ~ Adaptation * Weighting + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
+#summary(m.interactionNoRandomCondition)
+
+#print("ANOVA comparison of additive model and interactive model, both without \"RndAdt\" condition (to conclude that there is no significant interaction):", quote=FALSE)
+#p <- anova(m.additiveNoRandomCondition, m.interactionNoRandomCondition)
+#p
+#summary(p)
+
+#m.zeroModel <- lmer(RR ~ poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
 #summary(m.zeroModel)
 
-#m.noWeighting <- lmer(RR ~ Updating + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
+#m.noWeighting <- lmer(RR ~ Adaptation + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
 #summary(m.noWeighting)
 
-#m.noUpdating <- lmer(RR ~ Weighting + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
+#m.noUpdating <- lmer(RR ~ Weighting + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
 #summary(m.noUpdating)
 
 # Does not fit data as well as one with Weighting as a fixed effect as well
-#m.additiveNoWeighting <- lmer(RR ~ Updating + Random + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
+#m.additiveNoWeighting <- lmer(RR ~ Adaptation + RndAdt + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
 #summary(m.additiveComplex)
 
 # Doesn't improve fit
-#m.interactionComplex <- lmer(RR ~ Updating * Weighting + Random + poly(round, 2) + (1 + Updating * Weighting | Dyad), data = df, REML=FALSE)
+#m.interactionComplex <- lmer(RR ~ Adaptation * Weighting + RndAdt + poly(round, 2) + (1 + Adaptation * Weighting | Dyad), data = df, REML=FALSE)
 #print("Most complex model:", quote=FALSE)
 #summary(m.interactionComplex)
 
-#m.interactionRandomSlope <- lmer(RR ~ Updating * Weighting + Random + poly(round, 2) + (1 + Updating + Weighting | Dyad), data = df, REML=FALSE)
+#m.interactionRandomSlope <- lmer(RR ~ Adaptation * Weighting + RndAdt + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
 #print("Most complex model:", quote=FALSE)
 #summary(m.interactionComplex)
 
