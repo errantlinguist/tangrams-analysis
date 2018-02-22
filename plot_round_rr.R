@@ -23,7 +23,7 @@ if(length(args) < 2)
   stop("Usage: <scriptname> INFILE OUTFILE")
 }
 
-#infile <- "~/Projects/tangrams-restricted/Data/Analysis/updating.csv"
+#infile <- "~/Projects/tangrams-restricted/Data/Analysis/update-weight-3-onlyupdating.tsv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
