@@ -23,8 +23,8 @@ if(length(args) < 2)
   stop("Usage: <scriptname> INFILE OUTFILE")
 }
 
-infile = "~/Projects/tangrams-restricted/Data/Analysis/removal.csv"
-#infile <- args[1]
+#infile = "~/Projects/tangrams-restricted/Data/Analysis/removal.csv"
+infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
 }
@@ -96,11 +96,14 @@ print(aggregate(RR ~ Condition, data = df, FUN = std.error), short=FALSE, digits
 plot <- ggplot(df, aes(x=TrainingSet, y=RR))
 plot <- plot + xlab("Background data size (dialogues) ") + ylab("Mean RR")
 aspectRatio <- 2/3
-plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box="horizontal", legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
+plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box="vertical", legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.99), legend.position = c(0.99, 0.99), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
 
 # Manually created because viridis is annoying
 colors <- c("#21908CFF", "#440154FF")
-plot <- plot + scale_color_manual(values = colors) + scale_shape_manual(values=1:nlevels(df$Dyad))
+# Skip one because it's reserved for the baseline. This keeps the shapes equivalent across different plots
+#shapes <- 2:(nlevels(df$Condition)+1)
+shapes <- c(17,15)
+plot <- plot + scale_color_manual(values = colors) + scale_shape_manual(values=shapes)
 
 baseline_mrr <- 0.6472291648
 #updating_mrr <- 0.6925557115
@@ -115,14 +118,14 @@ plot <- plot + geom_line(data=agg_mrrs, aes(group=Condition, color=Condition))
 #regressionAlpha <- 1.0 / nlevels(df$Condition)
 #regressionAlpha <- 0.333333
 #print(sprintf("Using alpha transparency = %f for each individual regression line.", regressionAlpha), quote=FALSE)
-plot <- plot + geom_smooth(method = "lm", formula = y ~ x, level=0.95, fullrange=TRUE, size=0.7, aes(group=Condition, color=Condition))
+#plot <- plot + geom_smooth(method = "lm", formula = y ~ x, level=0.95, fullrange=TRUE, size=0.7, aes(group=Condition, color=Condition))
 plot <- plot + scale_x_continuous(breaks=sort(unique(df$TrainingSet)))
 #xmin <- min(df$removal)
 #xmax <- round(max(df$removal), digits = -1)
 #xmax <- max(df$removal)
 #ymin <- min(round_mrrs)
 ymin <- 0.6
-ymax = 0.9
+ymax = 1.0
 plot <- plot + coord_cartesian(ylim = c(ymin, ymax), expand = FALSE)
 #plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
 #plot
