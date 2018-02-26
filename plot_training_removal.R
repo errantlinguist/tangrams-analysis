@@ -110,7 +110,8 @@ plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis", direction=-1
 #updating_mrr <- 0.6925557115
 #plot <- plot + geom_hline(aes(yintercept = baseline_mrr, linetype="Baseline, 32 dialogues"), color="#FDE725FF", size=0.7) + scale_linetype_manual(values=c("dashed"))
 
-plot <- plot + stat_summary(fun.data = mean_se, size=0.3, aes(group=Condition, color=Condition, shape=Condition))
+plot <- plot + stat_summary(size=0.3, aes(group=Condition, color=Condition, shape=Condition))
+#plot <- plot + stat_summary(fun.data = mean_se, size=0.3, aes(group=Condition, color=Condition, shape=Condition))
 agg_mrrs <- aggregate(RR ~ TrainingSet + Condition, data = df, FUN = mean)
 plot <- plot + geom_line(data=agg_mrrs, aes(group=Condition, color=Condition))
 #plot <- plot + geom_point(aes(group=Condition, color=Condition, shape=Condition))
