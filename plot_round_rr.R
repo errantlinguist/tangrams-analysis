@@ -23,7 +23,7 @@ if(length(args) < 2)
   stop("Usage: <scriptname> INFILE OUTFILE")
 }
 
-#infile <- D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\update-weight-3-onlyupdating.tsv
+#infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\update-weight-3-onlyupdating.tsv"
 #infile <- "~/Projects/tangrams-restricted/Data/Analysis/update-weight-3-onlyupdating.tsv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
