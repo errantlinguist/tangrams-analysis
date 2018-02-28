@@ -58,6 +58,10 @@ class GameRoundUtteranceSequenceFactory(object):
 
 
 class SessionGameRoundUtteranceSequenceFactory(object):
+	"""
+	A class for reading session event and utterance data represented by a given session_data.SessionData object and returning a pandas dataframe comprising each logged event including the utterances made between the times the event and the following event were logged.
+	"""
+
 	UTTERANCE_SEQUENCE_COL_NAME = "UTTERANCES"
 
 	@staticmethod
@@ -87,6 +91,12 @@ class SessionGameRoundUtteranceSequenceFactory(object):
 		self.__token_seq_factory = utterances.TokenSequenceFactory() if token_seq_factory is None else token_seq_factory
 
 	def __call__(self, session: sd.SessionData) -> pd.DataFrame:
+		"""
+		:param session: The session_data.SessionData object representing the session event and utterance data to read.
+		:type session: session_data.SessionData
+		:return: A pandas dataframe comprising each logged event including the utterances made between the times the event and the following event were logged.
+		:rtype: pandas.DataFrame
+		"""
 		event_data = game_events.read_events(session)
 		source_participant_ids = event_data.source_participant_ids
 		seg_utt_factory = utterances.SegmentUtteranceFactory(self.__token_seq_factory,
@@ -114,5 +124,6 @@ class SessionGameRoundUtteranceSequenceFactory(object):
 												1,
 												inplace=True)
 		# Assert that all entities are represented in each round's set of events
-		assert len(round_first_turn_submission_events) % round_first_turn_submission_events[EventColumn.ENTITY_ID.value].nunique() == 0
+		assert len(round_first_turn_submission_events) % round_first_turn_submission_events[
+			EventColumn.ENTITY_ID.value].nunique() == 0
 		return round_first_turn_submission_events
