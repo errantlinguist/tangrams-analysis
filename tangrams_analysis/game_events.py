@@ -11,7 +11,7 @@ from typing import Mapping
 
 import pandas as pd
 
-import session_data as sd
+from . import session_data as sd
 
 
 class EventData(object):

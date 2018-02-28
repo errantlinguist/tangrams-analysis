@@ -15,9 +15,9 @@ from typing import Callable, Iterable, Iterator, Optional, Sequence, \
 import numpy as np
 import pandas as pd
 
-import game_events
-import session_data as sd
-import utterances
+from . import game_events
+from . import session_data as sd
+from . import utterances
 
 N = TypeVar('N', bound=Number)
 

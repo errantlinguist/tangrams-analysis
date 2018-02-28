@@ -16,7 +16,7 @@ from xml.etree.ElementTree import Element, parse as parse_etree
 
 import pandas as pd
 
-import annotations
+from . import annotations
 
 """
 NOTE: See "../src/main/resources/se/kth/speech/nlp/fillers.txt"

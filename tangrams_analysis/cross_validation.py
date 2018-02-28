@@ -13,9 +13,9 @@ from typing import Callable, Iterable, Iterator, Mapping, Optional, Tuple
 
 import pandas as pd
 
-import game_utterances
-import iristk
-import session_data as sd
+from . import game_utterances
+from . import iristk
+from . import session_data as sd
 
 CATEGORICAL_VAR_COL_NAMES = (
 	game_utterances.EventColumn.ENTITY_SHAPE.value, game_utterances.EventColumn.EVENT_SUBMITTER.value)
