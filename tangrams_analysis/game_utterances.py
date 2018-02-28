@@ -9,7 +9,7 @@ __license__ = "Apache License, Version 2.0"
 from enum import Enum, unique
 from numbers import Integral, Number
 from string import ascii_uppercase
-from typing import Callable, Iterable, Iterator, Sequence, \
+from typing import Callable, Iterable, Iterator, Optional, Sequence, \
 	Tuple, TypeVar
 
 import numpy as np
@@ -83,8 +83,8 @@ class SessionGameRoundUtteranceSequenceFactory(object):
 			lambda submitter_id: username_participant_ids[submitter_id])
 		event_df[EventColumn.EVENT_SUBMITTER.value] = anonymized_event_submitter_ids
 
-	def __init__(self, token_seq_factory: Callable[[Iterable[str]], Sequence[str]]):
-		self.__token_seq_factory = token_seq_factory
+	def __init__(self, token_seq_factory: Optional[Callable[[Iterable[str]], Sequence[str]]] = None):
+		self.__token_seq_factory = utterances.TokenSequenceFactory() if token_seq_factory is None else token_seq_factory
 
 	def __call__(self, session: sd.SessionData) -> pd.DataFrame:
 		event_data = game_events.read_events(session)

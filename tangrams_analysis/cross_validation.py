@@ -9,7 +9,7 @@ __license__ = "Apache License, Version 2.0"
 import csv
 import itertools
 from collections import namedtuple
-from typing import Callable, Iterable, Iterator, Mapping, Tuple
+from typing import Callable, Iterable, Iterator, Mapping, Optional, Tuple
 
 import pandas as pd
 
@@ -30,8 +30,8 @@ CrossValidationDataFrames = namedtuple("CrossValidationDataFrames", ("training",
 
 
 class CachingSessionDataFrameFactory(object):
-	def __init__(self, session_data_frame_factory: Callable[[sd.SessionData], pd.DataFrame]):
-		self.session_data_frame_factory = session_data_frame_factory
+	def __init__(self, session_data_frame_factory: Optional[Callable[[sd.SessionData], pd.DataFrame]] = None):
+		self.session_data_frame_factory = game_utterances.SessionGameRoundUtteranceSequenceFactory() if session_data_frame_factory is None else session_data_frame_factory
 		self.cache = {}
 
 	def __call__(self, infile: str, session: sd.SessionData) -> pd.DataFrame:
@@ -78,8 +78,8 @@ class CrossValidationDataFrameFactory(object):
 			testing_feature_df[col_name] = pd.Categorical(testing_feature_df[col_name], categories=unique_values,
 														  ordered=False)
 
-	def __init__(self, session_data_frame_factory: Callable[[str, sd.SessionData], pd.DataFrame]):
-		self.session_data_frame_factory = session_data_frame_factory
+	def __init__(self, session_data_frame_factory: Optional[Callable[[str, sd.SessionData], pd.DataFrame]]):
+		self.session_data_frame_factory = CachingSessionDataFrameFactory() if session_data_frame_factory is None else session_data_frame_factory
 
 	def __call__(self, named_session_data=Iterable[Tuple[str, sd.SessionData]]) -> Iterator[CrossValidationDataFrames]:
 		for testing_session_name, testing_session_data in named_session_data:

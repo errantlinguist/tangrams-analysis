@@ -15,7 +15,6 @@ from sklearn.linear_model import LogisticRegression
 import cross_validation
 import game_utterances
 import session_data as sd
-import utterances
 
 
 def __create_regex_disjunction(regexes: Iterable[str]) -> str:
@@ -195,8 +194,7 @@ def __main(args):
 		  file=sys.stderr)
 
 	cross_validation_data_frame_factory = cross_validation.CrossValidationDataFrameFactory(
-		cross_validation.CachingSessionDataFrameFactory(game_utterances.SessionGameRoundUtteranceSequenceFactory(
-			utterances.TokenSequenceFactory())))
+		cross_validation.CachingSessionDataFrameFactory())
 	print("Creating cross-validation datasets from {} session(s).".format(len(infile_session_data)), file=sys.stderr)
 
 	# parallelizer = Parallel(n_jobs = -2, backend = "multiprocessing")
