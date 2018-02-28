@@ -12,9 +12,9 @@ import numpy as np
 import pandas as pd
 from sklearn.linear_model import LogisticRegression
 
-import cross_validation
-import game_utterances
-import session_data as sd
+from tangrams_analysis import cross_validation
+from tangrams_analysis import game_utterances
+from tangrams_analysis import session_data as sd
 
 
 def __create_regex_disjunction(regexes: Iterable[str]) -> str:

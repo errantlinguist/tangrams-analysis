@@ -15,9 +15,9 @@ import csv
 import sys
 from typing import Counter, DefaultDict, Iterable, Tuple
 
-import game_utterances
-import session_data as sd
-import utterances
+from tangrams_analysis import game_utterances
+from tangrams_analysis import session_data as sd
+from tangrams_analysis import utterances
 
 
 def count_shape_ngrams(session_data: Iterable[sd.SessionData]) -> DefaultDict[str, Counter[str]]:
