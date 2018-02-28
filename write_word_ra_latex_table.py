@@ -33,7 +33,7 @@ def __main(args):
 	print("Reading \"{}\".".format(infile), file=sys.stderr)
 	with open(infile, 'r') as inf:
 		reader = csv.reader(inf, dialect=csv.excel_tab)
-		rows = tuple(sorted(reader, key=lambda row: float(row[RA_COL_IDX]), reverse=True))
+		rows = tuple(sorted(reader, key=lambda r: float(r[RA_COL_IDX]), reverse=True))
 
 	print("\\begin{tabular}{| l r r |}")
 	print("\t\\hline")
