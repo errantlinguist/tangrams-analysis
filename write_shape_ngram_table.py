@@ -60,7 +60,8 @@ def __main(args):
 	writer = csv.writer(sys.stdout, dialect=csv.excel_tab, lineterminator="\n")
 	writer.writerow(("SHAPE", "NGRAM", "COUNT"))
 	for shape, ngram_counts in sorted(shape_ngram_counts.items(), key=lambda item: item[0]):
-		for ngram, count in sorted(ngram_counts.items(), key=lambda item: item[1], reverse=True):
+		for ngram, count in sorted(sorted(ngram_counts.items(), key=lambda item: item[0]), key=lambda item: item[1],
+								   reverse=True):
 			writer.writerow((shape, ngram, count))
 
 
