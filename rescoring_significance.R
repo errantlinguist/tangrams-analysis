@@ -72,7 +72,8 @@ summary(m.additiveNoRndAdt)
 
 print("ANOVA comparison of quadratic additive model with and without \"RndAdt\" condition (to conclude that it is not significant):", quote=FALSE)
 p <- anova(m.additive, m.additiveNoRndAdt)
-p
+format(p, digits=10)
+
 
 print("Monomial additive model without the condition \"RndAdt\":", quote=FALSE)
 m.monomialAdditiveNoRndAdt <- lmer(RR ~ Adt + Wgt + scale(TokenCount) + round + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
