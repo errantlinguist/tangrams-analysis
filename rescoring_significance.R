@@ -23,21 +23,20 @@ if(length(args) < 1)
   stop("Usage: <scriptname> INFILE")
 }
 
-#infile <- "/home/tshore/Projects/tangrams-restricted/Data/Analysis//update-weight-3.tsv"
-#infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\update-weight-3.tsv"
-infile <- args[1]
+# Set global numeric value formatting, even for e.g. model "summary(..)" values
+options("scipen"=999, "digits"=5)
+
+infile <- "/home/tshore/Projects/tangrams-restricted/Data/Analysis/2018-04-27/results-cross-2.tsv"
+#infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
 }
 
 library(lmerTest)
-#library(texreg)
+library(optimx)
 
 read_results <- function(inpath) {
-  #return(read.xlsx2(inpath, 1, colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", mrr="numeric", accuracy="integer")))
-  #return(read.csv(inpath, sep = "\t"))
-  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", sess="factor")))
-  #return(read.csv(inpath, sep = "\t", colClasses=c(DYAD="factor", ONLY_INSTRUCTOR="logical", WEIGHT_BY_FREQ="logical", UPDATE_WEIGHT="factor")))
+  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", session="factor")))
 }
 
 df <- read_results(infile)
@@ -45,71 +44,90 @@ sapply(df, class)
 df$RR <- 1.0 / df$rank
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
-names(df)[names(df) == "sess"] <- "Dyad"
+names(df)[names(df) == "session"] <- "Dyad"
+names(df)[names(df) == "weight"] <- "MeanRA"
+names(df)[names(df) == "words"] <- "TokenCount"
 df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
-#reorder(levels(df$Condition), new.order=c("Baseline", "W", "U,W"))
 
 refLevel <- "Baseline"
 # Set the reference level
 relevel(df$Condition, ref=refLevel) -> df$Condition
 
-print("Additive model with the condition \"RndAdt\":", quote=FALSE)
+# https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method
+control <- lmerControl(optimizer ="Nelder_Mead")
+# Limited-memory BFGS <https://en.wikipedia.org/wiki/Limited-memory_BFGS> in order to avoid failed convergence, caused by the addition of the "TokenCount" condition
+# See https://stats.stackexchange.com/a/243225/169001
+#control <- lmerControl(optimizer ='optimx', optCtrl=list(method='L-BFGS-B'))
+
+print("Quadratic additive model with the condition \"RndAdt\":", quote=FALSE)
 # NOTE: Eliminated because the RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
-m.additive <- lmer(RR ~ Adaptation + Weighting + RndAdt + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
+m.additive <- lmer(RR ~ Adt + Wgt + RndAdt + scale(TokenCount) + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.additive)
 
-print("Additive model without the condition \"RndAdt\":", quote=FALSE)
+print("Quadratic additive model without the condition \"RndAdt\":", quote=FALSE)
 # The RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
 # This is the final model from backwards selection: Removing any more effects significantly hurts model fit
-m.additiveNoRandomCondition <- lmer(RR ~ Adaptation + Weighting + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
-summary(m.additiveNoRandomCondition)
-#texreg(m.additiveNoRandomCondition, single.row=TRUE, float.pos="htb", digits=3, fontsize="small")
+m.additiveNoRndAdt <- lmer(RR ~ Adt + Wgt + scale(TokenCount) + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+summary(m.additiveNoRndAdt)
 
-print("ANOVA comparison of additive model with and without \"RndAdt\" condition (to conclude that it is not significant):", quote=FALSE)
-p <- anova(m.additive, m.additiveNoRandomCondition)
+print("ANOVA comparison of quadratic additive model with and without \"RndAdt\" condition (to conclude that it is not significant):", quote=FALSE)
+p <- anova(m.additive, m.additiveNoRndAdt)
 p
-#summary(p)
 
-print("Additive model without the condition \"Weighting\" or \"RndAdt\":", quote=FALSE)
-# The RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
-m.additiveNoRandomNoWeighting <- lmer(RR ~ Adaptation + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
-summary(m.additiveNoRandomNoWeighting)
+print("Monomial additive model without the condition \"RndAdt\":", quote=FALSE)
+m.monomialAdditiveNoRndAdt <- lmer(RR ~ Adt + Wgt + scale(TokenCount) + round + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+summary(m.monomialAdditiveNoRndAdt)
 
-print("ANOVA comparison of additive model with and without \"Weighting\" condition (to conclude that it is not significant):", quote=FALSE)
-p <- anova(m.additiveNoRandomCondition, m.additiveNoRandomNoWeighting)
+print("ANOVA comparison of quadratic and monomial additive models, both without \"RndAdt\" condition (to conclude that the polynomial factor is significant):", quote=FALSE)
+p <- anova(m.additiveNoRndAdt, m.monomialAdditiveNoRndAdt)
 p
-#summary(p)
 
-#print("Interaction model without the condition \"RndAdt\":", quote=FALSE)
+print("Quadratic additive model without the condition \"Wgt\" or \"RndAdt\":", quote=FALSE)
 # The RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
-# This is the final model from backwards selection: Removing any more effects significantly hurts model fit
-#m.interactionNoRandomCondition <- lmer(RR ~ Adaptation * Weighting + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
-#summary(m.interactionNoRandomCondition)
+m.additiveNoRndAdtNoWgt <- lmer(RR ~ Adt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+summary(m.additiveNoRndAdtNoWgt)
 
-#print("ANOVA comparison of additive model and interactive model, both without \"RndAdt\" condition (to conclude that there is no significant interaction):", quote=FALSE)
-#p <- anova(m.additiveNoRandomCondition, m.interactionNoRandomCondition)
-#p
-#summary(p)
+print("ANOVA comparison of quadratic additive model with and without \"Wgt\" condition (to conclude that it is significant):", quote=FALSE)
+p <- anova(m.additiveNoRndAdt, m.additiveNoRndAdtNoWgt)
+p
 
-#m.zeroModel <- lmer(RR ~ poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
+print("Quadratic additive model without the condition \"RndAdt\" or \"TokenCount\":", quote=FALSE)
+m.additiveNoRndAdtNoWords <- lmer(RR ~ Adt + Wgt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+summary(m.additiveNoRndAdtNoWords)
+
+print("ANOVA comparison of additive model without \"RndAdt\" and additive model without \"RndAdt\" or \"TokenCount\" condition (to conclude that \"TokenCount\" is significant):", quote=FALSE)
+p <- anova(m.additiveNoRndAdt, m.additiveNoRndAdtNoWords)
+p
+
+# INTERACTIVE MODELS ----------------------------------------------
+
+print("Quadratic interaction model without the condition \"RndAdt\":", quote=FALSE)
+m.interactionNoRndAdt <- lmer(RR ~ Adt * Wgt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+summary(m.interactionNoRndAdt)
+
+print("ANOVA comparison of quadtratic additive model and interactive model, both without \"RndAdt\" condition (to conclude that there is no significant interaction):", quote=FALSE)
+p <- anova(m.additiveNoRndAdt, m.interactionNoRndAdt)
+p
+
+#m.zeroModel <- lmer(RR ~ poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 #summary(m.zeroModel)
 
-#m.noWeighting <- lmer(RR ~ Adaptation + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
-#summary(m.noWeighting)
+#m.noWgt <- lmer(RR ~ Adt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+#summary(m.noWgt)
 
-#m.noUpdating <- lmer(RR ~ Weighting + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
-#summary(m.noUpdating)
+#m.noAdaptation <- lmer(RR ~ Wgt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+#summary(m.noAdaptation)
 
-# Does not fit data as well as one with Weighting as a fixed effect as well
-#m.additiveNoWeighting <- lmer(RR ~ Adaptation + RndAdt + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
+# Does not fit data as well as one with Wgt as a fixed effect as well
+#m.additiveNoWgt <- lmer(RR ~ Adt + RndAdt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 #summary(m.additiveComplex)
 
 # Doesn't improve fit
-#m.interactionComplex <- lmer(RR ~ Adaptation * Weighting + RndAdt + poly(round, 2) + (1 + Adaptation * Weighting | Dyad), data = df, REML=FALSE)
+#m.interactionComplex <- lmer(RR ~ Adt * Wgt + RndAdt + poly(round, 2) + (1 + Adt * Wgt | Dyad), data = df, REML = FALSE, control = control)
 #print("Most complex model:", quote=FALSE)
 #summary(m.interactionComplex)
 
-#m.interactionRandomSlope <- lmer(RR ~ Adaptation * Weighting + RndAdt + poly(round, 2) + (1 + Adaptation + Weighting | Dyad), data = df, REML=FALSE)
+#m.interactionRandomSlope <- lmer(RR ~ Adt * Wgt + RndAdt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 #print("Most complex model:", quote=FALSE)
 #summary(m.interactionComplex)
 
