@@ -46,7 +46,7 @@ df$RR <- 1.0 / df$rank
 names(df)[names(df) == "cond"] <- "Condition"
 names(df)[names(df) == "session"] <- "Dyad"
 names(df)[names(df) == "weight"] <- "MeanRA"
-names(df)[names(df) == "words"] <- "TokenCount"
+names(df)[names(df) == "words"] <- "Tokens"
 df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
 
 refLevel <- "Baseline"
@@ -55,28 +55,27 @@ relevel(df$Condition, ref=refLevel) -> df$Condition
 
 # https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method
 control <- lmerControl(optimizer ="Nelder_Mead")
-# Limited-memory BFGS <https://en.wikipedia.org/wiki/Limited-memory_BFGS> in order to avoid failed convergence, caused by the addition of the "TokenCount" condition
+# Limited-memory BFGS <https://en.wikipedia.org/wiki/Limited-memory_BFGS> in order to avoid failed convergence, caused by the addition of the "Tokens" condition
 # See https://stats.stackexchange.com/a/243225/169001
 #control <- lmerControl(optimizer ='optimx', optCtrl=list(method='L-BFGS-B'))
 
 print("Quadratic additive model with the condition \"RndAdt\":", quote=FALSE)
 # NOTE: Eliminated because the RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
-m.additive <- lmer(RR ~ Adt + Wgt + RndAdt + scale(TokenCount) + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+m.additive <- lmer(RR ~ Adt + Wgt + RndAdt + scale(Tokens) + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.additive)
 
 print("Quadratic additive model without the condition \"RndAdt\":", quote=FALSE)
 # The RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
 # This is the final model from backwards selection: Removing any more effects significantly hurts model fit
-m.additiveNoRndAdt <- lmer(RR ~ Adt + Wgt + scale(TokenCount) + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+m.additiveNoRndAdt <- lmer(RR ~ Adt + Wgt + scale(Tokens) + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.additiveNoRndAdt)
 
 print("ANOVA comparison of quadratic additive model with and without \"RndAdt\" condition (to conclude that it is not significant):", quote=FALSE)
 p <- anova(m.additive, m.additiveNoRndAdt)
 format(p, digits=10)
 
-
 print("Monomial additive model without the condition \"RndAdt\":", quote=FALSE)
-m.monomialAdditiveNoRndAdt <- lmer(RR ~ Adt + Wgt + scale(TokenCount) + round + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+m.monomialAdditiveNoRndAdt <- lmer(RR ~ Adt + Wgt + scale(Tokens) + round + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.monomialAdditiveNoRndAdt)
 
 print("ANOVA comparison of quadratic and monomial additive models, both without \"RndAdt\" condition (to conclude that the polynomial factor is significant):", quote=FALSE)
@@ -92,11 +91,11 @@ print("ANOVA comparison of quadratic additive model with and without \"Wgt\" con
 p <- anova(m.additiveNoRndAdt, m.additiveNoRndAdtNoWgt)
 p
 
-print("Quadratic additive model without the condition \"RndAdt\" or \"TokenCount\":", quote=FALSE)
+print("Quadratic additive model without the condition \"RndAdt\" or \"Tokens\":", quote=FALSE)
 m.additiveNoRndAdtNoWords <- lmer(RR ~ Adt + Wgt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.additiveNoRndAdtNoWords)
 
-print("ANOVA comparison of additive model without \"RndAdt\" and additive model without \"RndAdt\" or \"TokenCount\" condition (to conclude that \"TokenCount\" is significant):", quote=FALSE)
+print("ANOVA comparison of additive model without \"RndAdt\" and additive model without \"RndAdt\" or \"Tokens\" condition (to conclude that \"Tokens\" is significant):", quote=FALSE)
 p <- anova(m.additiveNoRndAdt, m.additiveNoRndAdtNoWords)
 p
 
