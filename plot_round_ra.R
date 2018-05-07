@@ -66,8 +66,8 @@ df$Dyad <- factor(df$Dyad, levels = paste(sort(as.integer(levels(df$Dyad)))))
 #aggs <- aggregate(RA ~ Dyad * round, df, mean)
 
 plot <- ggplot(df, aes(x=Round, y=RA))
+#plot
 
-plot
 #text(4, 7, expression(bar(x) == sum(frac(x[i], n), i==1, n)))
 plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RA")
 aspectRatio <- 3/4
@@ -93,7 +93,7 @@ ymin <- 0.08
 ymax <- 0.5
 plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = FALSE)
 #plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
-plot
+#plot
 
 output_device <- file_ext(outfile)
 print(sprintf("Writing plot to \"%s\" using format \"%s\".", outfile, output_device), quote=FALSE)
