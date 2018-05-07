@@ -43,6 +43,7 @@ sapply(df, class)
 df$RR <- 1.0 / df$rank
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
+ames(df)[names(df) == "round"] <- "Round"
 names(df)[names(df) == "session"] <- "Dyad"
 names(df)[names(df) == "weight"] <- "MeanRA"
 names(df)[names(df) == "words"] <- "Tokens"
@@ -60,13 +61,13 @@ control <- lmerControl(optimizer ="Nelder_Mead")
 
 print("Quadratic additive model with the condition \"RndAdt\":", quote=FALSE)
 # NOTE: Eliminated because the RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
-m.additive <- lmer(RR ~ Adt + Wgt + RndAdt + scale(Tokens) + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+m.additive <- lmer(RR ~ Adt + Wgt + RndAdt + scale(Tokens) + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.additive)
 
 print("Quadratic additive model without the condition \"RndAdt\":", quote=FALSE)
 # The RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
 # This is the final model from backwards selection: Removing any more effects significantly hurts model fit
-m.additiveNoRndAdt <- lmer(RR ~ Adt + Wgt + scale(Tokens) + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+m.additiveNoRndAdt <- lmer(RR ~ Adt + Wgt + scale(Tokens) + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.additiveNoRndAdt)
 
 print("ANOVA comparison of quadratic additive model with and without \"RndAdt\" condition (to conclude that it is not significant):", quote=FALSE)
@@ -74,7 +75,7 @@ p <- anova(m.additive, m.additiveNoRndAdt)
 format(p, digits=10)
 
 print("Monomial additive model without the condition \"RndAdt\":", quote=FALSE)
-m.monomialAdditiveNoRndAdt <- lmer(RR ~ Adt + Wgt + scale(Tokens) + round + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+m.monomialAdditiveNoRndAdt <- lmer(RR ~ Adt + Wgt + scale(Tokens) + Round + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.monomialAdditiveNoRndAdt)
 
 print("ANOVA comparison of quadratic and monomial additive models, both without \"RndAdt\" condition (to conclude that the polynomial factor is significant):", quote=FALSE)
@@ -83,7 +84,7 @@ p
 
 print("Quadratic additive model without the condition \"Wgt\" or \"RndAdt\":", quote=FALSE)
 # The RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
-m.additiveNoRndAdtNoWgt <- lmer(RR ~ Adt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+m.additiveNoRndAdtNoWgt <- lmer(RR ~ Adt + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.additiveNoRndAdtNoWgt)
 
 print("ANOVA comparison of quadratic additive model with and without \"Wgt\" condition (to conclude that it is significant):", quote=FALSE)
@@ -91,7 +92,7 @@ p <- anova(m.additiveNoRndAdt, m.additiveNoRndAdtNoWgt)
 p
 
 print("Quadratic additive model without the condition \"RndAdt\" or \"Tokens\":", quote=FALSE)
-m.additiveNoRndAdtNoWords <- lmer(RR ~ Adt + Wgt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+m.additiveNoRndAdtNoWords <- lmer(RR ~ Adt + Wgt + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.additiveNoRndAdtNoWords)
 
 print("ANOVA comparison of additive model without \"RndAdt\" and additive model without \"RndAdt\" or \"Tokens\" condition (to conclude that \"Tokens\" is significant):", quote=FALSE)
@@ -101,32 +102,32 @@ p
 # INTERACTIVE MODELS ----------------------------------------------
 
 print("Quadratic interaction model without the condition \"RndAdt\":", quote=FALSE)
-m.interactionNoRndAdt <- lmer(RR ~ Adt * Wgt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+m.interactionNoRndAdt <- lmer(RR ~ Adt * Wgt + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.interactionNoRndAdt)
 
 print("ANOVA comparison of quadtratic additive model and interactive model, both without \"RndAdt\" condition (to conclude that there is no significant interaction):", quote=FALSE)
 p <- anova(m.additiveNoRndAdt, m.interactionNoRndAdt)
 p
 
-#m.zeroModel <- lmer(RR ~ poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+#m.zeroModel <- lmer(RR ~ poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 #summary(m.zeroModel)
 
-#m.noWgt <- lmer(RR ~ Adt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+#m.noWgt <- lmer(RR ~ Adt + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 #summary(m.noWgt)
 
-#m.noAdaptation <- lmer(RR ~ Wgt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+#m.noAdaptation <- lmer(RR ~ Wgt + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 #summary(m.noAdaptation)
 
 # Does not fit data as well as one with Wgt as a fixed effect as well
-#m.additiveNoWgt <- lmer(RR ~ Adt + RndAdt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+#m.additiveNoWgt <- lmer(RR ~ Adt + RndAdt + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 #summary(m.additiveComplex)
 
 # Doesn't improve fit
-#m.interactionComplex <- lmer(RR ~ Adt * Wgt + RndAdt + poly(round, 2) + (1 + Adt * Wgt | Dyad), data = df, REML = FALSE, control = control)
+#m.interactionComplex <- lmer(RR ~ Adt * Wgt + RndAdt + poly(Round, 2) + (1 + Adt * Wgt | Dyad), data = df, REML = FALSE, control = control)
 #print("Most complex model:", quote=FALSE)
 #summary(m.interactionComplex)
 
-#m.interactionRandomSlope <- lmer(RR ~ Adt * Wgt + RndAdt + poly(round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+#m.interactionRandomSlope <- lmer(RR ~ Adt * Wgt + RndAdt + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 #print("Most complex model:", quote=FALSE)
 #summary(m.interactionComplex)
 
