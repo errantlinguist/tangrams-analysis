@@ -25,9 +25,8 @@ if(length(args) < 1)
 
 # Set global numeric value formatting, even for e.g. model "summary(..)" values
 options("scipen"=999, "digits"=5)
-
-infile <- "/home/tshore/Projects/tangrams-restricted/Data/Analysis/2018-04-27/results-cross-2.tsv"
-#infile <- args[1]
+#infile <- "/home/tshore/Projects/tangrams-restricted/Data/Analysis/2018-04-27/results-cross-2.tsv"
+infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
 }
