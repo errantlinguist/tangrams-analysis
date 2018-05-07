@@ -43,7 +43,7 @@ sapply(df, class)
 df$RR <- 1.0 / df$rank
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
-ames(df)[names(df) == "round"] <- "Round"
+names(df)[names(df) == "round"] <- "Round"
 names(df)[names(df) == "session"] <- "Dyad"
 names(df)[names(df) == "weight"] <- "MeanRA"
 names(df)[names(df) == "words"] <- "Tokens"
