@@ -32,13 +32,7 @@ if (!file_test("-f", infile)) {
 outfile <- args[2]
 
 library(ggplot2)
-library(tools)  
-
-if (!require("viridis")) {
-  if (!require("devtools")) install.packages("devtools")
-  devtools::install_github("sjmgarnier/viridis")
-  library(viridis)
-}
+library(tools)
 
 read_results <- function(inpath) {
   #return(read.csv(inpath, sep = "\t", colClasses = c(Dyad="factor", round="integer", role="factor", word="factor")))
@@ -71,8 +65,7 @@ plot <- ggplot(df, aes(x=Round, y=RA))
 #text(4, 7, expression(bar(x) == sum(frac(x[i], n), i==1, n)))
 plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RA")
 aspectRatio <- 3/4
-plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.99), legend.position = c(0.99, 0.99), legend.text=element_text(family="mono", face="bold"))
-plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis")
+plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio)
 
 plot <- plot + stat_summary(fun.data = mean_se, size=0.01)
 #plot <- plot + geom_line()
@@ -90,7 +83,7 @@ xmax <- max(df$Round)
 #round_mra <- aggregate(MRA ~ Round, data = df, FUN = mean)
 ymin <- 0
 #ymax <- max(round_mra$MRA)
-ymax <- 0.55
+ymax <- 0.5
 plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = FALSE)
 #plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
 #plot
