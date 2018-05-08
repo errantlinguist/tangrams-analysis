@@ -74,7 +74,7 @@ aspectRatio <- 3/4
 plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.99), legend.position = c(0.99, 0.99), legend.text=element_text(family="mono", face="bold"))
 plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis")
 
-plot <- plot + stat_summary_bin(fun.data = mean_se, size=0.3)
+plot <- plot + stat_summary(fun.data = mean_se, size=0.01)
 #plot <- plot + geom_line()
 #plot
 #plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
@@ -88,9 +88,9 @@ plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x,2), level=0.95, f
 xmin <- min(df$Round)
 xmax <- max(df$Round)
 #round_mra <- aggregate(MRA ~ Round, data = df, FUN = mean)
-ymin <- 0.08
+ymin <- 0
 #ymax <- max(round_mra$MRA)
-ymax <- 0.5
+ymax <- 0.55
 plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = FALSE)
 #plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
 #plot
