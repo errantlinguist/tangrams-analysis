@@ -23,14 +23,13 @@ if(length(args) < 2)
   stop("Usage: <scriptname> INFILE OUTFILE")
 }
 
-#infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\update-weight-3-onlyupdating.tsv"
-#infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\update-weight-3-onlyweighting.tsv"
-#infile <- "~/Projects/tangrams-restricted/Data/Analysis/update-weight-3-onlyupdating.tsv"
+infile <- "~/Projects/tangrams-restricted/Data/Analysis/2018-04-27/results-cross-2.tsv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
 }
 
+outfile <- "~/Projects/tangrams-restricted/Data/Analysis/2018-04-27/round-rr.pdf"
 outfile <- args[2]
 
 library(ggplot2)
@@ -44,8 +43,9 @@ if (!require("viridis")) {
 
 read_results <- function(inpath) {
   #return(read.xlsx2(inpath, 1, colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", mrr="numeric", accuracy="integer")))
-  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", sess="factor", round="integer", rank="integer")))
+  #return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", sess="factor", round="integer", rank="integer")))
   #return(read.csv(inpath, sep = "\t", colClasses=c(DYAD="factor", ONLY_INSTRUCTOR="logical", WEIGHT_BY_FREQ="logical", UPDATE_WEIGHT="factor")))
+  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", session="factor", round="integer")))
 }
 
 std.error <- function(x) {
@@ -58,13 +58,19 @@ try(windowsFonts(Times=windowsFont("Times New Roman")))
 
 print(sprintf("Reading data from \"%s\".", infile), quote=FALSE)
 df <- read_results(infile)
-df$RR <- 1.0 / df$rank
+sapply(df, class)
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
-df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
-names(df)[names(df) == "sess"] <- "Dyad"
+names(df)[names(df) == "rank"] <- "Rank"
+names(df)[names(df) == "round"] <- "Round"
+names(df)[names(df) == "session"] <- "Dyad"
+names(df)[names(df) == "weight"] <- "RA"
+names(df)[names(df) == "words"] <- "Tokens"
 # https://stackoverflow.com/a/15665536
 df$Dyad <- factor(df$Dyad, levels = paste(sort(as.integer(levels(df$Dyad)))))
+
+df$RR <- 1.0 / df$Rank
+df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
 
 refLevel <- "Baseline"
 # Set the reference level
@@ -74,11 +80,11 @@ rank_digits <- 5
 print(sprintf("Printing ranks rounded to %d significant figures.", rank_digits), quote=FALSE)
 
 print("Condition avg rank:", quote=FALSE)
-print(aggregate(rank ~ Condition, data = df, FUN = mean), short=FALSE, digits=rank_digits)
+print(aggregate(Rank ~ Condition, data = df, FUN = mean), short=FALSE, digits=rank_digits)
 print("Condition avg rank standard deviation:", quote=FALSE)
-print(aggregate(rank ~ Condition, data = df, FUN = sd), short=FALSE, digits=rank_digits)
+print(aggregate(Rank ~ Condition, data = df, FUN = sd), short=FALSE, digits=rank_digits)
 print("Condition avg rank standard error:", quote=FALSE)
-print(aggregate(rank ~ Condition, data = df, FUN = std.error), short=FALSE, digits=rank_digits)
+print(aggregate(Rank ~ Condition, data = df, FUN = std.error), short=FALSE, digits=rank_digits)
 
 mrr_digits <- 4
 print(sprintf("Printing MRR rounded to %d significant figures.", mrr_digits), quote=FALSE)
@@ -90,7 +96,7 @@ print(aggregate(RR ~ Condition, data = df, FUN = sd), short=FALSE, digits=mrr_di
 print("Condition MRR standard error:", quote=FALSE)
 print(aggregate(RR ~ Condition, data = df, FUN = std.error), short=FALSE, digits=mrr_digits)
 
-plot <- ggplot(df, aes(x=round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition))
+plot <- ggplot(df, aes(x=Round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition))
 plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RR")
 aspectRatio <- 3/4
 plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
@@ -104,16 +110,15 @@ plot <- plot + stat_summary_bin(fun.data = mean_se, size=0.3)
 #print(sprintf("Using alpha transparency = %f for each individual regression line.", regressionAlpha), quote=FALSE)
 plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x, 2), level=0.95, fullrange=TRUE, size=0.7)
 
-xmin <- min(df$round)
-#xmax <- round(max(df$round), digits = -1)
-xmax <- max(df$round)
-#round_mrrs <- aggregate(RR ~ round, data = df, FUN = mean)
+xmin <- min(df$Round)
+#xmax <- round(max(df$Round), digits = -1)
+xmax <- max(df$Round)
+#round_mrrs <- aggregate(RR ~ Round, data = df, FUN = mean)
 #ymin <- min(round_mrrs)
 ymin <- 0.4
 ymax = 1.0
 plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = FALSE)
 #plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
-#plot
 
 output_device <- file_ext(outfile)
 print(sprintf("Writing plot to \"%s\" using format \"%s\".", outfile, output_device), quote=FALSE)
