@@ -25,7 +25,7 @@ if(length(args) < 1)
 
 # Set global numeric value formatting, even for e.g. model "summary(..)" values
 options("scipen"=999, "digits"=5)
-#infile <- "~/Projects/tangrams-restricted/Data/Analysis/2018-04-27/results-cross-2.tsv"
+infile <- "~/Projects/tangrams-restricted/Data/Analysis/2018-04-27/results-cross-2.tsv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
@@ -47,9 +47,9 @@ names(df)[names(df) == "round"] <- "Round"
 names(df)[names(df) == "session"] <- "Dyad"
 names(df)[names(df) == "weight"] <- "MeanRA"
 names(df)[names(df) == "words"] <- "Tokens"
-df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
 
 df$RR <- 1.0 / df$Rank
+df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
 
 refLevel <- "Baseline"
 # Set the reference level
