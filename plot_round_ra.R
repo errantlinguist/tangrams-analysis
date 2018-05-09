@@ -57,42 +57,49 @@ names(df)[names(df) == "words"] <- "Tokens"
 df$Dyad <- factor(df$Dyad, levels = paste(sort(as.integer(levels(df$Dyad)))))
 
 
-#aggs <- aggregate(RA ~ Dyad * round, df, mean)
-
 plot <- ggplot(df, aes(x=Round, y=RA))
-#plot
-
 #text(4, 7, expression(bar(x) == sum(frac(x[i], n), i==1, n)))
 plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RA")
 aspectRatio <- 3/4
-plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio)
-
+plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(12,0,0,0))
 plot <- plot + stat_summary(fun.data = mean_se, size=0.01)
 #plot <- plot + geom_line()
-#plot
+
 #plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
 #plot <- plot + geom_smooth(method="loess", level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
 #regressionAlpha <- 0.333333
 #print(sprintf("Using alpha transparency = %f for each individual regression line.", regressionAlpha), quote=FALSE)
 plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x,2), level=0.95, fullrange=TRUE, size=0.7, color="darkred")
 #plot <- plot + geom_smooth(method = "lm", formula = y ~ x, level=0.95, fullrange=TRUE, size=0.7, aes(color=Dyad))
-#plot
+#plot <- plot + scale_y_log10()
 
-xmin <- min(df$Round)
-xmax <- max(df$Round)
-#round_mra <- aggregate(MRA ~ Round, data = df, FUN = mean)
-ymin <- 0
-#ymax <- max(round_mra$MRA)
-ymax <- 0.5
+xmin <- 1
+#xmax <- max(df$Round)
+xmax <- 100
+print(sprintf("Plotting round %d to %d.", xmin, xmax), quote=FALSE)
+ymin <- 0.05
+#ymax <- max(df$RA)
+ymax <- 0.3
+print(sprintf("Plotting RA %f to %f.", ymin, ymax), quote=FALSE)
+# Hack to ensure that the limits are listed on the axis as breaks
+xb <- pretty(df$Round)
+xb <- append(xb, xmin, 0)
+xb <- append(xb, xmax)
+xb <- unique(sort(xb))
+plot <- plot + scale_x_continuous(expand = c(0, 0), oob = scales::squish, breaks = xb)
+# Hack to ensure that the limits are listed on the axis as breaks
+#yb <- pretty(df$RA)
+#yb <- append(yb, ymin, 0)
+#yb <- append(yb, ymax)
+#yb <- unique(sort(yb))
+#plot <- plot + scale_y_continuous(expand = c(0, 0), oob = scales::squish, breaks = yb)
 plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = FALSE)
-#plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
-#plot
+#plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, ymax), expand = c(0, 0))
+#plot <- plot + scale_x_discrete(drop = FALSE, expand = c(0, 0), limits=c(xmin, xmax)) + scale_y_continuous(expand = c(0, 0))
+#plot <- plot + scale_x_discrete(drop = FALSE, expand = c(0, 0))
 
 output_device <- file_ext(outfile)
 print(sprintf("Writing plot to \"%s\" using format \"%s\".", outfile, output_device), quote=FALSE)
 width <- 100
 height <- width * aspectRatio
 ggsave(outfile, plot = plot, device=output_device, width = width, height = height, units="mm", dpi=1000)
-
-# NOTE: This library causes problems with plotting aesthetics using "alpha(..)" function because it redefines it <https://github.com/const-ae/ggsignif/issues/2>
-#library(psych)
