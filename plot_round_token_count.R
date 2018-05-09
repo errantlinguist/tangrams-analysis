@@ -78,16 +78,20 @@ xmin <- 1
 #xmax <- max(df$Round)
 xmax <- 100
 print(sprintf("Plotting round %d to %d.", xmin, xmax), quote=FALSE)
-ymin <- min(df$Tokens)
-#ymax <- max(df$Tokens)
-ymax <- 100
-print(sprintf("Plotting token count %d to %d.", ymin, ymax), quote=FALSE)
 # Hack to ensure that the limits are listed on the axis as breaks
 xb <- pretty(df$Round)
 xb <- append(xb, xmin, 0)
 xb <- append(xb, xmax)
 xb <- unique(sort(xb))
-plot <- plot + scale_x_continuous(expand = c(0, 0), oob = scales::squish, breaks = xb)
+
+plot <- plot + scale_x_continuous(expand = c(0, 0), oob = scales::squish, breaks = c(xb, NA))
+
+ymin <- min(df$Tokens)
+#ymax <- max(df$Tokens)
+ymax <- 100
+print(sprintf("Plotting token count %d to %d.", ymin, ymax), quote=FALSE)
+
+
 plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = FALSE)
 
 output_device <- file_ext(outfile)
