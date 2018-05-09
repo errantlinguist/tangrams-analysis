@@ -73,18 +73,19 @@ plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x,2), level=0.95, f
 #plot <- plot + geom_smooth(method = "lm", formula = y ~ x, level=0.95, fullrange=TRUE, size=0.7, aes(color=Dyad))
 plot <- plot + scale_y_log10()
 
+# NOTE: This should be "0" so that a lower-bound break is shown without any distortion from scaling otherwise
 #xmin <- min(df$Round)
-xmin <- 1
+xmin <- 0
 #xmax <- max(df$Round)
 xmax <- 100
 print(sprintf("Plotting round %d to %d.", xmin, xmax), quote=FALSE)
 # Hack to ensure that the limits are listed on the axis as breaks
-xb <- pretty(df$Round)
-xb <- append(xb, xmin, 0)
-xb <- append(xb, xmax)
-xb <- unique(sort(xb))
+#xb <- pretty(df$Round)
+#xb <- append(xb, xmin, 0)
+#xb <- append(xb, xmax)
+#xb <- unique(sort(xb))
 
-plot <- plot + scale_x_continuous(expand = c(0, 0), oob = scales::squish, breaks = c(xb, NA))
+#plot <- plot + scale_x_continuous(expand = c(0, 0), oob = scales::squish, breaks = c(xb, NA))
 
 ymin <- min(df$Tokens)
 #ymax <- max(df$Tokens)
