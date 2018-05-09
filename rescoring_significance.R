@@ -40,7 +40,6 @@ read_results <- function(inpath) {
 
 df <- read_results(infile)
 sapply(df, class)
-df$RR <- 1.0 / df$Rank
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
 names(df)[names(df) == "rank"] <- "Rank"
@@ -49,6 +48,8 @@ names(df)[names(df) == "session"] <- "Dyad"
 names(df)[names(df) == "weight"] <- "MeanRA"
 names(df)[names(df) == "words"] <- "Tokens"
 df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
+
+df$RR <- 1.0 / df$Rank
 
 refLevel <- "Baseline"
 # Set the reference level
