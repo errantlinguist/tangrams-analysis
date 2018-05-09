@@ -73,7 +73,8 @@ plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x,2), level=0.95, f
 #plot <- plot + geom_smooth(method = "lm", formula = y ~ x, level=0.95, fullrange=TRUE, size=0.7, aes(color=Dyad))
 #plot <- plot + scale_y_log10()
 
-xmin <- 1
+# NOTE: This should be "0" so that a lower-bound break is shown without any distortion from scaling otherwise
+xmin <- 0
 #xmax <- max(df$Round)
 xmax <- 100
 print(sprintf("Plotting round %d to %d.", xmin, xmax), quote=FALSE)
@@ -92,7 +93,7 @@ print(sprintf("Plotting RA %f to %f.", ymin, ymax), quote=FALSE)
 #yb <- append(yb, ymax)
 #yb <- unique(sort(yb))
 
-plot <- plot + scale_x_continuous(expand = c(0, 0), oob = scales::squish, breaks = c(xb, NA))
+#plot <- plot + scale_x_continuous(expand = c(0, 0), oob = scales::squish, breaks = c(xb, NA))
 # Hack to ensure that the limits are listed on the axis as breaks
 #yb <- pretty(df$RA)
 #yb <- append(yb, ymin, 0)
