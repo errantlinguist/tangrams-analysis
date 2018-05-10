@@ -102,46 +102,28 @@ aspectRatio <- 3/4
 plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(12,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
 plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis", direction=-1)
 
-#plot <- plot + stat_summary_bin(fun.data = mean_se, size=0.3, position = position_jitter(width=0.5,height=0), fullrange=TRUE)
-plot <- plot + stat_summary(fun.data = mean_se, size=0.3, fullrange=TRUE)
 
-
-#plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
-#plot <- plot + geom_smooth(method="loess", level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
-#regressionAlpha <- 1.0 / nlevels(df$Condition)
-#regressionAlpha <- 0.333333
-#print(sprintf("Using alpha transparency = %f for each individual regression line.", regressionAlpha), quote=FALSE)
+break_datapoints <- df[df$Round %% 5 == 0, ]
+plot <- plot + stat_summary(data = break_datapoints, fun.data = mean_se, size=0.3)
 plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x, 2), level=0.95, fullrange=TRUE, size=0.7)
 
 xmin <- 1
 #xmax <- max(df$Round)
-xmax <- 100
+xmax <- 80
 print(sprintf("Plotting round %d to %d.", xmin, xmax), quote=FALSE)
-ymin <- 0.25
+xb <- seq(xmin, xmax)
+xb <- subset(xb, (xb %% 20 == 0) | (xb == xmin) | (xb == xmax))
+plot <- plot + scale_x_continuous(breaks = xb, expand = c(0, 0))
+
+ymin <- 0.40
 #ymax <- max(df$RA)
 ymax <- 1
 print(sprintf("Plotting RR %f to %f.", ymin, ymax), quote=FALSE)
-# Hack to ensure that the limits are listed on the axis as breaks
-xb <- pretty(df$Round)
-xb <- append(xb, xmin, 0)
-xb <- append(xb, xmax)
-xb <- unique(sort(xb))
-plot <- plot + scale_x_continuous(expand = c(0, 0), oob = scales::squish, breaks = c(xb, NA))
 plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = FALSE)
-#plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
+
 
 output_device <- file_ext(outfile)
 print(sprintf("Writing plot to \"%s\" using format \"%s\".", outfile, output_device), quote=FALSE)
-
 width <- 100
 height <- width * aspectRatio
 ggsave(outfile, plot = plot, device=output_device, width = width, height = height, units="mm", dpi=1000)
-
-
-# https://stackoverflow.com/a/31095291
-#ggplot(tempEf,aes(TRTYEAR, r, group=interaction(site, Myc), col=site, shape=Myc )) + 
-#  facet_grid(~N) +
-#  geom_line(aes(y=fit, lty=Myc), size=0.8) +
-#  geom_point(alpha = 0.3) + 
-#  geom_hline(yintercept=0, linetype="dashed") +
-#  theme_bw()

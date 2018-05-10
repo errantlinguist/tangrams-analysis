@@ -58,42 +58,31 @@ df$Dyad <- factor(df$Dyad, levels = paste(sort(as.integer(levels(df$Dyad)))))
 
 
 plot <- ggplot(df, aes(x=Round, y=Tokens))
-#text(4, 7, expression(bar(x) == sum(frac(x[i], n), i==1, n)))
 plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Token count")
 aspectRatio <- 3/4
 plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(12,0,0,0))
-plot <- plot + stat_summary(fun.data = mean_se, size=0.01)
-#plot <- plot + geom_line()
 
-#plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
-#plot <- plot + geom_smooth(method="loess", level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
-#regressionAlpha <- 0.333333
-#print(sprintf("Using alpha transparency = %f for each individual regression line.", regressionAlpha), quote=FALSE)
+break_datapoints <- df[df$Round %% 5 == 0, ]
+plot <- plot + stat_summary(data = break_datapoints, fun.data = mean_se, size=0.3)
 plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x,2), level=0.95, fullrange=TRUE, size=0.7, color="darkred")
-#plot <- plot + geom_smooth(method = "lm", formula = y ~ x, level=0.95, fullrange=TRUE, size=0.7, aes(color=Dyad))
-plot <- plot + scale_y_log10()
+#plot <- plot + scale_y_log10()
 
-# NOTE: This should be "0" so that a lower-bound break is shown without any distortion from scaling otherwise
-#xmin <- min(df$Round)
-xmin <- 0
+
+xmin <- 1
 #xmax <- max(df$Round)
-xmax <- 100
+xmax <- 80
 print(sprintf("Plotting round %d to %d.", xmin, xmax), quote=FALSE)
-# Hack to ensure that the limits are listed on the axis as breaks
-#xb <- pretty(df$Round)
-#xb <- append(xb, xmin, 0)
-#xb <- append(xb, xmax)
-#xb <- unique(sort(xb))
-
-#plot <- plot + scale_x_continuous(expand = c(0, 0), oob = scales::squish, breaks = c(xb, NA))
+xb <- seq(xmin, xmax)
+xb <- subset(xb, (xb %% 20 == 0) | (xb == xmin) | (xb == xmax))
+print(xb)
+plot <- plot + scale_x_continuous(breaks = xb, expand = c(0, 0))
 
 ymin <- min(df$Tokens)
 #ymax <- max(df$Tokens)
-ymax <- 100
+ymax <- 50
 print(sprintf("Plotting token count %d to %d.", ymin, ymax), quote=FALSE)
-
-
 plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expand = FALSE)
+
 
 output_device <- file_ext(outfile)
 print(sprintf("Writing plot to \"%s\" using format \"%s\".", outfile, output_device), quote=FALSE)
