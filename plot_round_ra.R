@@ -57,13 +57,14 @@ names(df)[names(df) == "words"] <- "Tokens"
 df$Dyad <- factor(df$Dyad, levels = paste(sort(as.integer(levels(df$Dyad)))))
 
 
-plot <- ggplot(df, aes(x=Round, y=RA), clip= "off")
+plot <- ggplot(df, aes(x=Round, y=RA))
 plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RA")
 aspectRatio <- 3/4
 plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(12,0,0,0))
 
-break_datapoints <- df[df$Round %% 5 == 0, ]
-plot <- plot + stat_summary(data = break_datapoints, fun.data = mean_se, size=0.3)
+#break_datapoints <- df[df$Round %% 5 == 0, ]
+#plot <- plot + stat_summary(data = break_datapoints, fun.data = mean_se, size=0.3)
+plot <- plot + stat_summary(fun.data = mean_se, size=0.2)
 plot <- plot + geom_smooth(method = "lm", formula = y ~ poly(x,2), level=0.95, fullrange=TRUE, size=0.7, color="darkred")
 
 

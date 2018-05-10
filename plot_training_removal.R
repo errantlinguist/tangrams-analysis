@@ -23,8 +23,7 @@ if(length(args) < 2)
   stop("Usage: <scriptname> INFILE OUTFILE")
 }
 
-#infile <- "D:\\Users\\tcshore\\Documents\\Projects\\Tangrams\\Data\\Analysis\\removal-with-baseline.tsv"
-#infile = "~/Projects/tangrams-restricted/Data/Analysis/removal-with-baseline.tsv"
+#infile <- "~/Projects/tangrams-restricted/Data/Analysis/2018-04-27/removal-0-35.tsv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
@@ -43,8 +42,9 @@ if (!require("viridis")) {
 
 read_results <- function(inpath) {
   #return(read.xlsx2(inpath, 1, colClasses = c(cond="factor", sess="factor", round="integer", rank="integer", mrr="numeric", accuracy="integer")))
-  return(read.csv(inpath, sep = "\t", colClasses = c(Condition="factor", Dyad="factor", round="integer", rank="integer", removal="integer")))
+  #return(read.csv(inpath, sep = "\t", colClasses = c(Condition="factor", Dyad="factor", round="integer", rank="integer", removal="integer")))
   #return(read.csv(inpath, sep = "\t", colClasses=c(DYAD="factor", ONLY_INSTRUCTOR="logical", WEIGHT_BY_FREQ="logical", UPDATE_WEIGHT="factor")))
+  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", removal="integer", session="factor", round="integer")))
 }
 
 std.error <- function(x) {
@@ -58,31 +58,31 @@ try(windowsFonts(Times=windowsFont("Times New Roman")))
 print(sprintf("Reading data from \"%s\".", infile), quote=FALSE)
 df <- read_results(infile)
 sapply(df, class)
-df$RR <- 1.0 / df$rank
-#df$TrainingSet <- as.character(df$removal)
-#df$TrainingSet <- as.numeric(df$TrainingSet)
-df$TrainingSet <- 32 - df$removal
-#df$TrainingSet <- factor(df$TrainingSet)
-levels(df$Condition)
-df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
-levels(df$Condition)
-#df$Dyad <- factor(df$Dyad)
+# Hack to change legend label
+names(df)[names(df) == "cond"] <- "Condition"
+names(df)[names(df) == "rank"] <- "Rank"
+names(df)[names(df) == "round"] <- "Round"
+names(df)[names(df) == "session"] <- "Dyad"
+names(df)[names(df) == "weight"] <- "RA"
+names(df)[names(df) == "words"] <- "Tokens"
 # https://stackoverflow.com/a/15665536
 df$Dyad <- factor(df$Dyad, levels = paste(sort(as.integer(levels(df$Dyad)))))
-sapply(df, class)
-#refLevel <- "Baseline"
-# Set the reference level
-#relevel(df$Condition, ref=refLevel) -> df$Condition
+
+df$RR <- 1.0 / df$Rank
+df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
+
+df$TrainingSet <- 40 - df$removal
+#df$TrainingSet <- factor(df$TrainingSet)
 
 rank_digits <- 5
 print(sprintf("Printing ranks rounded to %d significant figures.", rank_digits), quote=FALSE)
 
 print("Condition avg rank:", quote=FALSE)
-print(aggregate(rank ~ Condition, data = df, FUN = mean), short=FALSE, digits=rank_digits)
+print(aggregate(Rank ~ Condition, data = df, FUN = mean), short=FALSE, digits=rank_digits)
 print("Condition avg rank standard deviation:", quote=FALSE)
-print(aggregate(rank ~ Condition, data = df, FUN = sd), short=FALSE, digits=rank_digits)
+print(aggregate(Rank ~ Condition, data = df, FUN = sd), short=FALSE, digits=rank_digits)
 print("Condition avg rank standard error:", quote=FALSE)
-print(aggregate(rank ~ Condition, data = df, FUN = std.error), short=FALSE, digits=rank_digits)
+print(aggregate(Rank ~ Condition, data = df, FUN = std.error), short=FALSE, digits=rank_digits)
 
 mrr_digits <- 4
 print(sprintf("Printing MRR rounded to %d significant figures.", mrr_digits), quote=FALSE)
@@ -100,38 +100,32 @@ aspectRatio <- 9/16
 plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box="vertical", legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
 
 # Manually created because viridis is annoying
-colors <- c("#21908CFF", "#440154FF")
-# Skip one because it's reserved for the baseline. This keeps the shapes equivalent across different plots
-#shapes <- 2:(nlevels(df$Condition)+1)
-#shapes <- c(17,15)
+#colors <- c("#21908CFF", "#440154FF")
 plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis", direction=-1) #+ scale_shape_manual(values=shapes)
 
-#baseline_mrr <- 0.6472291648
-#updating_mrr <- 0.6925557115
-#plot <- plot + geom_hline(aes(yintercept = baseline_mrr, linetype="Baseline, 32 dialogues"), color="#FDE725FF", size=0.7) + scale_linetype_manual(values=c("dashed"))
+#removal_mrrs_for_dyad_cond <- aggregate(RR ~ TrainingSet + Condition + Dyad, data = df, FUN = mean)
+#removal_mrrs_for_dyad_cond <- within(removal_mrrs_for_dyad_cond,  ClusterCondition <- as.factor(paste(Condition, Dyad, TrainingSet, sep=",")))
+#sapply(removal_mrrs_for_dyad_cond, class)
+#kmeans_df <- removal_mrrs_for_dyad_cond[,c("RR","Dyad")]
+#fit <- kmeans(kmeans_df, 4, nstart = 7)
+# get cluster means
+#aggregate(removal_mrrs_for_dyad_cond,by=list(fit$cluster),FUN=mean)
+# append cluster assignment
+#removal_mrrs_for_dyad_cond <- data.frame(removal_mrrs_for_dyad_cond, fit$cluster) 
+#removal_mrrs_for_dyad_cond$fit.cluster <- as.factor(removal_mrrs_for_dyad_cond$fit.cluster)
+#plot <- plot + geom_point(data = removal_mrrs_for_dyad_cond, aes(group=fit.cluster, color=Condition, shape=fit.cluster), size=0.3) + guides(shape=FALSE)
 
-plot <- plot + stat_summary(size=0.3, aes(group=Condition, color=Condition, shape=Condition))
-#plot <- plot + stat_summary(fun.data = mean_se, size=0.3, aes(group=Condition, color=Condition, shape=Condition))
-agg_mrrs <- aggregate(RR ~ TrainingSet + Condition, data = df, FUN = mean)
-plot <- plot + geom_line(data=agg_mrrs, aes(group=Condition, color=Condition))
-#plot <- plot + geom_point(aes(group=Condition, color=Condition, shape=Condition))
-#plot <- plot + geom_jitter(alpha = 0.3, size=0.1)
-#plot <- plot + geom_smooth(method="loess", level=0.95, fullrange=TRUE, size=0.7, alpha=0.2)
-#regressionAlpha <- 1.0 / nlevels(df$Condition)
-#regressionAlpha <- 0.333333
-#print(sprintf("Using alpha transparency = %f for each individual regression line.", regressionAlpha), quote=FALSE)
-#plot <- plot + geom_smooth(method = "lm", formula = y ~ x, level=0.95, fullrange=TRUE, size=0.7, aes(group=Condition, color=Condition))
-plot <- plot + scale_x_continuous(breaks=sort(unique(df$TrainingSet)))
-#xmin <- min(df$removal)
-#xmax <- round(max(df$removal), digits = -1)
-#xmax <- max(df$removal)
-#ymin <- min(round_mrrs)
-#ymin <- min(agg_mrrs$RR)
+
+agg_mrrs <- aggregate(RR ~ TrainingSet + Condition + Dyad, data = df, FUN = mean)
+#plot <- plot + geom_line(data=agg_mrrs, aes(group=Condition, color=Condition))
+plot <- plot + geom_jitter(data=agg_mrrs, width = 0.5, height=0, size=0.3, aes(group=Dyad, color=Condition, shape=Condition)) + guides(shape=FALSE)
+
+#plot <- plot + stat_summary(size=0.3, fun.data = mean_se, aes(group=Condition, color=Condition, shape=Condition))
+plot <- plot + geom_smooth(method = "lm", level=0.95, fullrange=TRUE, size=0.7, formula = y ~ poly(x, 2))
+plot <- plot + scale_x_continuous(breaks=sort(unique(df$TrainingSet)), expand = c(0, 0))
 ymin <- 0.4
 ymax = 1.0
 plot <- plot + coord_cartesian(ylim = c(ymin, ymax), expand = FALSE)
-#plot <- plot + scale_x_continuous(limits=c(xmin, xmax), expand = c(0, 0), breaks = scales::pretty_breaks(n = 5)) + scale_y_continuous(limits=c(ymin, 1.0), expand = c(0, 0))
-#plot
 
 output_device <- file_ext(outfile)
 print(sprintf("Writing plot to \"%s\" using format \"%s\".", outfile, output_device), quote=FALSE)
@@ -139,12 +133,3 @@ print(sprintf("Writing plot to \"%s\" using format \"%s\".", outfile, output_dev
 width <- 100
 height <- width * aspectRatio
 ggsave(outfile, plot = plot, device=output_device, width = width, height = height, units="mm", dpi=1000)
-
-
-# https://stackoverflow.com/a/31095291
-#ggplot(tempEf,aes(TRTYEAR, r, group=interaction(site, Myc), col=site, shape=Myc )) + 
-#  facet_grid(~N) +
-#  geom_line(aes(y=fit, lty=Myc), size=0.8) +
-#  geom_point(alpha = 0.3) + 
-#  geom_hline(yintercept=0, linetype="dashed") +
-#  theme_bw()
