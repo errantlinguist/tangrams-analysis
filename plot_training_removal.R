@@ -95,7 +95,7 @@ print("Condition MRR standard error:", quote=FALSE)
 print(aggregate(RR ~ Condition, data = df, FUN = std.error), short=FALSE, digits=mrr_digits)
 
 plot <- ggplot(df, aes(x=TrainingSet, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition))
-plot <- plot + xlab(expression(paste("Background data size (", italic("n"), " dialogues)"))) + ylab("Mean RR")
+plot <- plot + xlab(expression(paste("Background data size (", italic("n"), " dialogs)"))) + ylab("Mean RR")
 aspectRatio <- 9/16
 plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(4,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box="vertical", legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
 
