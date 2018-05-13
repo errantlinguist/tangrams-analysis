@@ -102,9 +102,13 @@ p <- anova(m.additiveNoRndAdt, m.additiveNoRndAdtNoWords)
 p
 
 print("Quadratic additive model without the condition \"RndAdt\" or \"Tokens\" but with \"Corefs\":", quote=FALSE)
-m.additiveNoRndAdtCorefs <- lmer(RR ~ Adt + Wgt + poly(Round, 2) + Corefs + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
-summary(m.additiveNoRndAdtCorefs)
+m.additiveNoRndAdtNoWordsCorefs <- lmer(RR ~ Adt + Wgt + poly(Round, 2) + Corefs + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+summary(m.additiveNoRndAdtNoWordsCorefs)
 #0.0531 
+
+print("ANOVA comparison of additive model without \"RndAdt\" and additive model without \"RndAdt\" or \"Tokens\" condition (to conclude that \"Tokens\" is significant):", quote=FALSE)
+p <- anova(m.additiveNoRndAdt, m.additiveNoRndAdtNoWordsCorefs)
+p
 
 print("Testing significance of relationship of \"Tokens\" with \"Round\" and \"Corefs\":", quote=FALSE)
 # Only select the rows using just "Baseline"
