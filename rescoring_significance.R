@@ -107,7 +107,7 @@ summary(m.additiveNoRndAdtNoWordsCorefs)
 #0.0531 
 
 print("ANOVA comparison of additive model without \"RndAdt\" and additive model without \"RndAdt\" or \"Tokens\" condition (to conclude that \"Tokens\" is significant):", quote=FALSE)
-p <- anova(m.additiveNoRndAdt, m.additiveNoRndAdtNoWordsCorefs)
+p <- anova(m.additiveNoRndAdtNoWords, m.additiveNoRndAdtNoWordsCorefs)
 p
 
 print("Testing significance of relationship of \"Tokens\" with \"Round\" and \"Corefs\":", quote=FALSE)

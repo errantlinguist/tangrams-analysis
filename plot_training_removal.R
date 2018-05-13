@@ -116,12 +116,19 @@ plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis", direction=-1
 #plot <- plot + geom_point(data = removal_mrrs_for_dyad_cond, aes(group=fit.cluster, color=Condition, shape=fit.cluster), size=0.3) + guides(shape=FALSE)
 
 
-agg_mrrs <- aggregate(RR ~ TrainingSet + Condition + Dyad, data = df, FUN = mean)
-#plot <- plot + geom_line(data=agg_mrrs, aes(group=Condition, color=Condition))
-plot <- plot + geom_jitter(data=agg_mrrs, width = 0.5, height=0, size=0.3, aes(group=Dyad, color=Condition, shape=Condition)) + guides(shape=FALSE)
+#agg_mrrs <- aggregate(RR ~ TrainingSet + Condition + Dyad, data = df, FUN = mean)
+#plot <- plot + geom_line(aes(group=Condition, color=Condition))
+#plot <- plot + geom_jitter(data=agg_mrrs, width = 0.5, height=0, size=0.3, aes(group=Dyad, color=Condition, shape=Condition)) + guides(shape=FALSE)
 
-#plot <- plot + stat_summary(size=0.3, fun.data = mean_se, aes(group=Condition, color=Condition, shape=Condition))
-plot <- plot + geom_smooth(method = "lm", level=0.95, fullrange=TRUE, size=0.7, formula = y ~ poly(x, 2))
+#plot <- plot + geom_area(stat = "summary", fun.y = "mean", position = position_dodge(width = 0.9), aes(group=Condition, color=Condition, shape=Condition, fill=Condition), reverse = TRUE)
+#plot <- plot + geom_errorbar(stat = "summary", fun.data = "mean_sdl", fun.args = list(mult = 1), position =  position_dodge(width = 0.9), aes(group=Condition, color=Condition, shape=Condition))
+plot <- plot + stat_summary(size=0.3, fun.data = mean_se, aes(group=Condition, color=Condition, shape=Condition))
+agg_mrrs <- aggregate(RR ~ TrainingSet + Condition, data = df, FUN = mean)
+plot <- plot + geom_line(data=agg_mrrs, aes(group=Condition, color=Condition))
+#plot <- plot + geom_pointrange(stat = "summary", fun.data = "mean_se", aes(group=Condition, color=Condition), size=0.2)
+#plot <- plot + stat_summary(size=0.3, fun.data = "mean_sdl", fun.args = list(mult = 1), aes(group=Condition, color=Condition, shape=Condition))
+#plot <- plot + geom_errorbar(aes(group=Condition, color=Condition, shape=Condition, x=TrainingSet, y=RR, ymin=y-sd, ymax=y+sd))
+#plot <- plot + geom_smooth(method = "lm", level=0.95, fullrange=TRUE, size=0.7, formula = y ~ poly(x, 2))
 plot <- plot + scale_x_continuous(breaks=sort(unique(df$TrainingSet)), expand = c(0, 0))
 ymin <- 0.4
 ymax = 1.0
