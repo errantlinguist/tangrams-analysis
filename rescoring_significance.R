@@ -25,7 +25,7 @@ if(length(args) < 1)
 
 # Set global numeric value formatting, even for e.g. model "summary(..)" values
 options("scipen"=999, "digits"=5)
-#infile <- "~/Projects/tangrams-restricted/Data/Analysis/2018-04-27/results-cross-2.tsv"
+#infile <- "~/Projects/tangrams-restricted/Data/Analysis/2018-04-27/results-cross-2-with-corefs.tsv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
@@ -35,7 +35,7 @@ library(lmerTest)
 library(optimx)
 
 read_results <- function(inpath) {
-  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", session="factor")))
+  return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", session="factor", Referent="factor")))
 }
 
 df <- read_results(infile)
@@ -99,6 +99,23 @@ summary(m.additiveNoRndAdtNoWords)
 
 print("ANOVA comparison of additive model without \"RndAdt\" and additive model without \"RndAdt\" or \"Tokens\" condition (to conclude that \"Tokens\" is significant):", quote=FALSE)
 p <- anova(m.additiveNoRndAdt, m.additiveNoRndAdtNoWords)
+p
+
+print("Quadratic additive model without the condition \"RndAdt\" or \"Tokens\" but with \"Corefs\":", quote=FALSE)
+m.additiveNoRndAdtCorefs <- lmer(RR ~ Adt + Wgt + poly(Round, 2) + Corefs + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+summary(m.additiveNoRndAdtCorefs)
+#0.0531 
+
+print("Testing significance of relationship of \"Tokens\" with \"Round\" and \"Corefs\":", quote=FALSE)
+# Only select the rows using just "Baseline"
+df_baseline <- df[df$Condition %in% c("Baseline"), ]
+m.tokensAdditive <- lmer(Tokens ~ poly(Round, 2) + Corefs + (1 + Referent | Dyad), data = df_baseline, REML = FALSE, control = control)
+summary(m.tokensAdditive)
+
+m.tokensInteractive <- lmer(Tokens ~ poly(Round, 2) * Corefs + (1 + Referent | Dyad), data = df_baseline, REML = FALSE, control = control)
+summary(m.tokensInteractive)
+
+p <- anova(m.tokensAdditive, m.tokensInteractive)
 p
 
 # INTERACTIVE MODELS ----------------------------------------------
