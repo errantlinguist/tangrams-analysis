@@ -53,26 +53,39 @@ names(df)[names(df) == "words"] <- "Tokens"
 df$RR <- 1.0 / df$Rank
 df$Condition <- reorder(df$Condition, df$RR, FUN=mean)
 
-refLevel <- "Baseline"
-# Set the reference level
-relevel(df$Condition, ref=refLevel) -> df$Condition
-
 # https://en.wikipedia.org/wiki/Nelder%E2%80%93Mead_method
 control <- lmerControl(optimizer ="Nelder_Mead")
 # Limited-memory BFGS <https://en.wikipedia.org/wiki/Limited-memory_BFGS> in order to avoid failed convergence, caused by the addition of the "Tokens" condition
 # See https://stats.stackexchange.com/a/243225/169001
 #control <- lmerControl(optimizer ='optimx', optCtrl=list(method='L-BFGS-B'))
 
-print("Testing significance of relationship of \"RA\" with \"Tokens\", \"Round\" and \"Corefs\":", quote=FALSE)
-m.tokensAdditive <- lmer(MeanRA ~ scale(Tokens) + Corefs + poly(Round, 2) + (1  | Dyad), data = df, REML = FALSE, control = control)
+print("Testing significance of relationship of \"Tokens\" with \"Round\" and \"Corefs\":", quote=FALSE)
+m.tokensAdditive <- lmer(scale(Tokens) ~ Corefs + poly(Round, 2) + (1  | Dyad), data = df, REML = FALSE, control = control)
 summary(m.tokensAdditive)
 
 print("Fully interactive model:", quote=FALSE)
-m.tokensInteractive <- lmer(MeanRA ~ scale(Tokens) * Corefs * poly(Round, 2) + (1  | Dyad), data = df, REML = FALSE, control = control)
+m.tokensInteractive <- lmer(scale(Tokens) ~ Corefs * poly(Round, 2) + (1  | Dyad), data = df, REML = FALSE, control = control)
 summary(m.tokensInteractive)
 
 p <- anova(m.tokensAdditive, m.tokensInteractive)
 p
 
 
+print("Testing significance of relationship of \"RA\" with \"Tokens\", \"Round\" and \"Corefs\":", quote=FALSE)
+m.raAdditive <- lmer(MeanRA ~ scale(Tokens) + Corefs + poly(Round, 2) + (1  | Dyad), data = df, REML = FALSE, control = control)
+summary(m.raAdditive)
 
+print("Fully interactive model:", quote=FALSE)
+m.raInteractive.full <- lmer(MeanRA ~ scale(Tokens) * Corefs * poly(Round, 2) + (1  | Dyad), data = df, REML = FALSE, control = control)
+summary(m.raInteractive.full)
+
+p <- anova(m.raAdditive, m.raInteractive.full)
+p
+
+
+print("Fully interactive model, monomial:", quote=FALSE)
+m.raInteractive.full.monomial <- lmer(MeanRA ~ scale(Tokens) * Corefs * Round + (1  | Dyad), data = df, REML = FALSE, control = control)
+summary(m.raInteractive.full.monomial)
+
+p <- anova(m.raInteractive.full, m.raInteractive.full.monomial)
+p
