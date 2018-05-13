@@ -109,10 +109,10 @@ summary(m.additiveNoRndAdtCorefs)
 print("Testing significance of relationship of \"Tokens\" with \"Round\" and \"Corefs\":", quote=FALSE)
 # Only select the rows using just "Baseline"
 df_baseline <- df[df$Condition %in% c("Baseline"), ]
-m.tokensAdditive <- lmer(Tokens ~ poly(Round, 2) + Corefs + (1 + Referent | Dyad), data = df_baseline, REML = FALSE, control = control)
+m.tokensAdditive <- lmer(Tokens ~ poly(Round, 2) + Corefs + (1  | Dyad), data = df_baseline, REML = FALSE, control = control)
 summary(m.tokensAdditive)
 
-m.tokensInteractive <- lmer(Tokens ~ poly(Round, 2) * Corefs + (1 + Referent | Dyad), data = df_baseline, REML = FALSE, control = control)
+m.tokensInteractive <- lmer(Tokens ~ poly(Round, 2) * Corefs + (1 | Dyad), data = df_baseline, REML = FALSE, control = control)
 summary(m.tokensInteractive)
 
 p <- anova(m.tokensAdditive, m.tokensInteractive)
