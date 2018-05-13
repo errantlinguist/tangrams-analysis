@@ -86,7 +86,7 @@ p
 
 print("Quadratic additive model without the condition \"Wgt\" or \"RndAdt\":", quote=FALSE)
 # The RndAdt condition does not improve fit, which means that the condition does not significantly affect reciprocal rank 
-m.additiveNoRndAdtNoWgt <- lmer(RR ~ Adt + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+m.additiveNoRndAdtNoWgt <- lmer(RR ~ Adt + scale(Tokens) + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.additiveNoRndAdtNoWgt)
 
 print("ANOVA comparison of quadratic additive model with and without \"Wgt\" condition (to conclude that it is significant):", quote=FALSE)
