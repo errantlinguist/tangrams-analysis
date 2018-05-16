@@ -33,6 +33,7 @@ if (!file_test("-f", infile)) {
 
 library(lmerTest)
 library(optimx)
+library(stargazer)
 
 read_results <- function(inpath) {
   return(read.csv(inpath, sep = "\t", colClasses = c(cond="factor", session="factor", Referent="factor")))
@@ -81,6 +82,10 @@ summary(m.raInteractive.full)
 
 p <- anova(m.raAdditive, m.raInteractive.full)
 p
+
+control.lme4 <- lme4::lmerControl(optimizer ="Nelder_Mead")
+m.raInteractive.full.lme4 <- lme4::lmer(MeanRA ~ scale(Tokens) * Corefs * poly(Round, 2) + (1  | Dyad), data = df, REML = FALSE, control = control.lme4)
+stargazer(m.raInteractive.full.lme4, digits = 5, no.space=TRUE, single.row=TRUE,report = "vcst*", label = "tab:coefficients:meanRA", star.cutoffs = c(0.05, 0.01, 0.001), table.placement = "t", intercept.top = TRUE, intercept.bottom = FALSE, notes.label = "", omit.table.layout = "=lda")
 
 
 print("Fully interactive model, monomial:", quote=FALSE)
