@@ -59,7 +59,7 @@ df$Dyad <- factor(df$Dyad, levels = paste(sort(as.integer(levels(df$Dyad)))))
 
 plot <- ggplot(df, aes(x=Round, y=RA))
 plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RA")
-aspectRatio <- 3/4
+aspectRatio <- 9/16
 plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(12,0,0,0))
 
 #break_datapoints <- df[df$Round %% 5 == 0, ]
