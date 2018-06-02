@@ -94,20 +94,20 @@ p <- anova(m.additiveNoRndAdt, m.additiveNoRndAdtNoWgt)
 p
 
 print("Quadratic additive model without the condition \"RndAdt\" or \"Tokens\":", quote=FALSE)
-m.additiveNoRndAdtNoWords <- lmer(RR ~ Adt + Wgt + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
-summary(m.additiveNoRndAdtNoWords)
+m.additiveNoRndAdtNoTokens <- lmer(RR ~ Adt + Wgt + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+summary(m.additiveNoRndAdtNoTokens)
 
 print("ANOVA comparison of additive model without \"RndAdt\" and additive model without \"RndAdt\" or \"Tokens\" condition (to conclude that \"Tokens\" is significant):", quote=FALSE)
-p <- anova(m.additiveNoRndAdt, m.additiveNoRndAdtNoWords)
+p <- anova(m.additiveNoRndAdt, m.additiveNoRndAdtNoTokens)
 p
 
 print("Quadratic additive model without the condition \"RndAdt\" or \"Tokens\" but with \"Corefs\":", quote=FALSE)
-m.additiveNoRndAdtNoWordsCorefs <- lmer(RR ~ Adt + Wgt + poly(Round, 2) + Corefs + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
-summary(m.additiveNoRndAdtNoWordsCorefs)
+m.additiveNoRndAdtNoTokensCorefs <- lmer(RR ~ Adt + Wgt + poly(Round, 2) + Corefs + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+summary(m.additiveNoRndAdtNoTokensCorefs)
 #0.0531 
 
-print("ANOVA comparison of additive model without \"RndAdt\" and additive model without \"RndAdt\" or \"Tokens\" condition (to conclude that \"Tokens\" is significant):", quote=FALSE)
-p <- anova(m.additiveNoRndAdtNoWords, m.additiveNoRndAdtNoWordsCorefs)
+print("ANOVA comparison of additive model without \"RndAdt\" and additive model without \"RndAdt\" or \"Tokens\" condition but with \"Corefs\" (to conclude that \"Tokens\" is significant):", quote=FALSE)
+p <- anova(m.additiveNoRndAdtNoTokens, m.additiveNoRndAdtNoTokensCorefs)
 p
 
 print("Testing significance of relationship of \"Tokens\" with \"Round\" and \"Corefs\":", quote=FALSE)
