@@ -106,7 +106,7 @@ m.additiveNoRndAdtNoTokensCorefs <- lmer(RR ~ Adt + Wgt + poly(Round, 2) + Coref
 summary(m.additiveNoRndAdtNoTokensCorefs)
 #0.0531 
 
-print("ANOVA comparison of additive model without \"RndAdt\" and additive model without \"RndAdt\" or \"Tokens\" condition but with \"Corefs\" (to conclude that \"Tokens\" is significant):", quote=FALSE)
+print("ANOVA comparison of additive model without \"RndAdt\" and additive model without \"RndAdt\" or \"Tokens\" condition but with \"Corefs\" (to conclude that \"Corefs\" is not significant):", quote=FALSE)
 p <- anova(m.additiveNoRndAdtNoTokens, m.additiveNoRndAdtNoTokensCorefs)
 p
 
