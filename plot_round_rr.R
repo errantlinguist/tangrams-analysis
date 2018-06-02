@@ -59,6 +59,8 @@ try(windowsFonts(Times=windowsFont("Times New Roman")))
 print(sprintf("Reading data from \"%s\".", infile), quote=FALSE)
 df <- read_results(infile)
 sapply(df, class)
+# Only select the rows using just baseline and RA weighting "Wgt" (SemDial paper)
+#df <- df[df$cond %in% c("Baseline", "Wgt"), ]
 # Hack to change legend label
 names(df)[names(df) == "cond"] <- "Condition"
 names(df)[names(df) == "rank"] <- "Rank"
@@ -98,7 +100,8 @@ print(aggregate(RR ~ Condition, data = df, FUN = std.error), short=FALSE, digits
 
 plot <- ggplot(df, aes(x=Round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition))
 plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RR")
-aspectRatio <- 3/4
+aspectRatio <- 3/4 # EMNLP 2018
+#aspectRatio <- 2/4 # Semdial 2018
 plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(12,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
 plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis", direction=-1)
 
