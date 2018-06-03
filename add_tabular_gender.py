@@ -10,10 +10,10 @@ __license__ = "Apache License, Version 2.0"
 
 import argparse
 import csv
+import os
 import sys
 from typing import Mapping
 
-import os.path
 import pandas as pd
 
 import tangrams_analysis.session_data
@@ -40,7 +40,7 @@ def other_gender(session_participant_metadata: Mapping[str, Mapping[str, Mapping
 	instructor = row["Instructor"]
 	other_genders = tuple(
 		gender for (participant_id, gender) in gender_metadata.items() if participant_id != instructor)
-	if (len(other_genders) > 1):
+	if len(other_genders) > 1:
 		raise ValueError("Dyads with more than two participants are (currently) not supported.")
 	else:
 		return other_genders[0]
