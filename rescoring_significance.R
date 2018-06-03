@@ -125,7 +125,7 @@ p
 # INTERACTIVE MODELS ----------------------------------------------
 
 print("Quadratic interaction model without the condition \"RndAdt\":", quote=FALSE)
-m.interactionNoRndAdt <- lmer(RR ~ Adt * Wgt + poly(Round, 2) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
+m.interactionNoRndAdt <- lmer(RR ~ Adt * Wgt + poly(Round, 2) + scale(Tokens) + (1 + Adt + Wgt | Dyad), data = df, REML = FALSE, control = control)
 summary(m.interactionNoRndAdt)
 
 print("ANOVA comparison of quadtratic additive model and interactive model, both without \"RndAdt\" condition (to conclude that there is no significant interaction):", quote=FALSE)
