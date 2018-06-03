@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 
 """
-Adds participant gender from session participant metadata files to a given tabular data file for those sessions.
+Adds participant metadata to a given tabular data file for those sessions.
 """
 
 __author__ = "Todd Shore <errantlinguist+github@gmail.com>"
@@ -12,7 +12,7 @@ import argparse
 import csv
 import os
 import sys
-from typing import Mapping
+from typing import Iterable, Mapping, Tuple
 
 import pandas as pd
 
@@ -23,20 +23,37 @@ TABULAR_FILE_DTYPES = {"session": "category", "Adt": "bool", "Wgt": "bool", "Rnd
 TABULAR_FILE_ENCODING = "utf-8"
 
 
-def instructor_gender(session_participant_metadata: Mapping[str, Mapping[str, Mapping[str, str]]],
-					  row: pd.Series) -> str:
+def add_tabular_participant_metadata(df: pd.DataFrame,
+									 session_data: Iterable[Tuple[str, tangrams_analysis.session_data.SessionData]]):
+	df["Instructor"] = df["round"].transform(lambda game_round: "B" if game_round % 2 == 0 else "A")
+	session_participant_metadata = dict(
+		(session_name, sd.read_participant_metadata()) for (session_name, sd) in session_data)
+	metadata_names = tuple(sorted(frozenset(
+		metadatum_name for participant_metadata in session_participant_metadata.values() for metadatum_name in
+		participant_metadata.keys())))
+	print("Metadata to add: {}.".format(metadata_names), file=sys.stderr)
+	for metadatum_name in metadata_names:
+		df["Instructor" + metadatum_name] = df.apply(
+			lambda row: instructor_datum(row, metadatum_name, session_participant_metadata),
+			axis=1)
+		df["Manipulator" + metadatum_name] = df.apply(
+			lambda row: other_datum(row, metadatum_name, session_participant_metadata), axis=1)
+
+
+def instructor_datum(row: pd.Series, datum_name: str,
+					 session_participant_metadata: Mapping[str, Mapping[str, Mapping[str, str]]]) -> str:
 	session = row["session"]
 	participant_metadata = session_participant_metadata[session]
-	gender_metadata = participant_metadata["GENDER"]
+	gender_metadata = participant_metadata[datum_name]
 	instructor = row["Instructor"]
 	return gender_metadata[instructor]
 
 
-def other_gender(session_participant_metadata: Mapping[str, Mapping[str, Mapping[str, str]]],
-				 row: pd.Series) -> str:
+def other_datum(row: pd.Series, datum_name: str,
+				session_participant_metadata: Mapping[str, Mapping[str, Mapping[str, str]]]) -> str:
 	session = row["session"]
 	participant_metadata = session_participant_metadata[session]
-	gender_metadata = participant_metadata["GENDER"]
+	gender_metadata = participant_metadata[datum_name]
 	instructor = row["Instructor"]
 	other_genders = tuple(
 		gender for (participant_id, gender) in gender_metadata.items() if participant_id != instructor)
@@ -59,7 +76,7 @@ def read_tabular_data(infile: str) -> pd.DataFrame:
 
 def __create_argparser() -> argparse.ArgumentParser:
 	result = argparse.ArgumentParser(
-		description="Adds participant gender from session participant metadata files to a given tabular data file for those sessions.")
+		description="Adds participant metadata to a given tabular data file for those sessions.")
 	result.add_argument("infile", metavar="INFILE", help="The tabular file to add to.")
 	result.add_argument("session_dir", metavar="PATH", help="The directory under which the dyad files are to be found.")
 	return result
@@ -79,11 +96,7 @@ def __main(args):
 	if missing_session_names:
 		raise ValueError("Missing sessions: {}".format(missing_session_names))
 	else:
-		df["Instructor"] = df["round"].transform(lambda game_round: "B" if game_round % 2 == 0 else "A")
-		session_participant_metadata = dict(
-			(session_name, sd.read_participant_metadata()) for (session_name, sd) in session_data)
-		df["InstructorGender"] = df.apply(lambda row: instructor_gender(session_participant_metadata, row), axis=1)
-		df["ManipulatorGender"] = df.apply(lambda row: other_gender(session_participant_metadata, row), axis=1)
+		add_tabular_participant_metadata(df, session_data)
 		df.to_csv(sys.stdout, sep=TABULAR_FILE_CSV_DIALECT.delimiter, encoding=TABULAR_FILE_ENCODING, index=False)
 
 
