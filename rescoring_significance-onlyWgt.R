@@ -115,14 +115,6 @@ p
 
 # INTERACTIVE MODELS ----------------------------------------------
 
-print("Quadratic interaction model:", quote=FALSE)
-m.interaction <- lmer(RR ~ Wgt * poly(Round, 2) + scale(Tokens) + (1 + Wgt | Dyad), data = df, REML = FALSE)
-summary(m.interaction)
-
-print("ANOVA comparison of quadtratic additive model and interactive model (to conclude that there is no significant interaction):", quote=FALSE)
-p <- anova(m.additive, m.interaction)
-p
-
 print("Quadratic interaction model with the condition \"Corefs\":", quote=FALSE)
 m.interactionCorefs.full <- lmer(RR ~ Wgt * poly(Round, 2) * scale(Tokens) * Corefs + (1 + Wgt | Dyad), data = df, REML = FALSE)
 summary(m.interactionCorefs.full)
@@ -130,8 +122,13 @@ summary(m.interactionCorefs.full)
 m.interactionCorefs.partial <- lmer(RR ~ Wgt + poly(Round, 2) + scale(Tokens) + Corefs + Wgt:poly(Round, 2) + Wgt:scale(Tokens) + poly(Round, 2):scale(Tokens) + poly(Round, 2):scale(Tokens):Corefs + (1 + Wgt | Dyad), data = df, REML = FALSE)
 summary(m.interactionCorefs.partial)
 
-#p <- anova(m.additiveCorefs, m.interactionCorefs.full)
-#p
+print("ANOVA comparison of quadtratic additive model and partial interactive model (to conclude there is significant interaction):", quote=FALSE)
+p <- anova(m.additiveCorefs, m.interactionCorefs.partial)
+p
+
+print("ANOVA comparison of fully interactive model and partial interactive model (to conclude there is no significant difference):", quote=FALSE)
+p <- anova(m.interactionCorefs.full, m.interactionCorefs.partial)
+p
 
 #m.interactionCorefs.lme4 <- lme4::lmer(RR ~ Wgt * poly(Round, 2) * scale(Tokens) * Corefs + (1 + Wgt | Dyad), data = df, REML = FALSE)
 #stargazer(m.interactionCorefs.lme4, digits = 5, no.space=TRUE, single.row=TRUE,report = "vcst*", label = "tab:coefficients:meanRR", star.cutoffs = c(0.05, 0.01, 0.001), table.placement = "htb", intercept.top = TRUE, intercept.bottom = FALSE, notes.label = "", omit.table.layout = "=lda")
