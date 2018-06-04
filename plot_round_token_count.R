@@ -88,6 +88,7 @@ plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expan
 
 output_device <- file_ext(outfile)
 print(sprintf("Writing plot to \"%s\" using format \"%s\".", outfile, output_device), quote=FALSE)
-width <- 100
+width <- 100 # EMNLP 2018
+#width <- 80 # SemDial 2018
 height <- width * aspectRatio
 ggsave(outfile, plot = plot, device=output_device, width = width, height = height, units="mm", dpi=1000)
