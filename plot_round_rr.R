@@ -23,7 +23,7 @@ if(length(args) < 2)
   stop("Usage: <scriptname> INFILE OUTFILE")
 }
 
-infile <- "~/Projects/tangrams-restricted/Data/Analysis/2018-04-27/results-cross-2.tsv"
+#infile <- "~/Projects/tangrams-restricted/Data/Analysis/2018-04-27/results-cross-2.tsv"
 infile <- args[1]
 if (!file_test("-f", infile)) {
   stop(sprintf("No file found at \"%s\".", infile));
@@ -100,8 +100,8 @@ print(aggregate(RR ~ Condition, data = df, FUN = std.error), short=FALSE, digits
 
 plot <- ggplot(df, aes(x=Round, y=RR, group=Condition, shape=Condition, color=Condition, linetype=Condition))
 plot <- plot + xlab(expression(paste("Game round ", italic("i")))) + ylab("Mean RR")
-aspectRatio <- 3/4 # EMNLP 2018
-#aspectRatio <- 2/4 # Semdial 2018
+#aspectRatio <- 3/4 # EMNLP 2018
+#aspectRatio <- 2/6 # Semdial 2018
 plot <- plot + theme_light() + theme(text=element_text(family="Times"), aspect.ratio=aspectRatio, plot.margin=margin(12,0,0,0), legend.background=element_rect(fill=alpha("white", 0.0)), legend.box.margin=margin(0,0,0,0), legend.box.spacing=unit(1, "mm"), legend.direction="horizontal", legend.margin=margin(0,0,0,0), legend.justification = c(0.99, 0.01), legend.position = c(0.99, 0.01), legend.text=element_text(family="mono", face="bold"), legend.title=element_blank()) 
 plot <- plot + scale_color_viridis(discrete=TRUE, option="viridis", direction=-1)
 
@@ -127,6 +127,7 @@ plot <- plot + coord_cartesian(xlim = c(xmin, xmax), ylim = c(ymin, ymax), expan
 
 output_device <- file_ext(outfile)
 print(sprintf("Writing plot to \"%s\" using format \"%s\".", outfile, output_device), quote=FALSE)
-width <- 100
+width <- 100 # EMNLP 2018
+#width <- 160 # SemDial 2018
 height <- width * aspectRatio
 ggsave(outfile, plot = plot, device=output_device, width = width, height = height, units="mm", dpi=1000)
